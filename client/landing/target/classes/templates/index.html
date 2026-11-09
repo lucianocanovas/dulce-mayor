@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Dulce Mayor</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <a th:href="@{/}" class="logo">🍬 Dulce Mayor</a>
+        <nav>
+            <a th:href="@{/}">Inicio</a>
+            <a th:href="@{/catalog}">Catálogo Completo</a>
+            <a th:href="@{/contact}">Contacto & Sucursales</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Distribuidora Mayorista de Golosinas</h1>
+        <p>Abastecemos a kioscos, almacenes y comercios en Mendoza con las mejores marcas, precios directos y stock garantizado.</p>
+        <a th:href="@{/catalog}" class="btn btn-primary">Ver Catálogo Mayorista</a>
+    </section>
+
+    <div class="container">
+        <h2 class="section-title">Ofertas Destacadas por Bulto</h2>
+        <div class="grid">
+            <div th:each="prod : ${featuredProducts}" class="product-card">
+                <span class="badge-sale">OFERTA MAYORISTA</span>
+                <span class="product-code" th:text="${prod.code}">ALF-01</span>
+                <h3 class="product-title" th:text="${prod.name}">Nombre del Producto</h3>
+                <p class="product-desc" th:text="${prod.description}">Descripción del producto...</p>
+                <div class="product-pack" th:text="${prod.packaging}">Pack x 12 u.</div>
+                <div class="product-price" th:text="'$' + ${#numbers.formatDecimal(prod.currentPrice, 0, 'POINT', 0, 'COMMA')}">$0</div>
+                <div style="margin-top: 0.75rem;">
+                    <span class="stock-pill" th:text="${prod.currentStock} + ' bultos disponibles'">En Stock</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Dulce Mayor S.A.</strong> — CUIT: 30-71234567-8</p>
+        <p>Distribuidora Central: Mendoza, Argentina</p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Portal de Clientes Minoristas desarrollado en Java Spring Boot + Thymeleaf.</p>
+    </footer>
+</body>
+</html>

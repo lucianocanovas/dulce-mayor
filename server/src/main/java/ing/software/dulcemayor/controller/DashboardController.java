@@ -1,0 +1,24 @@
+package ing.software.dulcemayor.controller;
+
+import ing.software.dulcemayor.dto.dashboard.DashboardStatsDTO;
+import ing.software.dulcemayor.dto.response.ApiResponse;
+import ing.software.dulcemayor.service.dashboard.DashboardService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/dashboard")
+@RequiredArgsConstructor
+public class DashboardController {
+
+    private final DashboardService dashboardService;
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<DashboardStatsDTO>> getStats() {
+        DashboardStatsDTO stats = dashboardService.getDashboardStats();
+        return ResponseEntity.ok(ApiResponse.ok(stats));
+    }
+}

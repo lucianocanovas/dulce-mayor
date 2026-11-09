@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Catálogo — Dulce Mayor</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <a th:href="@{/}" class="logo">🍬 Dulce Mayor</a>
+        <nav>
+            <a th:href="@{/}">Inicio</a>
+            <a th:href="@{/catalog}">Catálogo Completo</a>
+            <a th:href="@{/contact}">Contacto & Sucursales</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1 class="section-title">Catálogo Mayorista de Productos</h1>
+
+        <!-- Search Bar -->
+        <form th:action="@{/catalog}" method="get" style="max-width: 600px; margin: 0 auto 2.5rem; display: flex; gap: 0.5rem;">
+            <input type="text" name="search" th:value="${search}" placeholder="Buscar golosinas por nombre o categoría..." style="flex: 1; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </form>
+
+        <div th:if="${#lists.isEmpty(products)}" style="text-align: center; padding: 3rem; color: #64748b;">
+            <p>No se encontraron productos disponibles en el catálogo en este momento.</p>
+        </div>
+
+        <div class="grid" th:unless="${#lists.isEmpty(products)}">
+            <div th:each="prod : ${products}" class="product-card">
+                <span th:if="${prod.onSale}" class="badge-sale">OFERTA</span>
+                <span class="product-code" th:text="${prod.code}">COD</span>
+                <h3 class="product-title" th:text="${prod.name}">Nombre</h3>
+                <p class="product-desc" th:text="${prod.description}">Descripción...</p>
+                <div class="product-pack" th:text="${prod.packaging} + ' (' + ${prod.unitsPerPack} + ' u/bulto)'">Pack</div>
+                <div class="product-price" th:text="'$' + ${#numbers.formatDecimal(prod.currentPrice, 0, 'POINT', 0, 'COMMA')}">$0</div>
+                <div style="margin-top: 0.75rem;">
+                    <span class="stock-pill" th:text="${prod.currentStock} + ' bultos disponibles'">En Stock</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Minoristas (Thymeleaf)</p>
+    </footer>
+</body>
+</html>
