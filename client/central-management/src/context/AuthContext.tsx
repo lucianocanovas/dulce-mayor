@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { UserRole } from '../types/enums';
+import { apiRequest } from '../services/api';
 
 export interface UserSession {
   userId: string;
@@ -10,9 +11,19 @@ export interface UserSession {
   token: string;
 }
 
+interface SocialLoginData {
+  email: string;
+  name?: string;
+  sub: string;
+  provider: 'GOOGLE' | 'FACEBOOK';
+  picture?: string;
+}
+
 interface AuthContextType {
   user: UserSession | null;
   login: (session: UserSession) => void;
+  loginSocial: (data: SocialLoginData) => Promise<void>;
+  changePassword: (newPassword: string, currentPassword?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -30,6 +41,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('dulcemayor_token', session.token);
   };
 
+  const loginSocial = async (data: SocialLoginData) => {
+    const session = await apiRequest<UserSession>('/auth/social', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    login(session);
+  };
+
+  const changePassword = async (newPassword: string, currentPassword: string = 'dulcemayor') => {
+    if (!user) throw new Error('No hay usuario en sesión');
+
+    await apiRequest<void>(`/auth/change-password?userId=${user.userId}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+      }),
+    });
+
+    const updatedUser: UserSession = {
+      ...user,
+      temporaryPassword: false,
+    };
+    login(updatedUser);
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('dulcemayor_user');
@@ -37,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, loginSocial, changePassword, logout }}>
       {children}
     </AuthContext.Provider>
   );

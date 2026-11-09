@@ -72,6 +72,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PointOfSaleRepository pointOfSaleRepository;
     private final OrderRepository orderRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final ing.software.dulcemayor.repository.catalog.PromotionRepository promotionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -197,6 +198,26 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
 
         orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(15000.0).subtotal(30000.0).product(p1).order(order2).build());
+
+        // 9. Promotions
+        promotionRepository.save(ing.software.dulcemayor.entity.catalog.Promotion.builder()
+                .code("BIENVENIDA")
+                .description("10% de descuento de bienvenida en la primera compra")
+                .discountPercentage(10.0)
+                .minimumQuantity(1)
+                .startDate(LocalDate.now().minusDays(5))
+                .endDate(LocalDate.now().plusMonths(3))
+                .build());
+
+        promotionRepository.save(ing.software.dulcemayor.entity.catalog.Promotion.builder()
+                .code("ALFAJORFEST")
+                .description("15% off especial en Alfajores Triples")
+                .discountPercentage(15.0)
+                .minimumQuantity(2)
+                .startDate(LocalDate.now().minusDays(2))
+                .endDate(LocalDate.now().plusMonths(1))
+                .product(p1)
+                .build());
 
         log.info("Database successfully seeded with admin credentials and initial inventory!");
     }

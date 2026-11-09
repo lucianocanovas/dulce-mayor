@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { apiRequest } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useAuth0Config } from '../context/Auth0ProviderWrapper';
 import type { UserSession } from '../context/AuthContext';
-import { Store, Lock, User, AlertCircle, KeyRound } from 'lucide-react';
+import { Store, Lock, User, AlertCircle, KeyRound, HelpCircle } from 'lucide-react';
+import { Auth0SocialButtons } from '../components/Auth0SocialButtons';
+import { Auth0FallbackButtons } from '../components/Auth0FallbackButtons';
+import { Auth0GuideModal } from '../components/Auth0GuideModal';
 
 export const LoginView: React.FC = () => {
-  const { login } = useAuth();
+  const { login, loginSocial } = useAuth();
+  const { isConfigured } = useAuth0Config();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +47,34 @@ export const LoginView: React.FC = () => {
   const handleFillDemoPreventor = () => {
     setUsername('preventor');
     setPassword('dulcemayor');
+  };
+
+  const handleSimulateSocial = async (provider: 'GOOGLE' | 'FACEBOOK') => {
+    try {
+      if (provider === 'GOOGLE') {
+        await loginSocial({
+          email: 'operador.mendoza@dulcemayor.com',
+          name: 'Carlos Mendoza',
+          sub: 'google-oauth2|109283746501928374',
+          provider: 'GOOGLE',
+          picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        });
+      } else {
+        await loginSocial({
+          email: 'mariana.ventas@dulcemayor.com',
+          name: 'Mariana Ventas',
+          sub: 'facebook|987654321098765',
+          provider: 'FACEBOOK',
+          picture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+        });
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Error en autenticación social');
+      }
+    }
   };
 
   return (
@@ -95,6 +129,32 @@ export const LoginView: React.FC = () => {
           </button>
         </form>
 
+        <div className="divider-with-text">
+          <span>O ingresar con Auth0</span>
+        </div>
+
+        {isConfigured ? (
+          <Auth0SocialButtons />
+        ) : (
+          <Auth0FallbackButtons
+            onOpenGuide={() => setIsGuideOpen(true)}
+            onSimulate={handleSimulateSocial}
+          />
+        )}
+
+        <div className="auth0-helper-bar mt-3 flex items-center justify-between text-xs text-muted">
+          <button
+            type="button"
+            onClick={() => setIsGuideOpen(true)}
+            className="btn-text-link flex items-center gap-1"
+          >
+            <HelpCircle size={14} /> ¿Cómo configurar Google y Facebook en Auth0?
+          </button>
+          <span className={`status-pill ${isConfigured ? 'status-pill-success' : 'status-pill-warning'}`}>
+            {isConfigured ? 'Auth0 Activo' : 'Auth0 Modo Guía'}
+          </span>
+        </div>
+
         <div className="demo-credentials-helper">
           <div className="demo-title">
             <KeyRound size={14} /> Accesos Rápidos de Demostración:
@@ -109,6 +169,11 @@ export const LoginView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Auth0GuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
     </div>
   );
 };

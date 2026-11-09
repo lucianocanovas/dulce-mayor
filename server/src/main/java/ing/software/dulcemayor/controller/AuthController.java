@@ -26,6 +26,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("Authentication successful", response));
     }
 
+    @PostMapping("/social")
+    public ResponseEntity<ApiResponse<AuthResponseDTO>> socialLogin(@RequestBody ing.software.dulcemayor.dto.auth.SocialLoginRequestDTO request) {
+        AuthResponseDTO response = authService.socialLogin(request);
+        return ResponseEntity.ok(ApiResponse.ok("Social authentication successful", response));
+    }
+
     @PostMapping("/change-password")
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @RequestParam String userId,
