@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { MOCK_PRODUCTS, getStoredPOS, saveStoredOrder } from '../services/api';
-import type { PointOfSale, OrderItem, Order } from '../types/models';
-import { OrderStatus, PaymentType } from '../types/enums';
+import React, { useState, useEffect } from 'react';
+import { fetchProducts, fetchPointsOfSale, submitOrderToBackend } from '../services/api';
+import type { PointOfSale, OrderItem, Product } from '../types/models';
+import { PaymentType } from '../types/enums';
 import { useAuth } from '../context/AuthContext';
 import {
   Search,
@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Store,
   X,
+  Loader2,
 } from 'lucide-react';
 
 interface CatalogOrderViewProps {
@@ -23,10 +24,11 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   onOrderSuccess,
 }) => {
   const { user } = useAuth();
-  const allPOS = getStoredPOS();
-  const [selectedPOS, setSelectedPOS] = useState<PointOfSale>(
-    initialPOS || allPOS[0]
-  );
+  const [products, setProducts] = useState<Product[]>([]);
+  const [allPOS, setAllPOS] = useState<PointOfSale[]>([]);
+  const [selectedPOS, setSelectedPOS] = useState<PointOfSale | null>(initialPOS || null);
+  const [loading, setLoading] = useState(true);
+
   const [selectedBrand, setSelectedBrand] = useState<string>('TODOS');
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<{ [productId: string]: number }>({});
@@ -35,11 +37,32 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   const [discountPercent, setDiscountPercent] = useState(0);
   const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.CASH);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlacedMsg, setOrderPlacedMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [loadedProds, loadedPos] = await Promise.all([
+          fetchProducts(),
+          fetchPointsOfSale(),
+        ]);
+        setProducts(loadedProds);
+        setAllPOS(loadedPos);
+        if (!selectedPOS && loadedPos.length > 0) {
+          setSelectedPOS(loadedPos[0]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const brands = ['TODOS', 'Arcor', 'Bagley', 'Mondelez', 'Terrabusi'];
 
-  const filteredProducts = MOCK_PRODUCTS.filter((prod) => {
+  const filteredProducts = products.filter((prod) => {
     const matchesBrand = selectedBrand === 'TODOS' || prod.brand === selectedBrand;
     const matchesSearch =
       prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -61,9 +84,14 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
     });
   };
 
+  const productMap: { [id: string]: Product } = {};
+  products.forEach((p) => {
+    productMap[p.id] = p;
+  });
+
   const cartItems: OrderItem[] = Object.entries(cart)
     .map(([prodId, qty]) => {
-      const product = MOCK_PRODUCTS.find((p) => p.id === prodId);
+      const product = productMap[prodId];
       if (!product || qty <= 0) return null;
       return {
         product,
@@ -80,161 +108,180 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
 
   const handleApplyCoupon = () => {
     const code = couponCode.trim().toUpperCase();
-    if (code === 'DULCE10' || code === 'MAYORISTA10') {
+    if (code === 'BIENVENIDA' || code === 'DULCE10' || code === 'MAYORISTA10') {
       setDiscountPercent(10);
       setCouponMsg({ text: 'Cupón del 10% aplicado con éxito', ok: true });
-    } else if (code === 'PROMO20') {
+    } else if (code === 'ALFAJORFEST') {
+      setDiscountPercent(15);
+      setCouponMsg({ text: 'Cupón especial 15% aplicado', ok: true });
+    } else if (code === 'MAYORISTA2026' || code === 'PROMO20') {
       setDiscountPercent(20);
       setCouponMsg({ text: 'Cupón especial 20% aplicado', ok: true });
     } else {
-      setCouponMsg({ text: 'Cupón inválido o expirado', ok: false });
+      setCouponMsg({ text: 'Cupón inválido o sin vigencia', ok: false });
     }
   };
 
-  const handleConfirmOrder = () => {
-    if (cartItems.length === 0) return;
+  const handleConfirmOrder = async () => {
+    if (cartItems.length === 0 || !selectedPOS) return;
 
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      orderNumber: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().split('T')[0],
-      pointOfSale: selectedPOS,
-      items: cartItems,
-      subtotal: rawSubtotal,
-      discountPercentage: discountPercent,
-      couponCode: discountPercent > 0 ? couponCode : undefined,
-      total: finalTotal,
-      status: OrderStatus.LOADED,
-      paymentType,
-      presaleAgentName: user?.fullName || 'Juan Manuel Torres',
-    };
+    setIsSubmitting(true);
+    try {
+      const orderItems = Object.entries(cart).map(([productId, quantity]) => ({
+        productId,
+        quantity,
+      }));
 
-    saveStoredOrder(newOrder);
-    setCart({});
-    setIsCartOpen(false);
-    setOrderPlacedMsg(`¡Pedido ${newOrder.orderNumber} cargado para ${selectedPOS.name}!`);
+      const created = await submitOrderToBackend({
+        pointOfSaleId: selectedPOS.id,
+        couponCode: discountPercent > 0 ? couponCode : undefined,
+        paymentType,
+        items: orderItems,
+        pointOfSale: selectedPOS,
+        agentName: user?.fullName || 'Juan Manuel Torres',
+        cartProducts: productMap,
+      });
 
-    setTimeout(() => {
-      setOrderPlacedMsg(null);
-      if (onOrderSuccess) onOrderSuccess();
-    }, 3000);
+      setCart({});
+      setIsCartOpen(false);
+      setOrderPlacedMsg(`¡Pedido ${created.orderNumber} registrado exitosamente para ${selectedPOS.name}!`);
+
+      setTimeout(() => {
+        setOrderPlacedMsg(null);
+        if (onOrderSuccess) onOrderSuccess();
+      }, 2500);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="view-container" style={{ textAlign: 'center', padding: '3rem' }}>
+        <Loader2 className="animate-spin" size={36} style={{ color: 'var(--dm-primary-orange)', margin: '0 auto 1rem' }} />
+        <p style={{ color: 'var(--dm-text-subtle)' }}>Cargando catálogo en tiempo real desde la base de datos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="view-container">
       {/* Customer Header Selector */}
-      <div className="order-target-card">
-        <div className="target-label">
-          <Store size={15} />
-          <span>Comercio Destino:</span>
+      {selectedPOS && (
+        <div className="order-target-card">
+          <div className="target-label">
+            <Store size={15} />
+            <span>Comercio Destino:</span>
+          </div>
+          <select
+            value={selectedPOS.id}
+            onChange={(e) => {
+              const found = allPOS.find((p) => p.id === e.target.value);
+              if (found) setSelectedPOS(found);
+            }}
+            className="pos-dropdown"
+          >
+            {allPOS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.neighborhood}, {p.city})
+              </option>
+            ))}
+          </select>
         </div>
-        <select
-          value={selectedPOS.id}
-          onChange={(e) => {
-            const found = allPOS.find((p) => p.id === e.target.value);
-            if (found) setSelectedPOS(found);
-          }}
-          className="pos-dropdown"
-        >
-          {allPOS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} — {p.address} ({p.neighborhood})
-            </option>
-          ))}
-        </select>
-      </div>
+      )}
 
-      {/* Confirmation Toast */}
+      {/* Success Banner */}
       {orderPlacedMsg && (
-        <div className="order-toast-success">
+        <div className="toast-banner success">
           <Check size={18} />
           <span>{orderPlacedMsg}</span>
         </div>
       )}
 
-      {/* Search and Brand Filters */}
-      <div className="catalog-filters">
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Buscar golosina o código..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-        </div>
+      {/* Search Bar */}
+      <div className="search-box">
+        <Search size={18} className="search-icon" />
+        <input
+          type="text"
+          placeholder="Buscar producto por nombre o código..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} className="search-clear">
+            <X size={16} />
+          </button>
+        )}
+      </div>
 
-        <div className="brand-chips-row">
-          {brands.map((b) => (
-            <button
-              key={b}
-              onClick={() => setSelectedBrand(b)}
-              className={`brand-chip ${selectedBrand === b ? 'active' : ''}`}
-            >
-              {b}
-            </button>
-          ))}
-        </div>
+      {/* Brand Filters */}
+      <div className="brand-pills-scroll">
+        {brands.map((brand) => (
+          <button
+            key={brand}
+            onClick={() => setSelectedBrand(brand)}
+            className={`brand-pill ${selectedBrand === brand ? 'active' : ''}`}
+          >
+            {brand}
+          </button>
+        ))}
       </div>
 
       {/* Products Grid */}
-      <div className="mobile-product-grid">
+      <div className="products-grid">
         {filteredProducts.map((prod) => {
-          const qtyInCart = cart[prod.id] || 0;
+          const inCartQty = cart[prod.id] || 0;
           return (
-            <div key={prod.id} className="mobile-product-card">
-              <div className="prod-badge-row">
-                <span className="packaging-tag">{prod.packaging}</span>
-                {prod.isOffer && <span className="offer-tag">Oferta</span>}
+            <div key={prod.id} className="product-card">
+              <div className="product-card-header">
+                <span className="brand-tag">{prod.brand}</span>
+                {prod.isOffer && <span className="offer-tag">OFERTA</span>}
               </div>
 
-              <h4 className="prod-name">{prod.name}</h4>
-              <span className="prod-brand-code">
-                {prod.brand} • {prod.code}
-              </span>
-
-              <div className="prod-price-box">
-                <div className="price-bulk">
-                  ${prod.bulkPrice.toLocaleString('es-AR')}
-                  <small className="per-pack"> /bulto</small>
-                </div>
-                <div className="price-unit">
-                  (${prod.unitPrice.toFixed(0)} c/u)
+              <div className="product-info">
+                <h4 className="product-title">{prod.name}</h4>
+                <div className="product-meta">
+                  <span>{prod.packaging}</span>
+                  <span className="meta-dot">•</span>
+                  <span>{prod.code}</span>
                 </div>
               </div>
 
-              <div className="stock-info-row">
-                <span className="stock-dot">●</span>
-                <span className="stock-text">{prod.stockPacks} bultos en almacén</span>
+              <div className="product-pricing">
+                <div className="bulk-price">${prod.bulkPrice.toLocaleString('es-AR')}</div>
+                <div className="unit-price-hint">
+                  ${prod.unitPrice.toLocaleString('es-AR')} / u.
+                </div>
               </div>
 
-              {/* Quantity Picker */}
-              <div className="card-cart-controls">
-                {qtyInCart > 0 ? (
-                  <div className="stepper-group">
+              <div className="product-actions">
+                {inCartQty === 0 ? (
+                  <button
+                    onClick={() => updateQuantity(prod.id, 1)}
+                    className="btn btn-sm btn-outline-primary w-full"
+                  >
+                    <Plus size={16} />
+                    <span>Agregar bulto</span>
+                  </button>
+                ) : (
+                  <div className="qty-stepper">
                     <button
                       onClick={() => updateQuantity(prod.id, -1)}
-                      className="stepper-btn"
+                      className="stepper-btn minus"
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="stepper-val">{qtyInCart}</span>
+                    <span className="stepper-value">{inCartQty}</span>
                     <button
                       onClick={() => updateQuantity(prod.id, 1)}
-                      className="stepper-btn"
+                      className="stepper-btn plus"
                     >
                       <Plus size={14} />
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => updateQuantity(prod.id, 1)}
-                    className="btn-add-cart"
-                  >
-                    <Plus size={15} />
-                    <span>Agregar</span>
-                  </button>
                 )}
               </div>
             </div>
@@ -242,135 +289,147 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
         })}
       </div>
 
-      {/* Persistent Bottom Bar when Cart has items */}
-      {totalPacks > 0 && (
+      {/* Floating Bottom Cart Bar */}
+      {totalPacks > 0 && !isCartOpen && (
         <div className="floating-cart-bar">
-          <div className="floating-cart-summary">
-            <span className="floating-packs">{totalPacks} bultos</span>
-            <span className="floating-total">${finalTotal.toLocaleString('es-AR')}</span>
+          <div className="cart-summary-pill" onClick={() => setIsCartOpen(true)}>
+            <div className="cart-count-badge">{totalPacks}</div>
+            <div className="cart-price-info">
+              <span className="cart-label">Total estimado</span>
+              <span className="cart-amount">${rawSubtotal.toLocaleString('es-AR')}</span>
+            </div>
+            <button className="cart-open-btn">
+              <span>Ver pedido</span>
+              <ArrowRight size={16} />
+            </button>
           </div>
-          <button onClick={() => setIsCartOpen(true)} className="btn-view-order">
-            <span>Ver Pedido</span>
-            <ArrowRight size={16} />
-          </button>
         </div>
       )}
 
       {/* Cart Drawer Modal */}
       {isCartOpen && (
-        <div className="cart-modal-backdrop" onClick={() => setIsCartOpen(false)}>
-          <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
+        <div className="drawer-overlay" onClick={() => setIsCartOpen(false)}>
+          <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-header">
               <div>
-                <h3 className="drawer-title">Resumen de Pedido</h3>
-                <span className="drawer-sub">{selectedPOS.name}</span>
+                <h3>Resumen de Pedido</h3>
+                <p className="drawer-subtitle">{selectedPOS?.name}</p>
               </div>
-              <button onClick={() => setIsCartOpen(false)} className="close-btn">
-                <X size={18} />
+              <button onClick={() => setIsCartOpen(false)} className="drawer-close">
+                <X size={20} />
               </button>
             </div>
 
-            <div className="drawer-body">
+            <div className="drawer-items">
               {cartItems.map((item) => (
                 <div key={item.product.id} className="drawer-item-row">
-                  <div className="item-info">
+                  <div className="item-details">
                     <span className="item-name">{item.product.name}</span>
-                    <span className="item-pack-desc">
-                      {item.quantityPacks} x ${item.product.bulkPrice.toLocaleString('es-AR')}
+                    <span className="item-sub">
+                      {item.product.packaging} • ${item.product.bulkPrice.toLocaleString('es-AR')}
                     </span>
                   </div>
-                  <div className="item-actions">
+                  <div className="qty-stepper compact">
                     <button
                       onClick={() => updateQuantity(item.product.id, -1)}
-                      className="stepper-btn-sm"
+                      className="stepper-btn"
                     >
-                      -
+                      <Minus size={12} />
                     </button>
-                    <span className="item-qty">{item.quantityPacks}</span>
+                    <span className="stepper-value">{item.quantityPacks}</span>
                     <button
                       onClick={() => updateQuantity(item.product.id, 1)}
-                      className="stepper-btn-sm"
+                      className="stepper-btn"
                     >
-                      +
+                      <Plus size={12} />
                     </button>
-                    <span className="item-subtotal">
-                      ${item.subtotal.toLocaleString('es-AR')}
-                    </span>
+                  </div>
+                  <div className="item-total">
+                    ${item.subtotal.toLocaleString('es-AR')}
                   </div>
                 </div>
               ))}
+            </div>
 
-              {/* Coupon Section */}
+            <div className="drawer-footer">
+              {/* Coupon input */}
               <div className="coupon-box">
-                <div className="coupon-input-group">
-                  <input
-                    type="text"
-                    placeholder="Código de cupón (ej: DULCE10)"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="coupon-input"
-                  />
-                  <button onClick={handleApplyCoupon} className="coupon-btn">
-                    Aplicar
-                  </button>
-                </div>
-                {couponMsg && (
-                  <span className={`coupon-feedback ${couponMsg.ok ? 'success' : 'error'}`}>
-                    {couponMsg.text}
-                  </span>
-                )}
+                <input
+                  type="text"
+                  placeholder="Cupón (ej. BIENVENIDA, ALFAJORFEST)"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  className="coupon-input"
+                />
+                <button onClick={handleApplyCoupon} className="btn btn-sm btn-secondary">
+                  Aplicar
+                </button>
               </div>
+              {couponMsg && (
+                <div className={`coupon-feedback ${couponMsg.ok ? 'ok' : 'err'}`}>
+                  {couponMsg.text}
+                </div>
+              )}
 
-              {/* Payment Type */}
-              <div className="payment-select-group">
-                <label className="section-label">Medio de Pago Acordado:</label>
+              {/* Payment selector */}
+              <div className="payment-select-row">
+                <label>Forma de pago:</label>
                 <div className="payment-pills">
                   <button
-                    type="button"
-                    className={`pay-pill ${paymentType === PaymentType.CASH ? 'active' : ''}`}
                     onClick={() => setPaymentType(PaymentType.CASH)}
+                    className={`pay-pill ${paymentType === PaymentType.CASH ? 'active' : ''}`}
                   >
                     Efectivo
                   </button>
                   <button
-                    type="button"
-                    className={`pay-pill ${paymentType === PaymentType.BANK_TRANSFER ? 'active' : ''}`}
                     onClick={() => setPaymentType(PaymentType.BANK_TRANSFER)}
+                    className={`pay-pill ${paymentType === PaymentType.BANK_TRANSFER ? 'active' : ''}`}
                   >
                     Transferencia
                   </button>
                   <button
-                    type="button"
-                    className={`pay-pill ${paymentType === PaymentType.DIGITAL_WALLET ? 'active' : ''}`}
                     onClick={() => setPaymentType(PaymentType.DIGITAL_WALLET)}
+                    className={`pay-pill ${paymentType === PaymentType.DIGITAL_WALLET ? 'active' : ''}`}
                   >
-                    Billetera QR
+                    Billetera Virtual
                   </button>
                 </div>
               </div>
 
-              {/* Pricing Totals */}
-              <div className="totals-breakdown">
-                <div className="total-row">
-                  <span>Subtotal:</span>
+              {/* Totals */}
+              <div className="summary-breakdown">
+                <div className="summary-line">
+                  <span>Subtotal ({totalPacks} bultos)</span>
                   <span>${rawSubtotal.toLocaleString('es-AR')}</span>
                 </div>
                 {discountPercent > 0 && (
-                  <div className="total-row discount">
-                    <span>Descuento ({discountPercent}%):</span>
+                  <div className="summary-line discount">
+                    <span>Descuento ({discountPercent}%)</span>
                     <span>-${discountAmount.toLocaleString('es-AR')}</span>
                   </div>
                 )}
-                <div className="total-row grand-total">
-                  <span>Total Final:</span>
+                <div className="summary-line total">
+                  <span>Total Final</span>
                   <span>${finalTotal.toLocaleString('es-AR')}</span>
                 </div>
               </div>
-            </div>
 
-            <div className="drawer-footer">
-              <button onClick={handleConfirmOrder} className="btn-primary btn-block">
-                Confirmar y Transmitir Pedido
+              <button
+                onClick={handleConfirmOrder}
+                disabled={isSubmitting}
+                className="btn btn-primary btn-block confirm-btn"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    <span>Guardando en Servidor...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={18} />
+                    <span>Confirmar y Enviar Pedido</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
