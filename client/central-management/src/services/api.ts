@@ -18,15 +18,25 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (err: unknown) {
+    throw new Error('No se pudo conectar con el servidor backend (puerto 8080).');
+  }
 
-  const json: ApiResponse<T> = await response.json();
+  let json: ApiResponse<T>;
+  try {
+    json = await response.json();
+  } catch {
+    throw new Error(`Respuesta inválida del servidor (Status ${response.status})`);
+  }
 
   if (!response.ok || !json.success) {
-    throw new Error(json.message || `Request failed with status ${response.status}`);
+    throw new Error(json.message || `Error en la solicitud (Status ${response.status})`);
   }
 
   return json.data;

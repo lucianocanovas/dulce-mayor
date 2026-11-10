@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="100%" height="100%">
+  <defs>
+    <!-- Candy clipping circle -->
+    <clipPath id="h-candy-clip">
+      <circle cx="60" cy="62" r="38" />
+    </clipPath>
+    <!-- Facet split for crown -->
+    <clipPath id="h-split-left">
+      <rect x="0" y="0" width="60" height="120" />
+    </clipPath>
+    <clipPath id="h-split-right">
+      <rect x="60" y="0" width="100" height="120" />
+    </clipPath>
+  </defs>
+
+  <!-- ==================== ICON GROUP ==================== -->
+  <g transform="translate(4, 2)">
+    <!-- Crown behind candy -->
+    <g id="h-crown">
+      <!-- Left facet -->
+      <path clip-path="url(#h-split-left)"
+            d="M 60 12
+               C 55 17 52 23 49 24
+               C 46 25 42 21 38 18
+               C 35 21 34 25 37 29
+               C 38 32 40 36 40 42
+               L 60 42 Z"
+            fill="#FAC536" />
+      <!-- Right facet -->
+      <path clip-path="url(#h-split-right)"
+            d="M 60 12
+               C 65 17 68 23 71 24
+               C 74 25 78 21 82 18
+               C 85 21 86 25 83 29
+               C 82 32 80 36 80 42
+               L 60 42 Z"
+            fill="#E89A1B" />
+      <!-- Crown outline -->
+      <path d="M 40 42
+               C 40 36 38 32 37 29
+               C 34 25 35 21 38 18
+               C 42 21 46 25 49 24
+               C 52 23 55 17 60 12
+               C 65 17 68 23 71 24
+               C 74 25 78 21 82 18
+               C 85 21 86 25 83 29
+               C 82 32 80 36 80 42"
+            fill="none" stroke="#C0831F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- Tip Spheres -->
+      <circle cx="38" cy="18" r="4.5" fill="#FAC536" stroke="#C0831F" stroke-width="1.5" />
+      <circle cx="82" cy="18" r="4.5" fill="#E89A1B" stroke="#C0831F" stroke-width="1.5" />
+      <circle cx="60" cy="11" r="5.5" fill="#FAC536" clip-path="url(#h-split-left)" />
+      <circle cx="60" cy="11" r="5.5" fill="#E89A1B" clip-path="url(#h-split-right)" />
+      <circle cx="60" cy="11" r="5.5" fill="none" stroke="#C0831F" stroke-width="1.5" />
+    </g>
+
+    <!-- Candy circle -->
+    <g id="h-candy">
+      <!-- Outer rim -->
+      <circle cx="60" cy="62" r="38" fill="#FAC933" />
+      <!-- Swirl arms pattern -->
+      <g clip-path="url(#h-candy-clip)">
+        <!-- 6 orange spiral blades -->
+        <path d="M 60 62 Q 72 50 88 42 A 38 38 0 0 1 98 62 Q 78 66 60 62 Z" fill="#F58721" />
+        <path d="M 60 62 Q 76 72 82 92 A 38 38 0 0 1 65 100 Q 58 82 60 62 Z" fill="#F58721" />
+        <path d="M 60 62 Q 48 76 34 88 A 38 38 0 0 1 23 74 Q 42 66 60 62 Z" fill="#F58721" />
+        <path d="M 60 62 Q 44 52 32 36 A 38 38 0 0 1 48 25 Q 56 44 60 62 Z" fill="#F58721" />
+        <path d="M 60 62 Q 62 44 74 27 A 38 38 0 0 1 89 36 Q 74 52 60 62 Z" fill="#F58721" />
+        <path d="M 60 62 Q 54 80 44 98 A 38 38 0 0 1 31 92 Q 44 74 60 62 Z" fill="#F58721" />
+      </g>
+      <!-- Border rim -->
+      <circle cx="60" cy="62" r="38" fill="none" stroke="#E6681C" stroke-width="3" />
+    </g>
+  </g>
+
+  <!-- ==================== BRAND TYPOGRAPHY ==================== -->
+  <g transform="translate(126, 0)">
+    <!-- Wordmark "DULCE" -->
+    <text x="0" y="58"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-weight="900"
+          font-size="44"
+          letter-spacing="-0.5"
+          fill="#F58721">DULCE</text>
+    <!-- Wordmark "MAYOR" -->
+    <text x="156" y="58"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-weight="900"
+          font-size="44"
+          letter-spacing="-0.5"
+          fill="#2B1810">MAYOR</text>
+    
+    <!-- Subtitle pill badge / tagline -->
+    <rect x="0" y="72" width="280" height="24" rx="12" fill="#FAF0DE" />
+    <text x="14" y="88"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-weight="700"
+          font-size="12"
+          letter-spacing="1.2"
+          fill="#D85817">DISTRIBUIDORA MAYORISTA</text>
+  </g>
+</svg>

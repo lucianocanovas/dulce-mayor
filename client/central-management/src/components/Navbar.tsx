@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User as UserIcon, Shield, Store } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -8,12 +8,10 @@ export const Navbar: React.FC = () => {
   return (
     <header className="navbar">
       <div className="navbar-brand">
-        <div className="brand-logo">
-          <Store size={22} className="brand-icon" />
-        </div>
+        <img src="/logo.svg" alt="Dulce Mayor" className="brand-logo-img" />
         <div>
           <h1 className="brand-title">Dulce Mayor</h1>
-          <span className="brand-subtitle">Central Management Backoffice</span>
+          <span className="brand-subtitle">Administración Central & Almacén</span>
         </div>
       </div>
 
@@ -29,7 +27,7 @@ export const Navbar: React.FC = () => {
                 <Shield size={12} /> {user.role}
               </span>
             </div>
-            <button onClick={logout} className="logout-btn" title="Sign Out">
+            <button onClick={logout} className="logout-btn" title="Cerrar Sesión">
               <LogOut size={16} />
               <span>Cerrar Sesión</span>
             </button>

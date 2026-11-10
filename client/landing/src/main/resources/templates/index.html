@@ -3,22 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${title}">Dulce Mayor</title>
+    <title th:text="${title}">Dulce Mayor • Distribuidora Mayorista</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
     <header>
-        <a th:href="@{/}" class="logo">🍬 Dulce Mayor</a>
-        <nav>
+        <a th:href="@{/}" class="logo">
+            <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
+        </a>
+        <nav style="display: flex; align-items: center; gap: 1rem;">
             <a th:href="@{/}">Inicio</a>
             <a th:href="@{/catalog}">Catálogo Completo</a>
             <a th:href="@{/contact}">Contacto & Sucursales</a>
+            <a href="http://localhost:5174" class="btn btn-outline" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Acceso Campo</a>
+            <a href="http://localhost:5173" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Ingreso Backoffice</a>
         </nav>
     </header>
 
     <section class="hero">
         <h1>Distribuidora Mayorista de Golosinas</h1>
-        <p>Abastecemos a kioscos, almacenes y comercios en Mendoza con las mejores marcas, precios directos y stock garantizado.</p>
+        <p>Abastecemos a kioscos, almacenes y comercios en Mendoza con las mejores marcas, precios directos de fábrica y stock garantizado.</p>
         <a th:href="@{/catalog}" class="btn btn-primary">Ver Catálogo Mayorista</a>
     </section>
 
@@ -41,8 +46,8 @@
 
     <footer>
         <p><strong>Dulce Mayor S.A.</strong> — CUIT: 30-71234567-8</p>
-        <p>Distribuidora Central: Mendoza, Argentina</p>
-        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Portal de Clientes Minoristas desarrollado en Java Spring Boot + Thymeleaf.</p>
+        <p>Distribuidora Central: Mendoza, Argentina • Tel: +54 9 261 555-1234</p>
+        <p style="margin-top: 0.5rem; font-size: 0.82rem; color: #C5B3A5;">Portal de Clientes Minoristas • Dulce Mayor</p>
     </footer>
 </body>
 </html>

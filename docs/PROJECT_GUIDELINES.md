@@ -23,7 +23,7 @@
    * **OpenStreetMap (OSM) + Leaflet** integration (`react-leaflet`) for interactive routing, store markers, and real-time itinerary tracking without full-page reloads.
    * Presale agents (Preventores): store onboarding, catalog browsing with live stock, mobile order entry with coupon code discounts, next optimal stop recommendations.
    * Delivery couriers (Distribuidores): daily route stops, delivery marking ("DELIVERED"), and automated email triggers to the next stop.
-   * Authentication: Dual support for standard credentials and **OAuth2 (Google + GitHub/Facebook)**.
+   * Authentication: Dual support for standard credentials and **OAuth2 (Google + Facebook)**.
 
 3. **Central Management Backoffice (`client/central-management` - React 19 + Vite):**
    * High-interactivity Single Page Application (SPA) built with **React 19 + TypeScript + Vite**.
@@ -33,7 +33,7 @@
    * User management with automated assignment of temporary password (`dulcemayor`).
    * Management reporting: export sales lists to Excel (by department and presale agent) and PDF invoices/summaries.
    * Analytics & Charts: interactive bar charts (orders per presale agent per day) and pie charts (product stock distribution).
-   * Authentication: Dual support for standard credentials and **OAuth2 (Google + GitHub/Facebook)**.
+   * Authentication: Dual support for standard credentials and **OAuth2 (Google + Facebook)**.
 
 4. **Central REST API Server (`server`):**
    * Pure backend REST API engine (no frontend templates or view renderers).
@@ -51,7 +51,7 @@
 | **Local / Test Database** | H2 Database | In-memory for fast unit/integration tests |
 | **Production Database** | **PostgreSQL 17+** | Containerized via Docker (`postgres:latest`) |
 | **Security & Auth** | Spring Security + JWT + OAuth2 Client | `spring-boot-starter-security`, `spring-boot-starter-oauth2-client`, `jjwt` |
-| **OAuth2 Providers** | **Google, GitHub & Facebook** | Configured in `central-management`, `order-management`, and `server` |
+| **OAuth2 Providers** | **Google & Facebook** | Configured in `central-management`, `order-management`, and `server` |
 | **Frontend SPAs (Rich Clients)** | **React 19 + TypeScript + Vite** | Modular component architecture for `central-management` (Backoffice) & `order-management` (Mobile Field Operations) |
 | **Frontend SSR (Public Storefront)** | **Java Thymeleaf (Spring Boot)** | Standalone Java Web client application for `landing` (Customer Portal & Public Catalog) located in `client/landing` (Port 8081) |
 | **Maps & Routing** | **OpenStreetMap + Leaflet** | `leaflet`, `react-leaflet` (No paid API keys or billing required) |
@@ -68,6 +68,7 @@
 dulce-mayor/
 │
 ├── docs/                                # Canonical project documentation
+│   ├── DESIGN_SYSTEM.md                 # Design system & visual manual for all 3 frontends
 │   ├── ENTITIES.md                      # Data model & entity specifications
 │   ├── ENUMS.md                         # Complete enum glossary
 │   ├── PROJECT_GUIDELINES.md            # This document
@@ -167,7 +168,7 @@ dulce-mayor/
 
 1. **Dual Authentication Engine:**
    * **Local Authentication:** Username/email + encrypted password (BCrypt), issuing signed JWT tokens.
-   * **OAuth2 Social Login:** Supported providers include **Google**, **GitHub**, and **Facebook**. Configured on both client portals (`central-management` and `order-management`) and validated by the backend.
+   * **OAuth2 Social Login:** Supported providers include **Google** and **Facebook**. Configured on both client portals (`central-management` and `order-management`) and validated by the backend.
 2. **Mandatory First Login Password Change:**
    * When an administrative user registers an employee, the system sets `isTemporaryPassword = true` and the initial password `dulcemayor`.
    * On login, if `isTemporaryPassword == true`, the API returns a flag/token restricting access strictly to the password reset endpoint (`/api/auth/change-password`).

@@ -29,12 +29,28 @@ dulce-mayor/
 
 Para levantar el **backend** y las **3 aplicaciones frontend** simultáneamente:
 
+En Linux / macOS:
+
 ```bash
 ./start.sh
 ```
 
+En Windows (PowerShell):
+
+```powershell
+./start.bat
+```
+
 Para detener cualquier instancia activa en los puertos de la aplicación:
+
+En Linux / macOS:
 
 ```bash
 ./start.sh --stop
+```
+
+En Windows (PowerShell):
+
+```powershell
+./start.bat -Stop
 ```

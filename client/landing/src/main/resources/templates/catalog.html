@@ -4,15 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">Catálogo — Dulce Mayor</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
     <header>
-        <a th:href="@{/}" class="logo">🍬 Dulce Mayor</a>
-        <nav>
+        <a th:href="@{/}" class="logo">
+            <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
+        </a>
+        <nav style="display: flex; align-items: center; gap: 1rem;">
             <a th:href="@{/}">Inicio</a>
             <a th:href="@{/catalog}">Catálogo Completo</a>
             <a th:href="@{/contact}">Contacto & Sucursales</a>
+            <a href="http://localhost:5174" class="btn btn-outline" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Acceso Campo</a>
+            <a href="http://localhost:5173" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Ingreso Backoffice</a>
         </nav>
     </header>
 
@@ -21,11 +26,11 @@
 
         <!-- Search Bar -->
         <form th:action="@{/catalog}" method="get" style="max-width: 600px; margin: 0 auto 2.5rem; display: flex; gap: 0.5rem;">
-            <input type="text" name="search" th:value="${search}" placeholder="Buscar golosinas por nombre o categoría..." style="flex: 1; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;">
+            <input type="text" name="search" th:value="${search}" placeholder="Buscar por golosina, marca o código..." style="flex: 1; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.95rem; background: #fff; outline: none;">
             <button type="submit" class="btn btn-primary">Buscar</button>
         </form>
 
-        <div th:if="${#lists.isEmpty(products)}" style="text-align: center; padding: 3rem; color: #64748b;">
+        <div th:if="${#lists.isEmpty(products)}" style="text-align: center; padding: 3rem; color: var(--muted);">
             <p>No se encontraron productos disponibles en el catálogo en este momento.</p>
         </div>
 
@@ -45,7 +50,8 @@
     </div>
 
     <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Minoristas (Thymeleaf)</p>
+        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Minoristas</p>
+        <p>Mendoza, Argentina</p>
     </footer>
 </body>
 </html>

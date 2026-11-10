@@ -1,18 +1,25 @@
 :root {
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: #eef2ff;
-  --success: #10b981;
-  --success-light: #ecfdf5;
-  --warning: #f59e0b;
-  --warning-light: #fffbeb;
-  --danger: #ef4444;
-  --danger-light: #fef2f2;
-  --bg-main: #f8fafc;
+  --primary: #F58721;
+  --primary-hover: #E07312;
+  --primary-light: #FDE8D4;
+  --secondary: #FAC933;
+  --secondary-light: #FEF6D7;
+  --rust: #D85817;
+  --gold: #C0831F;
+  --success: #28A745;
+  --success-light: #E8F5E9;
+  --warning: #E69500;
+  --warning-light: #FFF8E1;
+  --danger: #DC3545;
+  --danger-light: #FFEBEE;
+  --info: #2B6CB0;
+  --info-light: #EBF4FC;
+  --bg-main: #FAF6F0;
   --bg-card: #ffffff;
-  --border: #e2e8f0;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  --border: #EADFCF;
+  --border-strong: #D5C2AA;
+  --text-main: #2B1810;
+  --text-muted: #665349;
   --sidebar-w: 260px;
   --header-h: 68px;
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -59,22 +66,16 @@ body {
   gap: 0.85rem;
 }
 
-.brand-logo {
-  background: var(--primary);
-  color: #fff;
+.brand-logo-img {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+  object-fit: contain;
 }
 
 .brand-title {
   font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-weight: 800;
+  color: var(--primary);
   line-height: 1.2;
 }
 
@@ -150,8 +151,8 @@ body {
 
 .sidebar {
   width: var(--sidebar-w);
-  background: var(--bg-card);
-  border-right: 1px solid var(--border);
+  background: #2B1810;
+  border-right: 1px solid #1E0F0A;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1rem;
@@ -162,7 +163,7 @@ body {
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: #C5B3A5;
   margin-bottom: 0.75rem;
   padding-left: 0.75rem;
 }
@@ -178,11 +179,11 @@ body {
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  padding: 0.65rem 0.85rem;
+  padding: 0.7rem 0.85rem;
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: #E2D5C8;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -191,36 +192,40 @@ body {
 }
 
 .sidebar-nav-item:hover {
-  background: #f8fafc;
-  color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--secondary);
 }
 
 .sidebar-nav-item.active {
-  background: var(--primary-light);
-  color: var(--primary);
-  font-weight: 600;
+  background: rgba(245, 135, 33, 0.2);
+  color: var(--secondary);
+  font-weight: 700;
+  border-left: 3px solid var(--secondary);
 }
 
 .sidebar-footer {
   margin-top: auto;
   padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .env-badge {
   font-size: 0.75rem;
-  color: #0284c7;
-  background: #e0f2fe;
+  color: var(--secondary);
+  background: rgba(250, 201, 51, 0.15);
+  border: 1px solid rgba(250, 201, 51, 0.3);
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
   display: inline-block;
-  font-weight: 500;
+  font-weight: 600;
+  text-align: center;
 }
 
 .version-info {
   font-size: 0.7rem;
-  color: var(--text-muted);
+  color: #A39082;
   margin-top: 0.4rem;
+  text-align: center;
 }
 
 /* App Content */
@@ -675,17 +680,12 @@ body {
   margin-bottom: 1.75rem;
 }
 
-.login-logo {
-  width: 64px;
-  height: 64px;
-  background: var(--primary);
-  color: #fff;
-  border-radius: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.85rem;
-  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+.login-logo-img {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  margin: 0 auto 0.85rem;
+  display: block;
 }
 
 .login-subtitle {

@@ -3,26 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${title}">Contacto — Dulce Mayor</title>
+    <title th:text="${title}">Contacto & Sucursales — Dulce Mayor</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
     <header>
-        <a th:href="@{/}" class="logo">🍬 Dulce Mayor</a>
-        <nav>
+        <a th:href="@{/}" class="logo">
+            <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
+        </a>
+        <nav style="display: flex; align-items: center; gap: 1rem;">
             <a th:href="@{/}">Inicio</a>
             <a th:href="@{/catalog}">Catálogo Completo</a>
             <a th:href="@{/contact}">Contacto & Sucursales</a>
+            <a href="http://localhost:5174" class="btn btn-outline" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Acceso Campo</a>
+            <a href="http://localhost:5173" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Ingreso Backoffice</a>
         </nav>
     </header>
 
     <div class="container" style="max-width: 800px;">
         <h1 class="section-title">Sucursales y Canales de Atención</h1>
         <div class="product-card" style="padding: 2.5rem; gap: 1rem;">
-            <h3>Sede Central Mendoza</h3>
+            <h3 style="font-size: 1.4rem; color: var(--rust);">Sede Central Mendoza</h3>
             <p><strong>Dirección:</strong> Av. San Martín 1500, Ciudad de Mendoza (CP 5500)</p>
             <p><strong>Teléfono:</strong> +54 9 261 555-1234</p>
-            <p><strong>Correo Corporativo:</strong> ventas@dulcemayor.com</p>
+            <p><strong>Correo Corporativo:</strong> ventas@dulcemayor.com.ar</p>
             <p><strong>Horario de Atención Mayorista:</strong> Lunes a Viernes de 08:00 a 17:00 hs.</p>
         </div>
     </div>
