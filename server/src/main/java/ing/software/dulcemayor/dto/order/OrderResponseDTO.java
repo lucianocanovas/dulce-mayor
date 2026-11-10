@@ -27,4 +27,5 @@ public class OrderResponseDTO {
     private String salesRepName;
     private String couponCode;
     private int itemCount;
+    private java.util.List<OrderDetailResponseDTO> items;
 }

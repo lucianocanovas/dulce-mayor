@@ -74,6 +74,35 @@ public class UserService {
     }
 
     @Transactional
+    public UserResponseDTO update(String id, CreateUserRequestDTO request) {
+        User user = userRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
+
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+
+        if (user.getPerson() != null) {
+            if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
+                user.getPerson().setFirstName(request.getFirstName().trim());
+            }
+            if (request.getLastName() != null && !request.getLastName().isBlank()) {
+                user.getPerson().setLastName(request.getLastName().trim());
+            }
+            if (request.getDocumentNumber() != null && !request.getDocumentNumber().isBlank()) {
+                user.getPerson().setDocumentNumber(request.getDocumentNumber().trim());
+            }
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setTemporaryPassword(false);
+        }
+
+        return mapToDTO(userRepository.save(user));
+    }
+
+    @Transactional
     public void delete(String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));

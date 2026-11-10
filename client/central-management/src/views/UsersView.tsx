@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '../services/api';
 import type { UserRole, AuthProvider } from '../types/enums';
-import { UserPlus, Users, Trash2, Key, CheckCircle2, AlertCircle, X, Shield } from 'lucide-react';
+import {
+  UserPlus,
+  Trash2,
+  Key,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Shield,
+  Eye,
+  Edit2,
+  AlertTriangle,
+  User,
+} from 'lucide-react';
 
 interface UserResponse {
   id: string;
@@ -17,7 +29,12 @@ export const UsersView: React.FC = () => {
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewUser, setViewUser] = useState<UserResponse | null>(null);
+  const [editUser, setEditUser] = useState<UserResponse | null>(null);
+  const [deleteUser, setDeleteUser] = useState<UserResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
@@ -27,6 +44,7 @@ export const UsersView: React.FC = () => {
   const [documentNumber, setDocumentNumber] = useState('');
   const [role, setRole] = useState<UserRole>('PRESALE_AGENT');
   const [employeeIdNumber, setEmployeeIdNumber] = useState('');
+  const [password, setPassword] = useState('');
 
   const fetchUsers = async () => {
     try {
@@ -47,6 +65,23 @@ export const UsersView: React.FC = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const openCreateModal = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (u: UserResponse) => {
+    setEditUser(u);
+    const parts = (u.fullName || '').split(' ');
+    setUsername(u.username);
+    setFirstName(parts[0] || '');
+    setLastName(parts.slice(1).join(' ') || '');
+    setDocumentNumber('');
+    setRole(u.role);
+    setEmployeeIdNumber('');
+    setPassword('');
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,18 +115,52 @@ export const UsersView: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (id: string, name: string) => {
-    if (!window.confirm(`¿Está seguro de dar de baja al usuario '${name}'?`)) {
-      return;
-    }
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser) return;
+    setSubmitting(true);
+    setError(null);
 
     try {
-      await apiRequest<void>(`/users/${id}`, {
-        method: 'DELETE',
+      await apiRequest<UserResponse>(`/users/${editUser.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          username: editUser.username,
+          firstName,
+          lastName,
+          documentNumber: documentNumber || undefined,
+          role,
+          password: password.trim() ? password.trim() : undefined,
+        }),
       });
+
+      setEditUser(null);
+      resetForm();
       fetchUsers();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al eliminar usuario');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Error al actualizar datos del usuario');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUser) return;
+    setSubmitting(true);
+    try {
+      await apiRequest<void>(`/users/${deleteUser.id}`, {
+        method: 'DELETE',
+      });
+      setDeleteUser(null);
+      fetchUsers();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al dar de baja al usuario');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -102,230 +171,398 @@ export const UsersView: React.FC = () => {
     setDocumentNumber('');
     setRole('PRESALE_AGENT');
     setEmployeeIdNumber('');
+    setPassword('');
   };
 
-  const getRoleBadge = (r: UserRole) => {
-    switch (r) {
-      case 'MANAGER':
-        return <span className="badge badge-primary">Gerencia</span>;
-      case 'ADMINISTRATIVE':
-        return <span className="badge badge-info">Administrativo</span>;
-      case 'PRESALE_AGENT':
-        return <span className="badge badge-success">Preventista / Vendedor</span>;
-      case 'DELIVERY_AGENT':
-        return <span className="badge badge-warning">Repartidor / Logística</span>;
-      default:
-        return <span className="badge">{r}</span>;
-    }
+  const roleLabels: Record<string, string> = {
+    MANAGER: 'Gerencia y Administración',
+    ADMINISTRATIVE: 'Administrativo de Depósito',
+    PRESALE_AGENT: 'Preventista de Calle',
+    DELIVERY_AGENT: 'Repartidor de Logística',
   };
 
   return (
     <div className="users-view">
       <div className="view-header">
         <div>
-          <h2>Gestión de Personal y Usuarios</h2>
-          <p className="text-muted">Control de accesos, roles y claves provisorias del equipo de Dulce Mayor.</p>
+          <h2>Administración de Personal y Usuarios</h2>
+          <p className="text-muted">Gestión de cuentas internas, roles, preventistas y choferes de reparto.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <UserPlus size={18} />
-          Nuevo Personal
-        </button>
+        <div className="header-actions">
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="btn btn-primary"
+          >
+            <UserPlus size={16} /> Nuevo Personal
+          </button>
+          <button onClick={fetchUsers} className="btn btn-secondary">
+            Actualizar
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="login-error mb-4">
+        <div style={{ background: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <AlertCircle size={18} />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="panel">
-        {loading ? (
-          <div className="p-8 text-center text-muted">Cargando personal de la empresa...</div>
-        ) : users.length === 0 ? (
-          <div className="p-8 text-center text-muted">
-            <Users size={48} className="mx-auto mb-2 opacity-50" />
-            No hay empleados dados de alta en el sistema.
-          </div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Usuario / Legajo</th>
-                <th>Nombre Completo</th>
-                <th>Rol / Función</th>
-                <th>Proveedor</th>
-                <th>Estado Clave</th>
-                <th className="text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <div className="font-semibold">{u.username}</div>
-                  </td>
-                  <td>{u.fullName}</td>
-                  <td>{getRoleBadge(u.role)}</td>
-                  <td>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-gray-100">
-                      {u.authProvider}
-                    </span>
-                  </td>
-                  <td>
-                    {u.temporaryPassword ? (
-                      <span className="badge badge-warning flex items-center gap-1">
-                        <Key size={12} /> Temporal (dulcemayor)
-                      </span>
-                    ) : (
-                      <span className="badge badge-success flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Clave Personalizada
-                      </span>
-                    )}
-                  </td>
-                  <td className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteUser(u.id, u.username)}
-                      className="btn-icon text-danger"
-                      title="Dar de baja usuario"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+      {loading ? (
+        <div className="view-loading">
+          <p>Cargando personal...</p>
+        </div>
+      ) : (
+        <div className="panel">
+          <div className="panel-body no-padding">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Nombre y Apellido</th>
+                  <th>Rol Asignado</th>
+                  <th>Método Auth</th>
+                  <th>Clave Provisoria</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Shield size={15} className="text-muted" />
+                        <span className="font-mono font-bold">{u.username}</span>
+                      </div>
+                    </td>
+                    <td className="font-semibold">{u.fullName}</td>
+                    <td>
+                      <span className={`badge ${u.role === 'MANAGER' ? 'badge-primary' : 'badge-neutral'}`}>
+                        {roleLabels[u.role] || u.role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge badge-neutral">{u.authProvider}</span>
+                    </td>
+                    <td>
+                      {u.temporaryPassword ? (
+                        <span className="status-indicator warning">
+                          <Key size={13} /> Sí ('dulcemayor')
+                        </span>
+                      ) : (
+                        <span className="text-muted text-xs">Definida por usuario</span>
+                      )}
+                    </td>
+                    <td>
+                      {u.active ? (
+                        <span className="status-indicator good">
+                          <CheckCircle2 size={13} /> Activo
+                        </span>
+                      ) : (
+                        <span className="status-indicator warning">
+                          Inactivo
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="action-btn-group">
+                        <button
+                          onClick={() => setViewUser(u)}
+                          className="action-icon-btn view"
+                          title="Ver ficha de personal"
+                        >
+                          <Eye size={14} />
+                          <span>Ver</span>
+                        </button>
+                        <button
+                          onClick={() => openEditModal(u)}
+                          className="action-icon-btn edit"
+                          title="Editar rol y datos"
+                        >
+                          <Edit2 size={14} />
+                          <span>Editar</span>
+                        </button>
+                        {u.username !== 'admin' && (
+                          <button
+                            onClick={() => setDeleteUser(u)}
+                            className="action-icon-btn delete"
+                            title="Dar de baja usuario"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* Modal Nuevo Personal */}
-      {isModalOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-dialog">
-            <div className="modal-header">
-              <div className="flex items-center gap-2">
-                <UserPlus className="text-primary" size={22} />
-                <h3 className="font-bold">Dar de Alta Nuevo Personal</h3>
+      {/* Modal: VER FICHA */}
+      {viewUser && (
+        <div className="modal-backdrop" onClick={() => setViewUser(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <User size={20} className="text-primary" />
+                <h3 style={{ margin: 0 }}>Ficha del Empleado</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsModalOpen(false);
-                  resetForm();
-                }}
-                className="btn-icon"
-              >
+              <button onClick={() => setViewUser(null)} className="modal-close-btn">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateUser}>
-              <div className="modal-body space-y-4">
-                <div className="form-row grid grid-cols-2 gap-4">
-                  <label className="form-group">
-                    <span className="form-label">Nombre:</span>
-                    <input
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="ej. Juan"
-                      required
-                    />
-                  </label>
-                  <label className="form-group">
-                    <span className="form-label">Apellido:</span>
-                    <input
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="ej. Pérez"
-                      required
-                    />
-                  </label>
-                </div>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                {viewUser.fullName}
+              </div>
+              <span className="font-mono text-sm text-muted">@{viewUser.username}</span>
+            </div>
 
-                <div className="form-row grid grid-cols-2 gap-4">
-                  <label className="form-group">
-                    <span className="form-label">Usuario (para iniciar sesión):</span>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="ej. jperez"
-                      required
-                    />
-                  </label>
-                  <label className="form-group">
-                    <span className="form-label">DNI / Documento:</span>
-                    <input
-                      type="text"
-                      value={documentNumber}
-                      onChange={(e) => setDocumentNumber(e.target.value)}
-                      placeholder="ej. 35123456"
-                      required
-                    />
-                  </label>
-                </div>
+            <div className="details-grid">
+              <div className="detail-item">
+                <span className="detail-label">Rol y Área</span>
+                <span className="detail-value font-semibold">
+                  {roleLabels[viewUser.role] || viewUser.role}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Proveedor de Autenticación</span>
+                <span className="detail-value">{viewUser.authProvider}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Clave Provisoria</span>
+                <span className="detail-value">
+                  {viewUser.temporaryPassword ? 'Pendiente de cambio' : 'Clave confirmada'}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Estado de la Cuenta</span>
+                <span className="detail-value font-semibold text-success">
+                  {viewUser.active ? 'Habilitado' : 'Baja'}
+                </span>
+              </div>
+            </div>
 
-                <div className="form-row grid grid-cols-2 gap-4">
-                  <label className="form-group">
-                    <span className="form-label">Rol en Dulce Mayor:</span>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value as UserRole)}
-                      required
-                    >
-                      <option value="PRESALE_AGENT">Preventista / Vendedor Móvil</option>
-                      <option value="DELIVERY_AGENT">Repartidor / Logística</option>
-                      <option value="ADMINISTRATIVE">Administrativo Central</option>
-                      <option value="MANAGER">Gerente Comercial</option>
-                    </select>
-                  </label>
-                  <label className="form-group">
-                    <span className="form-label">N° de Legajo:</span>
-                    <input
-                      type="text"
-                      value={employeeIdNumber}
-                      onChange={(e) => setEmployeeIdNumber(e.target.value)}
-                      placeholder="ej. PREV-015"
-                    />
-                  </label>
-                </div>
+            <div className="modal-actions">
+              <button
+                onClick={() => {
+                  const u = viewUser;
+                  setViewUser(null);
+                  openEditModal(u);
+                }}
+                className="btn btn-primary"
+              >
+                <Edit2 size={16} /> Editar Usuario
+              </button>
+              <button onClick={() => setViewUser(null)} className="btn btn-secondary">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-                <div className="p-3 bg-warning-soft rounded-lg border border-warning-soft text-xs text-muted">
-                  <div className="flex items-center gap-1 font-semibold text-warning mb-1">
-                    <Shield size={14} /> Contraseña Provisoria Automática
-                  </div>
-                  El usuario se creará con la clave provisoria predeterminada <strong>dulcemayor</strong>. En su primer ingreso, el sistema le exigirá de forma obligatoria establecer una contraseña nueva y privada.
-                </div>
+      {/* Modal: CREAR USUARIO */}
+      {isModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <h3>Alta de Personal</h3>
+              <button onClick={() => setIsModalOpen(false)} className="modal-close-btn">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="modal-form">
+              <label>
+                Nombre de Usuario (Login) *
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  placeholder="ej. jtorres"
+                  required
+                />
+              </label>
+
+              <div className="grid-cols-2 gap-4">
+                <label>
+                  Nombre *
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Apellido *
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </label>
               </div>
 
-              <div className="modal-footer flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    resetForm();
-                  }}
-                  className="btn btn-secondary"
+              <div className="grid-cols-2 gap-4">
+                <label>
+                  DNI *
+                  <input
+                    type="text"
+                    value={documentNumber}
+                    onChange={(e) => setDocumentNumber(e.target.value)}
+                    placeholder="34567890"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Legajo / Nro Empleado
+                  <input
+                    type="text"
+                    value={employeeIdNumber}
+                    onChange={(e) => setEmployeeIdNumber(e.target.value)}
+                    placeholder="EMP-012"
+                  />
+                </label>
+              </div>
+
+              <label>
+                Rol en el Sistema *
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid var(--border)' }}
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn btn-primary"
-                >
+                  <option value="PRESALE_AGENT">Preventista de Calle (Order Management)</option>
+                  <option value="DELIVERY_AGENT">Repartidor de Logística (Rutas y Entregas)</option>
+                  <option value="ADMINISTRATIVE">Administrativo de Depósito</option>
+                  <option value="MANAGER">Gerencia (Acceso Total)</option>
+                </select>
+              </label>
+
+              <div className="modal-actions">
+                <button type="submit" disabled={submitting} className="btn btn-primary">
                   {submitting ? 'Guardando...' : 'Registrar Empleado'}
+                </button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
+                  Cancelar
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: EDITAR USUARIO */}
+      {editUser && (
+        <div className="modal-backdrop" onClick={() => setEditUser(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <h3>Editar Usuario (@{editUser.username})</h3>
+              <button onClick={() => setEditUser(null)} className="modal-close-btn">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateUser} className="modal-form">
+              <div className="grid-cols-2 gap-4">
+                <label>
+                  Nombre *
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Apellido *
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </label>
+              </div>
+
+              <label>
+                Rol en la Empresa *
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid var(--border)' }}
+                >
+                  <option value="PRESALE_AGENT">Preventista de Calle (Order Management)</option>
+                  <option value="DELIVERY_AGENT">Repartidor de Logística (Rutas y Entregas)</option>
+                  <option value="ADMINISTRATIVE">Administrativo de Depósito</option>
+                  <option value="MANAGER">Gerencia (Acceso Total)</option>
+                </select>
+              </label>
+
+              <label>
+                Restablecer Contraseña (opcional - dejar vacío para conservar la actual):
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Nueva contraseña..."
+                />
+              </label>
+
+              <div className="modal-actions">
+                <button type="submit" disabled={submitting} className="btn btn-primary">
+                  {submitting ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+                <button type="button" onClick={() => setEditUser(null)} className="btn btn-secondary">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: ELIMINAR USUARIO */}
+      {deleteUser && (
+        <div className="modal-backdrop" onClick={() => setDeleteUser(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', color: 'var(--danger)' }}>
+              <AlertTriangle size={28} />
+              <h3 style={{ margin: 0, color: 'var(--text-main)' }}>¿Dar de baja a {deleteUser.fullName}?</h3>
+            </div>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+              El usuario <strong>@{deleteUser.username}</strong> perderá el acceso a las aplicaciones de gestión y preventa de Dulce Mayor.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={submitting}
+                className="btn btn-danger-outline"
+                style={{ background: 'var(--danger)', color: '#fff', border: 'none' }}
+              >
+                {submitting ? 'Dando de baja...' : 'Sí, Dar de Baja'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteUser(null)}
+                className="btn btn-secondary"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}

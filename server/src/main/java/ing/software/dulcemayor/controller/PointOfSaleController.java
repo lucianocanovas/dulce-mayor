@@ -34,4 +34,18 @@ public class PointOfSaleController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Punto de venta registrado con éxito", created));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<PointOfSaleResponseDTO>> update(
+            @PathVariable String id,
+            @RequestBody CreatePointOfSaleRequestDTO request) {
+        PointOfSaleResponseDTO updated = pointOfSaleService.updatePointOfSale(id, request);
+        return ResponseEntity.ok(ApiResponse.ok("Punto de venta actualizado correctamente", updated));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
+        pointOfSaleService.deletePointOfSale(id);
+        return ResponseEntity.ok(ApiResponse.ok("Punto de venta eliminado correctamente", null));
+    }
 }

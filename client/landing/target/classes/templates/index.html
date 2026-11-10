@@ -32,6 +32,9 @@
         <div class="grid">
             <div th:each="prod : ${featuredProducts}" class="product-card">
                 <span class="badge-sale">OFERTA MAYORISTA</span>
+                <div th:if="${prod.imageUrl}" style="width: 100%; height: 150px; overflow: hidden; border-radius: 8px; margin-bottom: 0.75rem; background: #fdfaf7;">
+                    <img th:src="${prod.imageUrl}" th:alt="${prod.name}" style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
                 <span class="product-code" th:text="${prod.code}">ALF-01</span>
                 <h3 class="product-title" th:text="${prod.name}">Nombre del Producto</h3>
                 <p class="product-desc" th:text="${prod.description}">Descripción del producto...</p>

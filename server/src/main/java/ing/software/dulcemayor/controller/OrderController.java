@@ -43,4 +43,10 @@ public class OrderController {
         OrderResponseDTO updated = orderService.updateOrderStatus(id, request);
         return ResponseEntity.ok(ApiResponse.ok("Order status updated successfully", updated));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable String id) {
+        orderService.deleteOrder(id);
+        return ResponseEntity.ok(ApiResponse.ok("Pedido cancelado y eliminado correctamente", null));
+    }
 }

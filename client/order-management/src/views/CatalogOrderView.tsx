@@ -241,6 +241,12 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
                 {prod.isOffer && <span className="offer-tag">OFERTA</span>}
               </div>
 
+              {prod.imageUrl && (
+                <div style={{ width: '100%', height: '110px', overflow: 'hidden', borderRadius: '8px', margin: '0.4rem 0', background: '#faf6f0' }}>
+                  <img src={prod.imageUrl} alt={prod.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+
               <div className="product-info">
                 <h4 className="product-title">{prod.name}</h4>
                 <div className="product-meta">

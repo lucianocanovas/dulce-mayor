@@ -30,6 +30,12 @@ public class UserController {
                 .body(ApiResponse.ok("Personal registrado con clave provisoria 'dulcemayor'", created));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> update(@PathVariable String id, @RequestBody CreateUserRequestDTO request) {
+        UserResponseDTO updated = userService.update(id, request);
+        return ResponseEntity.ok(ApiResponse.ok("Datos del usuario actualizados correctamente", updated));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
         userService.delete(id);

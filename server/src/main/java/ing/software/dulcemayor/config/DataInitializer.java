@@ -198,21 +198,21 @@ public class DataInitializer implements CommandLineRunner {
         SubCategory subChiclesSub = subCategoryRepository.save(SubCategory.builder().name("Chicles").category(catChicles).build());
 
         // 5. Authentic FMCG Confectionery Products (Arcor, Bagley, Mondelez, Terrabusi)
-        Product p1 = createProduct("ARC-BON-01", "Bon o Bon Leche", "Bombón con relleno de pasta de maní bañado en chocolate de leche.", "Display x 24 u.", 24, true, subBombones, 14200.0, 180);
-        Product p2 = createProduct("BAG-SUR-02", "Surtido Bagley Clásico", "Pack familiar surtido con las tradicionales galletitas Bagley surtidas.", "Caja x 15 paq. (390g)", 15, false, subGalletitas, 22500.0, 95);
-        Product p3 = createProduct("MDZ-ORE-03", "Oreo Original Regular", "Galletitas rellenas de crema con sabor a vainilla.", "Caja x 28 paq. (118g)", 28, true, subGalletitas, 33600.0, 140);
-        Product p4 = createProduct("ARC-MOG-04", "Mogul Gomitas Frutales", "Gomitas sabor frutas surtidas libres de gluten.", "Display x 12 bolsas (150g)", 12, false, subGomitasSub, 12800.0, 210);
-        Product p5 = createProduct("MDZ-MIL-05", "Milka Chocolate con Leche 100g", "Auténtico chocolate suizo con leche de los Alpes.", "Display x 16 tabletas", 16, true, subTabletas, 28800.0, 65);
-        Product p6 = createProduct("TER-RHOD-06", "Rhodesia Oblea Bañada", "Oblea rellena con crema sabor limón bañada con chocolate con leche.", "Display x 36 u.", 36, false, subObleas, 19800.0, 120);
-        Product p7 = createProduct("ARC-TOP-07", "Topline Menta Fuerte", "Chicles sabor menta fuerte sin azúcar de máxima frescura.", "Display x 20 paq.", 20, false, subChiclesSub, 11000.0, 340);
-        Product p8 = createProduct("TER-TITA-08", "Tita Galletita Bañada con Limón", "Galletita crocante rellena de limón con cobertura chocolatosa.", "Display x 36 u.", 36, false, subObleas, 18000.0, 15); // LOW STOCK
-        Product p9 = createProduct("BAG-CHO-09", "Chocolinas Clásicas 250g", "Galletitas dulces con sabor a chocolate ideales para chocotorta.", "Caja x 20 paq.", 20, false, subGalletitas, 26000.0, 8); // LOW STOCK
-        Product p10 = createProduct("ARC-COF-10", "Cofler Block Chocolate 300g", "Chocolate con leche y maní tostado seleccionado.", "Pack x 10 u.", 10, true, subTabletas, 35000.0, 55);
-        Product p11 = createProduct("MDZ-BEL-11", "Beldent Infinit Menta", "Chicles sin azúcar extra duración sabor menta fresca.", "Display x 18 paq.", 18, false, subChiclesSub, 16200.0, 190);
-        Product p12 = createProduct("ARC-ROC-12", "Rocklets Chocolate Confitado", "Pastillas confitadas con centro de rico chocolate con leche.", "Display x 24 tubos", 24, true, subBombones, 21600.0, 110);
-        Product p13 = createProduct("BAG-SON-13", "Sonrisas Frambuesa 118g", "Galletitas dulces con jalea sabor frambuesa.", "Caja x 24 paq.", 24, false, subGalletitas, 24000.0, 14); // LOW STOCK
-        Product p14 = createProduct("BAG-CRI-14", "Criollitas Galletitas de Agua", "Galletitas crocantes de agua tradicionales.", "Caja x 30 paq.", 30, false, subGalletitas, 27000.0, 85);
-        Product p15 = createProduct("TER-VAR-15", "Variedad Terrabusi 400g", "Surtido dulce de galletitas Terrabusi.", "Caja x 14 paq.", 14, false, subGalletitas, 23800.0, 70);
+        Product p1 = createProduct("ARC-BON-01", "Bon o Bon Leche", "Bombón con relleno de pasta de maní bañado en chocolate de leche.", "Display x 24 u.", 24, true, subBombones, 14200.0, 180, "https://images.unsplash.com/photo-1548741487-18d363dc4469?w=400&auto=format&fit=crop&q=80");
+        Product p2 = createProduct("BAG-SUR-02", "Surtido Bagley Clásico", "Pack familiar surtido con las tradicionales galletitas Bagley surtidas.", "Caja x 15 paq. (390g)", 15, false, subGalletitas, 22500.0, 95, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&auto=format&fit=crop&q=80");
+        Product p3 = createProduct("MDZ-ORE-03", "Oreo Original Regular", "Galletitas rellenas de crema con sabor a vainilla.", "Caja x 28 paq. (118g)", 28, true, subGalletitas, 33600.0, 140, "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=400&auto=format&fit=crop&q=80");
+        Product p4 = createProduct("ARC-MOG-04", "Mogul Gomitas Frutales", "Gomitas sabor frutas surtidas libres de gluten.", "Display x 12 bolsas (150g)", 12, false, subGomitasSub, 12800.0, 210, "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&auto=format&fit=crop&q=80");
+        Product p5 = createProduct("MDZ-MIL-05", "Milka Chocolate con Leche 100g", "Auténtico chocolate suizo con leche de los Alpes.", "Display x 16 tabletas", 16, true, subTabletas, 28800.0, 65, "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&auto=format&fit=crop&q=80");
+        Product p6 = createProduct("TER-RHOD-06", "Rhodesia Oblea Bañada", "Oblea rellena con crema sabor limón bañada con chocolate con leche.", "Display x 36 u.", 36, false, subObleas, 19800.0, 120, "https://images.unsplash.com/photo-1579372786545-d24232daf58c?w=400&auto=format&fit=crop&q=80");
+        Product p7 = createProduct("ARC-TOP-07", "Topline Menta Fuerte", "Chicles sabor menta fuerte sin azúcar de máxima frescura.", "Display x 20 paq.", 20, false, subChiclesSub, 11000.0, 340, "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&auto=format&fit=crop&q=80");
+        Product p8 = createProduct("TER-TITA-08", "Tita Galletita Bañada con Limón", "Galletita crocante rellena de limón con cobertura chocolatosa.", "Display x 36 u.", 36, false, subObleas, 18000.0, 15, "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&auto=format&fit=crop&q=80"); // LOW STOCK
+        Product p9 = createProduct("BAG-CHO-09", "Chocolinas Clásicas 250g", "Galletitas dulces con sabor a chocolate ideales para chocotorta.", "Caja x 20 paq.", 20, false, subGalletitas, 26000.0, 8, "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&auto=format&fit=crop&q=80"); // LOW STOCK
+        Product p10 = createProduct("ARC-COF-10", "Cofler Block Chocolate 300g", "Chocolate con leche y maní tostado seleccionado.", "Pack x 10 u.", 10, true, subTabletas, 35000.0, 55, "https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&auto=format&fit=crop&q=80");
+        Product p11 = createProduct("MDZ-BEL-11", "Beldent Infinit Menta", "Chicles sin azúcar extra duración sabor menta fresca.", "Display x 18 paq.", 18, false, subChiclesSub, 16200.0, 190, "https://images.unsplash.com/photo-1621996346565-e3d5d6281699?w=400&auto=format&fit=crop&q=80");
+        Product p12 = createProduct("ARC-ROC-12", "Rocklets Chocolate Confitado", "Pastillas confitadas con centro de rico chocolate con leche.", "Display x 24 tubos", 24, true, subBombones, 21600.0, 110, "https://images.unsplash.com/photo-1575224300306-1b8da36134ec?w=400&auto=format&fit=crop&q=80");
+        Product p13 = createProduct("BAG-SON-13", "Sonrisas Frambuesa 118g", "Galletitas dulces con jalea sabor frambuesa.", "Caja x 24 paq.", 24, false, subGalletitas, 24000.0, 14, "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=400&auto=format&fit=crop&q=80"); // LOW STOCK
+        Product p14 = createProduct("BAG-CRI-14", "Criollitas Galletitas de Agua", "Galletitas crocantes de agua tradicionales.", "Caja x 30 paq.", 30, false, subGalletitas, 27000.0, 85, "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80");
+        Product p15 = createProduct("TER-VAR-15", "Variedad Terrabusi 400g", "Surtido dulce de galletitas Terrabusi.", "Caja x 14 paq.", 14, false, subGalletitas, 23800.0, 70, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&auto=format&fit=crop&q=80");
 
         // 6. Orders
         Order o1 = orderRepository.save(Order.builder()
@@ -302,7 +302,7 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Database successfully seeded with 15 products, 5 Mendoza POS, 4 sample orders, 3 promotions, and users (admin, preventor, repartidor)!");
     }
 
-    private Product createProduct(String code, String name, String desc, String pack, int units, boolean onSale, SubCategory subCat, double price, int stock) {
+    private Product createProduct(String code, String name, String desc, String pack, int units, boolean onSale, SubCategory subCat, double price, int stock, String imageUrl) {
         Product product = productRepository.save(Product.builder()
                 .code(code)
                 .name(name)
@@ -311,6 +311,7 @@ public class DataInitializer implements CommandLineRunner {
                 .unitsPerPack(units)
                 .isOnSale(onSale)
                 .subCategory(subCat)
+                .imageUrl(imageUrl)
                 .build());
 
         priceValidityRepository.save(PriceValidity.builder()

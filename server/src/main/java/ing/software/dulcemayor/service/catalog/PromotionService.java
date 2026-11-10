@@ -49,6 +49,42 @@ public class PromotionService {
     }
 
     @Transactional
+    public PromotionDTO update(String id, PromotionDTO dto) {
+        Promotion promo = promotionRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new IllegalArgumentException("Promoción no encontrada con ID: " + id));
+
+        if (dto.getCode() != null) {
+            promo.setCode(dto.getCode().toUpperCase().trim());
+        }
+        if (dto.getDescription() != null) {
+            promo.setDescription(dto.getDescription());
+        }
+        if (dto.getDiscountPercentage() > 0) {
+            promo.setDiscountPercentage(dto.getDiscountPercentage());
+        }
+        if (dto.getMinimumQuantity() != null) {
+            promo.setMinimumQuantity(dto.getMinimumQuantity());
+        }
+        if (dto.getStartDate() != null) {
+            promo.setStartDate(dto.getStartDate());
+        }
+        if (dto.getEndDate() != null) {
+            promo.setEndDate(dto.getEndDate());
+        }
+
+        if (dto.getProductId() != null) {
+            if (dto.getProductId().isBlank()) {
+                promo.setProduct(null);
+            } else {
+                productRepository.findByIdAndIsDeletedFalse(dto.getProductId())
+                        .ifPresent(promo::setProduct);
+            }
+        }
+
+        return mapToDTO(promotionRepository.save(promo));
+    }
+
+    @Transactional
     public void delete(String id) {
         Promotion promo = promotionRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new IllegalArgumentException("Promoción no encontrada"));

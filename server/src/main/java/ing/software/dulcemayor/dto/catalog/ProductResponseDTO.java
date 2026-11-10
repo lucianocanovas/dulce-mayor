@@ -24,5 +24,6 @@ public class ProductResponseDTO {
     private String categoryName;
     private double currentPrice;
     private int currentStock;
+    private String imageUrl;
     private String imageBase64;
 }

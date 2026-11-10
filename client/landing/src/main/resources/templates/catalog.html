@@ -37,6 +37,9 @@
         <div class="grid" th:unless="${#lists.isEmpty(products)}">
             <div th:each="prod : ${products}" class="product-card">
                 <span th:if="${prod.onSale}" class="badge-sale">OFERTA</span>
+                <div th:if="${prod.imageUrl}" style="width: 100%; height: 150px; overflow: hidden; border-radius: 8px; margin-bottom: 0.75rem; background: #fdfaf7;">
+                    <img th:src="${prod.imageUrl}" th:alt="${prod.name}" style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
                 <span class="product-code" th:text="${prod.code}">COD</span>
                 <h3 class="product-title" th:text="${prod.name}">Nombre</h3>
                 <p class="product-desc" th:text="${prod.description}">Descripción...</p>

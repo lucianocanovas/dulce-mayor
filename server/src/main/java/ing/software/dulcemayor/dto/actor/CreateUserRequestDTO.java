@@ -17,4 +17,5 @@ public class CreateUserRequestDTO {
     private String documentNumber;
     private UserRole role;
     private String employeeIdNumber;
+    private String password;
 }

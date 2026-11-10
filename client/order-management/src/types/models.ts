@@ -58,6 +58,7 @@ export interface Product {
   unitPrice: number;
   stockPacks: number;
   isOffer?: boolean;
+  imageUrl?: string;
 }
 
 export interface OrderItem {

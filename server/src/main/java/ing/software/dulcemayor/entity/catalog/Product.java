@@ -50,4 +50,8 @@ public class Product extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id")
     private Image image;
+
+    @jakarta.persistence.Lob
+    @Column(name = "image_url")
+    private String imageUrl;
 }

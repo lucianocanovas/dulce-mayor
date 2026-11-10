@@ -306,6 +306,8 @@ interface BackendProductDTO {
   categoryName: string;
   currentPrice: number;
   currentStock: number;
+  imageUrl?: string;
+  imageBase64?: string;
 }
 
 interface BackendPointOfSaleDTO {
@@ -360,6 +362,7 @@ function mapProductDTO(p: BackendProductDTO): Product {
     unitPrice: Math.round((p.currentPrice / units) * 100) / 100,
     stockPacks: p.currentStock,
     isOffer: p.onSale,
+    imageUrl: p.imageUrl || p.imageBase64,
   };
 }
 

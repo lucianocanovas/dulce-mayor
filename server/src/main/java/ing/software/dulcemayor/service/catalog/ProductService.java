@@ -65,6 +65,7 @@ public class ProductService extends BaseService<Product, ProductRequestDTO, Prod
                 .unitsPerPack(dto.getUnitsPerPack() > 0 ? dto.getUnitsPerPack() : 1)
                 .isOnSale(dto.isOnSale())
                 .subCategory(subCategory)
+                .imageUrl(dto.getImageUrl())
                 .build();
     }
 
@@ -78,6 +79,9 @@ public class ProductService extends BaseService<Product, ProductRequestDTO, Prod
         if (dto.getSubCategoryId() != null) {
             SubCategory subCategory = subCategoryRepository.findByIdAndIsDeletedFalse(dto.getSubCategoryId()).orElse(null);
             entity.setSubCategory(subCategory);
+        }
+        if (dto.getImageUrl() != null) {
+            entity.setImageUrl(dto.getImageUrl().trim().isEmpty() ? null : dto.getImageUrl().trim());
         }
     }
 
@@ -154,6 +158,8 @@ public class ProductService extends BaseService<Product, ProductRequestDTO, Prod
                 .categoryName(catName)
                 .currentPrice(currentPrice)
                 .currentStock(currentStock)
+                .imageUrl(entity.getImageUrl())
+                .imageBase64(entity.getImageUrl())
                 .build();
     }
 

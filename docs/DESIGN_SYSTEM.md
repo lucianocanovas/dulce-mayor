@@ -311,6 +311,85 @@ Para garantizar consistencia entre el cliente web, la app del preventista y el b
 - Bordes tenues: `1px solid #EADFCF`.
 - Paginación limpia: Números de página y selector de elementos por página (`10`, `25`, `50`), sin animaciones que traben el scroll.
 
+### E. Diálogos Modales (Modal Dialogs)
+
+Los modales se utilizan para visualización de detalles, formularios de edición rápida, reabastecimiento de stock y confirmaciones destructivas:
+
+| Tamaño | Ancho Máximo | Caso de Uso Típico |
+| :--- | :--- | :--- |
+| **Standard** | `max-w-lg` (`512px` / `500px`) | Modales de confirmación, reposición de stock, cambio de estado de pedido |
+| **Large** | `max-w-2xl` (`672px` / `680px`) | Creación y edición de productos, detalle completo de pedidos con desglose de ítems |
+
+**Directrices de Anatomía Modal:**
+- **Overlay / Backdrop:** `rgba(43, 24, 16, 0.5)` (Cálido chocolate semitransparente con `backdrop-blur-sm`). Cero fondos negros azulados fríos.
+- **Contenedor:** Fondo blanco `#FFFFFF`, bordes redondeados `12px` a `16px`, borde suave `1px solid var(--dm-border)`.
+- **Altura Máxima:** `max-h-[90vh]` con scrollbar vertical limpio (`overflow-y-auto`) para no cortar contenido en pantallas compactas o laptops.
+- **Cabecera (Header):** Título descriptivo con ícono de sección (ej. paquete para producto, carrito para pedido), subtítulo breve en `--dm-text-secondary`, y botón de cierre (`✕`) accesible en la esquina superior derecha.
+- **Pie de Acciones (Footer):** Alineado a la derecha con botón secundario/outline ("Cancelar") a la izquierda y botón de acción principal ("Guardar Cambios", "Confirmar") a la derecha.
+
+### F. Tratamiento y Carga de Imágenes de Producto (Dual-Mode Image Upload)
+
+Para garantizar flexibilidad operativa y persistencia confiable sin requerir servicios de almacenamiento externo tipo S3 durante el desarrollo, la carga de fotos de producto soporta **dos modos intercambiables**:
+
+```text
+┌────────────────────────────────────────────────────────┐
+│  Foto del Producto                                     │
+│  [  Enlace web (URL)  ]   [  Subir archivo local  ]    │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ https://images.unsplash.com/...                  │  │
+│  └──────────────────────────────────────────────────┘  │
+│  Vista previa: [ 📷 Miniatura 80x80 ]                  │
+└────────────────────────────────────────────────────────┘
+```
+
+1. **Modo URL Directa:**
+   - Permite enlazar fotos alojadas en CDN, sitios de fabricantes (Arcor, Mondelez) o Unsplash.
+   - Validación de formato: URLs que inicien con `http://` o `https://`.
+2. **Modo Archivo Local (File Upload con Base64):**
+   - El usuario selecciona un archivo desde su equipo (`.jpg`, `.jpeg`, `.png`, `.webp`).
+   - La aplicación cliente convierte inmediatamente el archivo a un Data URL Base64 (`data:image/jpeg;base64,...`) mediante `FileReader.readAsDataURL()`.
+   - El backend almacena el Data URL en la columna `@Lob image_url` de la entidad `Product`.
+   - Límite recomendado: Máximo **2 MB** por imagen.
+3. **Especificaciones de Display de Imagen:**
+   - **Aspect Ratio:** 1:1 (cuadrado) en miniaturas de tablas (`w-12 h-12`), 4:3 o 1:1 en tarjetas de catálogo y modales de detalle (`w-full h-44 object-cover`).
+   - **Fondo de Contenedor:** `#FAF6F0` (Vanilla Cream) para armonizar con envases que tengan fondo blanco o transparente.
+   - **Fallback Placeholder:** Si el producto no dispone de imagen (`imageUrl == null`), se muestra un contenedor neutro con el ícono de paquete (`Package`) en tono toffee `#D5C2AA`.
+
+### G. Grupos de Botones de Acción (Action Button Groups)
+
+En tablas y listados administrativos, las acciones por fila deben ser compactas, claras y con semántica visual inequívoca:
+
+| Acción | Icono | Estilo de Botón | Color Texto / Borde | Color Fondo Hover |
+| :--- | :--- | :--- | :--- | :--- |
+| **Ver Detalle** | `Eye` | Micro-pill con borde | `#2B6CB0` (Marine Sugar) | `#EBF4FC` |
+| **Editar** | `Edit2` | Micro-pill con borde | `#D85817` (Terracotta) | `#FDE8D4` |
+| **Stock** | `PackagePlus` | Micro-pill con borde | `#28A745` (Mint Green) | `#E8F5E9` |
+| **Eliminar** | `Trash2` | Micro-pill con borde | `#DC3545` (Cherry Berry) | `#FFEBEE` |
+
+- Toda acción destructiva (**Eliminar producto**, **Cancelar pedido**, **Dar de baja usuario**) debe abrir obligatoriamente un modal de confirmación con botón rojo `--dm-danger` antes de ejecutar la mutación contra la API.
+
+### H. Tablas de Desglose de Pedidos (Order Details Breakdown)
+
+El modal de detalle de pedidos estandariza la presentación financiera para preventistas y operadores de almacén:
+
+```text
+┌───────────────────────────────────────────────────────────────────┐
+│  Ítems del Pedido (#ORD-001)                                      │
+├───────────────────────┬────────────┬─────────────┬────────────────┤
+│ Producto              │ Cantidad   │ Precio Unit.│ Subtotal       │
+├───────────────────────┼────────────┼─────────────┼────────────────┤
+│ Bon o Bon Leche       │ 3 bultos   │ $14.200     │ $42.600        │
+│ Galletitas Oreo 118g  │ 5 bultos   │ $16.500     │ $82.500        │
+├───────────────────────┴────────────┴─────────────┼────────────────┤
+│ Subtotal:                                        │ $125.100       │
+│ Cupón Dulce Mayor (BIENVENIDA10 -10%):           │ -$12.510       │
+│ TOTAL A COBRAR:                                  │ $112.590       │
+└──────────────────────────────────────────────────┴────────────────┘
+```
+
+- Las líneas de descuento / cupones promocionales se destacan en verde `--dm-success`.
+- El total final se enfatiza en negrita tamaño `1.25rem` con el color corporativo Dark Chocolate `#2B1810`.
+
 ---
 
 ## 7. Directrices por Aplicación
@@ -349,3 +428,50 @@ Antes de considerar terminada cualquier vista o componente en cualquiera de las 
 - [ ] **¿Los estados de pedido usan los nombres y colores unificados?** (`PENDING`, `IN_PREPARATION`, etc.).
 - [ ] **¿La vista es usable en pantalla táctil/móvil?** (Botones de al menos 44px de alto para preventistas en la calle).
 - [ ] **¿Se evitaron sombras y desenfoques (*blur*) innecesarios?**
+
+---
+
+## 9. Auditoría Automatizada de Paridad Visual con Playwright
+
+Para garantizar que el manual de diseño no sea meramente declarativo, se implementó y ejecutó una suite de inspección visual mediante **Playwright** que navega e inspecciona los 3 frontends en simultáneo:
+
+| Aplicación | Entorno / Stack | URL Auditada | Muestreo de Pantallas |
+| :--- | :--- | :--- | :--- |
+| `client/landing` | Spring Boot / Thymeleaf | `http://localhost:8081` | Home, Catálogo Minorista, Carrito, Contacto |
+| `client/central-management` | React 19 / Vite / Tailwind | `http://localhost:5173` | Login, Dashboard, Productos, Modales CRUD, Pedidos, Promociones, Usuarios |
+| `client/order-management` | React 19 / PWA Mobile | `http://localhost:5174` | Login Móvil, Rutas de Hoy, Catálogo Preventa, Comercios |
+
+### A. Resultados de la Verificación de Tokens CSS Computados
+
+La auditoría extrajo directamente los estilos computados del DOM en cada aplicación, validando una paridad del 100% en los tokens esenciales:
+
+```json
+{
+  "canvasBackground": "rgb(250, 246, 240)",    /* #FAF6F0 - Vanilla Cream idéntico en las 3 apps */
+  "bodyTextColor": "rgb(43, 24, 16)",          /* #2B1810 - Dark Chocolate idéntico */
+  "primaryAccent": "rgb(245, 135, 33)",        /* #F58721 - Caramel Orange idéntico */
+  "secondaryPills": "rgb(254, 246, 215)",      /* #FEF6D7 - Light Honey idéntico */
+  "fontFamily": "system-ui, -apple-system, Segoe UI, Roboto",
+  "borderRadius": "8px a 16px (desktop) / 9999px (pills)"
+}
+```
+
+### B. Repositorio de Capturas de Pantalla de la Auditoría
+
+Todas las capturas de alta resolución (desktop `1440x900` y mobile viewport `390x844`) se encuentran archivadas en [`docs/review_screenshots/`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/review_screenshots/):
+
+1. `01_landing_home.png` — Hero sobrio, logo SVG horizontal, buscador y promociones destacadas.
+2. `02_landing_catalog.png` — Grid de productos con precios mayoristas y selector de bultos.
+3. `03_landing_contact.png` — Información de distribuidora en Mendoza y formulario sin rodeos.
+4. `04_central_login.png` — Autenticación limpia con Auth0 y credenciales corporativas.
+5. `05_central_dashboard.png` — KPIs de stock, pedidos del día y atajos rápidos de gestión.
+6. `06_central_products.png` — Tabla con miniaturas fotográficas y botones de acción unificados.
+7. `07_central_product_modal.png` — Modal `max-w-2xl` con uploader dual de fotos (URL y archivo).
+8. `08_central_orders.png` — Listado de pedidos con badges semánticos de estado.
+9. `09_central_order_modal.png` — Modal de desglose de ítems con tabla de productos y cupón.
+10. `10_central_promotions.png` — Administración de códigos de descuento activos.
+11. `11_central_users.png` — Gestión de usuarios con roles y confirmación de baja.
+12. `12_order_login.png` — Login táctil adaptado para repartidores y preventistas.
+13. `13_order_routes.png` — Vista de ruta con paradas, comercios de Mendoza y estado de visita.
+14. `14_order_catalog.png` — Catálogo táctil optimizado para toma rápida de pedidos.
+15. `15_order_retailers.png` — Directorio de puntos de venta con coordenadas y teléfono directo.

@@ -29,6 +29,12 @@ public class PromotionController {
                 .body(ApiResponse.ok("Promoción creada correctamente", created));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<PromotionDTO>> update(@PathVariable String id, @RequestBody PromotionDTO request) {
+        PromotionDTO updated = promotionService.update(id, request);
+        return ResponseEntity.ok(ApiResponse.ok("Promoción actualizada correctamente", updated));
+    }
+
     @GetMapping("/validate")
     public ResponseEntity<ApiResponse<PromotionDTO>> validateCode(@RequestParam String code) {
         PromotionDTO validPromo = promotionService.validateCode(code);

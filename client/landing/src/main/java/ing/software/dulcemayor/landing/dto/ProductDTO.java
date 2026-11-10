@@ -23,4 +23,5 @@ public class ProductDTO {
     private String subCategoryName;
     private double currentPrice;
     private int currentStock;
+    private String imageUrl;
 }

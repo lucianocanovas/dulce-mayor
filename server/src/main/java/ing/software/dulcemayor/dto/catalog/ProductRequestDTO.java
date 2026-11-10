@@ -21,4 +21,5 @@ public class ProductRequestDTO {
     private String subCategoryId;
     private double price;
     private int initialStock;
+    private String imageUrl;
 }

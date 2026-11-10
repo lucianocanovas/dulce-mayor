@@ -96,6 +96,44 @@ public class PointOfSaleService {
         return toResponseDTO(saved);
     }
 
+    @Transactional
+    public PointOfSaleResponseDTO updatePointOfSale(String id, CreatePointOfSaleRequestDTO request) {
+        PointOfSale pos = pointOfSaleRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new IllegalArgumentException("Point of Sale not found with ID: " + id));
+
+        if (request.getStoreName() != null && !request.getStoreName().isBlank()) {
+            pos.setStoreName(request.getStoreName().trim());
+        }
+
+        if (pos.getRetailer() != null && request.getOwnerName() != null && !request.getOwnerName().isBlank()) {
+            String[] nameParts = request.getOwnerName().trim().split(" ", 2);
+            pos.getRetailer().setFirstName(nameParts[0]);
+            pos.getRetailer().setLastName(nameParts.length > 1 ? nameParts[1] : "");
+            if (request.getTaxIdOrDni() != null && !request.getTaxIdOrDni().isBlank()) {
+                pos.getRetailer().setDocumentNumber(request.getTaxIdOrDni().trim());
+            }
+            retailerRepository.save(pos.getRetailer());
+        }
+
+        if (pos.getAddress() != null) {
+            if (request.getAddress() != null) pos.getAddress().setStreet(request.getAddress().trim());
+            if (request.getNeighborhood() != null) pos.getAddress().setNeighborhood(request.getNeighborhood().trim());
+            if (request.getLatitude() != null) pos.getAddress().setLatitude(request.getLatitude());
+            if (request.getLongitude() != null) pos.getAddress().setLongitude(request.getLongitude());
+            addressRepository.save(pos.getAddress());
+        }
+
+        return toResponseDTO(pointOfSaleRepository.save(pos));
+    }
+
+    @Transactional
+    public void deletePointOfSale(String id) {
+        PointOfSale pos = pointOfSaleRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new IllegalArgumentException("Point of Sale not found with ID: " + id));
+        pos.setDeleted(true);
+        pointOfSaleRepository.save(pos);
+    }
+
     public PointOfSaleResponseDTO toResponseDTO(PointOfSale pos) {
         String ownerName = pos.getRetailer() != null
                 ? pos.getRetailer().getFirstName() + " " + pos.getRetailer().getLastName()

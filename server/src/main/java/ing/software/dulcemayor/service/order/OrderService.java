@@ -191,6 +191,15 @@ public class OrderService {
         return toResponseDto(savedOrder);
     }
 
+    @Transactional
+    public void deleteOrder(String id) {
+        Order order = orderRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + id));
+        order.setDeleted(true);
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
+
     public OrderResponseDTO toResponseDto(Order order) {
         String storeName = order.getPointOfSale() != null ? order.getPointOfSale().getStoreName() : "N/A";
         String retailerName = (order.getPointOfSale() != null && order.getPointOfSale().getRetailer() != null)
@@ -201,6 +210,26 @@ public class OrderService {
                 : "Unassigned";
 
         int itemCount = order.getOrderDetails() != null ? order.getOrderDetails().size() : 0;
+
+        List<ing.software.dulcemayor.dto.order.OrderDetailResponseDTO> items = new ArrayList<>();
+        if (order.getOrderDetails() != null) {
+            for (OrderDetail d : order.getOrderDetails()) {
+                if (d.isDeleted()) continue;
+                String pCode = d.getProduct() != null ? d.getProduct().getCode() : "N/A";
+                String pName = d.getProduct() != null ? d.getProduct().getName() : "Producto eliminado";
+                String pPack = d.getProduct() != null ? d.getProduct().getPackaging() : "";
+                items.add(ing.software.dulcemayor.dto.order.OrderDetailResponseDTO.builder()
+                        .id(d.getId())
+                        .productId(d.getProduct() != null ? d.getProduct().getId() : null)
+                        .productCode(pCode)
+                        .productName(pName)
+                        .packaging(pPack)
+                        .quantity(d.getQuantity())
+                        .unitPrice(d.getUnitPrice())
+                        .subtotal(d.getSubtotal())
+                        .build());
+            }
+        }
 
         return OrderResponseDTO.builder()
                 .id(order.getId())
@@ -215,6 +244,7 @@ public class OrderService {
                 .salesRepName(repName)
                 .couponCode(order.getCouponCode())
                 .itemCount(itemCount)
+                .items(items)
                 .build();
     }
 }
