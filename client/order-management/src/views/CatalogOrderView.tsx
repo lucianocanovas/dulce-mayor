@@ -9,6 +9,7 @@ import type { PointOfSale, OrderItem, Product, PaymentConfig } from '../types/mo
 import { PaymentType } from '../types/enums';
 import { useAuth } from '../context/AuthContext';
 import { MercadoPagoQrModal } from '../components/MercadoPagoQrModal';
+import { NewPointOfSaleModal } from '../components/NewPointOfSaleModal';
 import {
   Search,
   Plus,
@@ -19,6 +20,7 @@ import {
   X,
   Loader2,
   QrCode,
+  PlusCircle,
 } from 'lucide-react';
 
 interface CatalogOrderViewProps {
@@ -34,6 +36,7 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [allPOS, setAllPOS] = useState<PointOfSale[]>([]);
   const [selectedPOS, setSelectedPOS] = useState<PointOfSale | null>(initialPOS || null);
+  const [showNewPosModal, setShowNewPosModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [selectedBrand, setSelectedBrand] = useState<string>('TODOS');
@@ -216,29 +219,55 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
 
   return (
     <div className="view-container">
-      {/* Customer Header Selector */}
-      {selectedPOS && (
-        <div className="order-target-card">
+      {/* Customer Header Selector & Quick Register */}
+      <div className="order-target-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.65rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="target-label">
-            <Store size={15} />
-            <span>Comercio Destino:</span>
+            <Store size={16} />
+            <span>Local / Kiosco a Visitar:</span>
           </div>
-          <select
-            value={selectedPOS.id}
-            onChange={(e) => {
-              const found = allPOS.find((p) => p.id === e.target.value);
-              if (found) setSelectedPOS(found);
+          <button
+            type="button"
+            onClick={() => setShowNewPosModal(true)}
+            style={{
+              background: '#FAF5E9',
+              border: '1.5px solid #C88D33',
+              color: '#0F1D38',
+              borderRadius: '6px',
+              padding: '0.3rem 0.6rem',
+              fontSize: '0.76rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
             }}
-            className="pos-dropdown"
           >
-            {allPOS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.neighborhood}, {p.city})
-              </option>
-            ))}
-          </select>
+            <PlusCircle size={14} style={{ color: '#C88D33' }} />
+            <span>+ Cargar Nuevo Local</span>
+          </button>
         </div>
-      )}
+
+        <select
+          value={selectedPOS?.id || ''}
+          onChange={(e) => {
+            const found = allPOS.find((p) => p.id === e.target.value);
+            if (found) setSelectedPOS(found);
+          }}
+          className="pos-dropdown"
+          style={{ width: '100%', padding: '0.5rem', fontWeight: 600, color: '#0F1D38' }}
+        >
+          {allPOS.length === 0 ? (
+            <option value="">No hay comercios registrados aún</option>
+          ) : (
+            allPOS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} — {p.address} ({p.neighborhood || p.city})
+              </option>
+            ))
+          )}
+        </select>
+      </div>
 
       {/* Success Banner */}
       {orderPlacedMsg && (
@@ -541,6 +570,18 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
           }}
         />
       )}
+
+      {/* New POS Registration Modal */}
+      <NewPointOfSaleModal
+        isOpen={showNewPosModal}
+        onClose={() => setShowNewPosModal(false)}
+        onSuccess={(newPos) => {
+          setAllPOS((prev) => [newPos, ...prev]);
+          setSelectedPOS(newPos);
+          setOrderPlacedMsg(`✓ Comercio "${newPos.name}" registrado con éxito y seleccionado.`);
+          setTimeout(() => setOrderPlacedMsg(null), 3500);
+        }}
+      />
     </div>
   );
 };

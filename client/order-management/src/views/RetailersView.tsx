@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import type { PointOfSale } from '../types/models';
 import { fetchPointsOfSale, createPointOfSaleOnBackend } from '../services/api';
-import { Plus, MapPin, Phone, User, Check, Search, Navigation, Loader2 } from 'lucide-react';
+import { Plus, MapPin, Phone, User, Check, Search, Navigation, Loader2, ShoppingBag } from 'lucide-react';
 
-export const RetailersView: React.FC = () => {
+interface RetailersViewProps {
+  onSelectPOS?: (pos: PointOfSale) => void;
+}
+
+export const RetailersView: React.FC<RetailersViewProps> = ({ onSelectPOS }) => {
   const [retailers, setRetailers] = useState<PointOfSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -316,6 +320,33 @@ export const RetailersView: React.FC = () => {
                   <span>{pos.phone}</span>
                 </div>
               </div>
+
+              {onSelectPOS && (
+                <div style={{ marginTop: '0.65rem', paddingTop: '0.5rem', borderTop: '1px solid #F1F5F9' }}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPOS(pos)}
+                    style={{
+                      width: '100%',
+                      background: '#1B449C',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.45rem',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                    }}
+                  >
+                    <ShoppingBag size={14} />
+                    <span>Tomar Pedido para este Comercio</span>
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}

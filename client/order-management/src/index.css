@@ -1590,3 +1590,114 @@ body {
   cursor: pointer;
   min-height: 44px;
 }
+
+/* GPS Live Tracking & Map Marker Animations */
+@keyframes gpsPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.custom-driver-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-map-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Optimization badge and route stats styling */
+.route-opt-banner {
+  background: linear-gradient(135deg, #1B449C 0%, #0F1D38 100%);
+  color: #FFFFFF;
+  border-radius: var(--dm-radius-lg);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(15, 29, 56, 0.15);
+}
+
+.route-opt-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  color: #FAF5E9;
+}
+
+.route-opt-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.82rem;
+  opacity: 0.95;
+}
+
+.route-opt-stat-item strong {
+  color: #F8C36A;
+}
+
+.btn-optimize-route {
+  background-color: var(--dm-gold);
+  color: #0F1D38;
+  border: none;
+  font-weight: 800;
+  border-radius: var(--dm-radius-md);
+  padding: 0.55rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  margin-top: 0.65rem;
+}
+
+.btn-optimize-route:hover {
+  background-color: #d89938;
+}
+
+/* Modal for inline POS creation */
+.pos-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 29, 56, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .pos-modal-overlay {
+    align-items: center;
+    padding: 1.5rem;
+  }
+}
+
+.pos-modal-sheet {
+  background-color: var(--dm-bg-surface);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  padding: 1.25rem 1.25rem 2rem;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 640px) {
+  .pos-modal-sheet {
+    border-radius: 20px;
+    padding: 1.5rem;
+  }
+}
+

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { CheckCircle2, ExternalLink, Loader2, QrCode, RefreshCw, X } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Loader2, QrCode, RefreshCw, X, CheckCheck } from 'lucide-react';
 import type { OrderPaymentStatus } from '../types/models';
 import { OrderStatus } from '../types/enums';
-import { pollOrderPaymentStatus } from '../services/api';
+import { pollOrderPaymentStatus, confirmManualPayment } from '../services/api';
 import './payments.css';
 
 interface MercadoPagoQrModalProps {
@@ -29,6 +29,7 @@ export const MercadoPagoQrModal: React.FC<MercadoPagoQrModalProps> = ({
 }) => {
   const [paymentStatus, setPaymentStatus] = useState<OrderPaymentStatus | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [isConfirmingManual, setIsConfirmingManual] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [notifiedAccredited, setNotifiedAccredited] = useState(false);
 
@@ -38,6 +39,26 @@ export const MercadoPagoQrModal: React.FC<MercadoPagoQrModalProps> = ({
       paymentStatus?.orderStatus === OrderStatus.PAID ||
       paymentStatus?.orderStatus === OrderStatus.INVOICED
   );
+
+  const handleManualConfirm = async () => {
+    setIsConfirmingManual(true);
+    setErrorMsg(null);
+    try {
+      const res = await confirmManualPayment(orderId, 'MERCADO_PAGO', 'IN-SITU-QR', 'Verificado por preventista');
+      setPaymentStatus(res);
+      if (!notifiedAccredited) {
+        setNotifiedAccredited(true);
+        if (onPaymentAccredited) {
+          onPaymentAccredited(res);
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al confirmar el pago in situ.';
+      setErrorMsg(msg);
+    } finally {
+      setIsConfirmingManual(false);
+    }
+  };
 
   const checkStatus = async (explicitTrigger = false) => {
     setIsChecking(true);
@@ -164,15 +185,44 @@ export const MercadoPagoQrModal: React.FC<MercadoPagoQrModalProps> = ({
                 <span>Verificando acreditación automáticamente cada 3.5s...</span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => checkStatus(true)}
-                disabled={isChecking}
-                className="btn btn-sm btn-ghost"
-                style={{ fontSize: '0.78rem' }}
-              >
-                Consultar estado ahora en Mercado Pago
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', width: '100%', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={handleManualConfirm}
+                  disabled={isConfirmingManual}
+                  className="btn btn-primary btn-block"
+                  style={{
+                    backgroundColor: '#16A34A',
+                    borderColor: '#16A34A',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    padding: '0.65rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem',
+                    boxShadow: '0 3px 8px rgba(22, 163, 74, 0.3)',
+                  }}
+                >
+                  {isConfirmingManual ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <CheckCheck size={18} />
+                  )}
+                  <span>Marcar como Pagado (In Situ)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => checkStatus(true)}
+                  disabled={isChecking}
+                  className="btn btn-sm btn-ghost"
+                  style={{ fontSize: '0.78rem' }}
+                >
+                  Consultar estado ahora en Mercado Pago
+                </button>
+              </div>
 
               {errorMsg && (
                 <div style={{ color: '#DC2626', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center' }}>

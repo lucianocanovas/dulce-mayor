@@ -1,51 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth, AuthProviderWrapper } from './context/AuthContext';
 import { Auth0ProviderWrapper } from './context/Auth0ProviderWrapper';
 import { Navbar } from './components/Navbar';
 import { BottomNavigation } from './components/BottomNavigation';
 import type { ActiveTab } from './components/BottomNavigation';
 import { LoginView } from './views/LoginView';
-import { RoutesView } from './views/RoutesView';
 import { CatalogOrderView } from './views/CatalogOrderView';
 import { RetailersView } from './views/RetailersView';
+import { PresaleOrdersView } from './views/PresaleOrdersView';
+import { DeliveryDashboardView } from './views/DeliveryDashboardView';
 import { ProfileView } from './views/ProfileView';
-import type { RouteStop, PointOfSale } from './types/models';
+import { UserRole } from './types/enums';
+import type { PointOfSale } from './types/models';
 
 const MainApp: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('routes');
+  const isDelivery = user?.role === UserRole.DELIVERY_AGENT;
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(
+    isDelivery ? 'delivery-route' : 'order'
+  );
   const [targetPOS, setTargetPOS] = useState<PointOfSale | null>(null);
+
+  // Sync tab if user role changes (e.g. via profile switcher)
+  useEffect(() => {
+    if (user?.role === UserRole.DELIVERY_AGENT) {
+      setActiveTab('delivery-route');
+    } else if (user) {
+      setActiveTab('order');
+    }
+  }, [user?.role]);
 
   if (!user) {
     return <LoginView />;
   }
-
-  const handleStartOrderForStop = (stop: RouteStop) => {
-    setTargetPOS(stop.pointOfSale);
-    setActiveTab('catalog');
-  };
 
   return (
     <div className="mobile-app-shell">
       <Navbar />
 
       <main className="mobile-main-content">
-        {activeTab === 'routes' && (
-          <RoutesView onStartOrderForStop={handleStartOrderForStop} />
+        {/* PREVENTISTA VIEWS */}
+        {!isDelivery && (
+          <>
+            {activeTab === 'order' && (
+              <CatalogOrderView
+                initialPOS={targetPOS}
+                onOrderSuccess={() => setActiveTab('history')}
+              />
+            )}
+            {activeTab === 'retailers' && (
+              <RetailersView
+                onSelectPOS={(pos) => {
+                  setTargetPOS(pos);
+                  setActiveTab('order');
+                }}
+              />
+            )}
+            {activeTab === 'history' && <PresaleOrdersView />}
+          </>
         )}
-        {activeTab === 'catalog' && (
-          <CatalogOrderView
-            initialPOS={targetPOS}
-            onOrderSuccess={() => setActiveTab('routes')}
-          />
+
+        {/* REPARTIDOR VIEWS */}
+        {isDelivery && (
+          <>
+            {activeTab === 'delivery-route' && (
+              <DeliveryDashboardView initialSubTab="map" />
+            )}
+            {activeTab === 'delivery-pending' && (
+              <DeliveryDashboardView initialSubTab="pending" />
+            )}
+            {activeTab === 'delivery-completed' && (
+              <DeliveryDashboardView initialSubTab="delivered" />
+            )}
+          </>
         )}
-        {activeTab === 'retailers' && <RetailersView />}
+
+        {/* SHARED ACCOUNT / PROFILE */}
         {activeTab === 'profile' && <ProfileView />}
       </main>
 
       <BottomNavigation
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        role={user.role}
         cartCount={0}
       />
     </div>
