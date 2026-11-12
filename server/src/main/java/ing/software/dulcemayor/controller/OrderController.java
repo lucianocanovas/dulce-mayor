@@ -1,9 +1,11 @@
 package ing.software.dulcemayor.controller;
 
+import ing.software.dulcemayor.dto.billing.MercadoPagoQrResponseDTO;
 import ing.software.dulcemayor.dto.order.CreateOrderRequestDTO;
 import ing.software.dulcemayor.dto.order.OrderResponseDTO;
 import ing.software.dulcemayor.dto.order.UpdateOrderStatusDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
+import ing.software.dulcemayor.service.billing.PaymentAccreditationService;
 import ing.software.dulcemayor.service.order.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final PaymentAccreditationService paymentAccreditationService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<OrderResponseDTO>>> getAllOrders() {
@@ -48,5 +51,13 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable String id) {
         orderService.deleteOrder(id);
         return ResponseEntity.ok(ApiResponse.ok("Pedido cancelado y eliminado correctamente", null));
+    }
+
+    @PostMapping("/{id}/mp/qr")
+    public ResponseEntity<ApiResponse<MercadoPagoQrResponseDTO>> generateMercadoPagoQr(
+            @PathVariable String id,
+            @RequestParam(required = false) String returnBaseUrl) {
+        MercadoPagoQrResponseDTO qr = paymentAccreditationService.generateOrFetchMercadoPagoQr(id, returnBaseUrl);
+        return ResponseEntity.ok(ApiResponse.ok("QR de Mercado Pago generado", qr));
     }
 }

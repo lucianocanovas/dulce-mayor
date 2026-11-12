@@ -188,4 +188,11 @@ public class ProductService extends BaseService<Product, ProductRequestDTO, Prod
                 .map(stock -> toResponseDto(stock.getProduct()))
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponseDTO> getInStockProducts() {
+        return getAll().stream()
+                .filter(p -> p.getCurrentStock() > 0)
+                .toList();
+    }
 }

@@ -9,4 +9,8 @@ import java.util.List;
 @Repository
 public interface DeliveryRouteRepository extends BaseRepository<DeliveryRoute> {
     List<DeliveryRoute> findByDeliveryAgentIdAndIsDeletedFalse(String deliveryAgentId);
+
+    java.util.Optional<DeliveryRoute> findFirstByIsDeletedFalseOrderByDateDesc();
+
+    List<DeliveryRoute> findByDateAndIsDeletedFalse(java.time.LocalDate date);
 }

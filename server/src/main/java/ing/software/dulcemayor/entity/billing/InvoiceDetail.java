@@ -32,6 +32,16 @@ public class InvoiceDetail extends BaseEntity {
     private double subtotal;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private ing.software.dulcemayor.entity.catalog.Product product;
+
+    @Column(name = "product_code", length = 50)
+    private String productCode;
+
+    @Column(name = "product_name", length = 150)
+    private String productName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)
     private Invoice invoice;
 }

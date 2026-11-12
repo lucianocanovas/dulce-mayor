@@ -157,7 +157,11 @@ public class PointOfSaleService {
                 : "Sin asignar";
 
         boolean hasActiveOrder = orderRepository.findByPointOfSaleIdAndIsDeletedFalse(pos.getId()).stream()
-                .anyMatch(o -> o.getStatus() == OrderStatus.LOADED || o.getStatus() == OrderStatus.INVOICED || o.getStatus() == OrderStatus.IN_DELIVERY);
+                .anyMatch(o -> o.getStatus() == OrderStatus.PENDING_PAYMENT
+                        || o.getStatus() == OrderStatus.LOADED
+                        || o.getStatus() == OrderStatus.PAID
+                        || o.getStatus() == OrderStatus.INVOICED
+                        || o.getStatus() == OrderStatus.IN_DELIVERY);
 
         return PointOfSaleResponseDTO.builder()
                 .id(pos.getId())

@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PaymentMethodRepository extends BaseRepository<PaymentMethod> {
+    java.util.Optional<PaymentMethod> findByPaymentTypeAndIsDeletedFalse(ing.software.dulcemayor.enums.PaymentType paymentType);
 }

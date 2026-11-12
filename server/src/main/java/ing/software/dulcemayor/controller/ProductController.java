@@ -31,4 +31,9 @@ public class ProductController extends BaseController<Product, ProductRequestDTO
         List<ProductResponseDTO> lowStockProducts = productService.getLowStockProducts(threshold);
         return ResponseEntity.ok(ApiResponse.ok(lowStockProducts));
     }
+
+    @GetMapping("/in-stock")
+    public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getInStockProducts() {
+        return ResponseEntity.ok(ApiResponse.ok(productService.getInStockProducts()));
+    }
 }

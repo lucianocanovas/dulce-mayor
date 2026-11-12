@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Finalizar Compra — Dulce Mayor</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <a th:href="@{/}" class="logo">
+            <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
+        </a>
+        <nav style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <a th:href="@{/}">Inicio</a>
+            <a th:href="@{/catalog}">Catálogo Completo</a>
+            <a th:href="@{/my-orders}">Mis Pedidos</a>
+            <a th:href="@{/contact}">Contacto &amp; Sucursales</a>
+            <button type="button" id="dm-open-cart-btn" class="dm-cart-btn">
+                🛒 Carrito <span id="dm-cart-count" class="dm-cart-badge">0</span>
+            </button>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1 class="section-title">Finalizar Compra Mayorista</h1>
+
+        <div id="dm-empty-checkout" class="dm-panel" style="display:none; text-align:center; padding:3rem;">
+            <h3>Tu carrito está vacío</h3>
+            <p style="margin:0.75rem 0 1.25rem; color:#7A6254;">Agregá golosinas desde nuestro catálogo para generar tu pedido y elegir el medio de pago.</p>
+            <a th:href="@{/catalog}" class="btn btn-primary">Explorar Catálogo</a>
+        </div>
+
+        <form id="dm-checkout-form" class="dm-checkout-grid">
+            <div style="display:flex; flex-direction:column; gap:1.25rem;">
+                <div class="dm-panel">
+                    <h2 style="margin-bottom:1rem; font-size:1.15rem;">1. Datos del Comprador y Entrega</h2>
+                    <div class="dm-form-grid">
+                        <div class="dm-field">
+                            <label for="customerName">Nombre y Apellido *</label>
+                            <input id="customerName" name="customerName" required placeholder="Ej: Lucía Fernández" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="storeName">Nombre del Kiosco / Comercio</label>
+                            <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="customerEmail">Correo Electrónico (confirmación y seguimiento)</label>
+                            <input id="customerEmail" name="customerEmail" type="email" placeholder="cliente@kiosco.com" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="customerPhone">Teléfono / WhatsApp *</label>
+                            <input id="customerPhone" name="customerPhone" required placeholder="261-555-0000" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="taxIdOrDni">CUIT o DNI</label>
+                            <input id="taxIdOrDni" name="taxIdOrDni" placeholder="20-34567890-1" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="deliveryCity">Departamento / Localidad *</label>
+                            <select id="deliveryCity" name="deliveryCity">
+                                <option value="Mendoza Capital">Mendoza Capital</option>
+                                <option value="Godoy Cruz">Godoy Cruz</option>
+                                <option value="Guaymallén">Guaymallén</option>
+                                <option value="Maipú">Maipú</option>
+                                <option value="Las Heras">Las Heras</option>
+                            </select>
+                        </div>
+                        <div class="dm-field">
+                            <label for="deliveryAddress">Dirección de Entrega *</label>
+                            <input id="deliveryAddress" name="deliveryAddress" required placeholder="Av. San Martín 1450" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="deliveryNeighborhood">Barrio / Referencia de Zona</label>
+                            <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro" />
+                        </div>
+                    </div>
+                    <div class="dm-field" style="margin-top:0.85rem;">
+                        <label for="notes">Notas para el Repartidor</label>
+                        <textarea id="notes" name="notes" rows="2" placeholder="Ej: Horario de descarga 09:00 a 13:00 hs"></textarea>
+                    </div>
+                </div>
+
+                <div class="dm-panel">
+                    <h2 style="margin-bottom:1rem; font-size:1.15rem;">2. Seleccioná el Medio de Pago</h2>
+
+                    <label class="dm-payment-option selected" data-method="MERCADO_PAGO">
+                        <input type="radio" name="paymentType" value="MERCADO_PAGO" checked style="margin-top:0.25rem;" />
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:var(--text);">Mercado Pago / Billetera Virtual</div>
+                            <div style="font-size:0.83rem; color:#7A6254;">
+                                Te redirigimos al Checkout oficial de Mercado Pago (tarjeta de débito, crédito o dinero en cuenta). Al acreditarse se emite tu factura y pasa directo a distribución.
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="dm-payment-option" data-method="BANK_TRANSFER">
+                        <input type="radio" name="paymentType" value="BANK_TRANSFER" style="margin-top:0.25rem;" />
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:var(--text);">Transferencia Bancaria por Alias</div>
+                            <div style="font-size:0.83rem; color:#7A6254;">
+                                Reservamos tu pedido como pendiente hasta que administración confirme el comprobante de transferencia.
+                            </div>
+                            <div id="dm-transfer-details" class="dm-bank-box" style="display:none;">
+                                <div><strong>Alias:</strong> <span th:text="${paymentConfig.bankAlias}">DULCE.MAYOR.MZA</span></div>
+                                <div><strong>CBU:</strong> <span th:text="${paymentConfig.bankCbu}">0000003100084920193842</span></div>
+                                <div><strong>Titular:</strong> <span th:text="${paymentConfig.bankHolder}">Dulce Mayor S.A.</span> — <span th:text="${paymentConfig.bankName}">Banco Nación</span></div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="dm-payment-option" data-method="CASH">
+                        <input type="radio" name="paymentType" value="CASH" style="margin-top:0.25rem;" />
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:var(--text);">Efectivo Contra Entrega</div>
+                            <div style="font-size:0.83rem; color:#7A6254;">
+                                Abonás directamente al repartidor mayorista al recibir la mercadería.
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="dm-panel">
+                <h2 style="margin-bottom:1rem; font-size:1.15rem;">Resumen del Pedido</h2>
+                <div id="dm-checkout-items" style="display:flex; flex-direction:column; gap:0.65rem; margin-bottom:1rem;"></div>
+
+                <div style="display:flex; gap:0.5rem; margin-bottom:0.85rem;">
+                    <input type="text" id="couponCode" placeholder="Cupón de descuento (opcional)" style="flex:1; padding:0.55rem 0.75rem; border:1.5px solid var(--border); border-radius:8px; text-transform:uppercase;" />
+                    <button type="button" id="dm-apply-coupon" class="btn btn-outline" style="padding:0.5rem 0.85rem;">Aplicar</button>
+                </div>
+                <div id="dm-coupon-msg" style="font-size:0.8rem; margin-bottom:0.85rem; min-height:1.1rem;"></div>
+
+                <div style="border-top:1px solid var(--border); padding-top:0.85rem; display:flex; flex-direction:column; gap:0.4rem;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.92rem;">
+                        <span>Subtotal</span>
+                        <strong id="dm-summary-subtotal">$0</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.92rem; color:#059669;">
+                        <span>Descuento</span>
+                        <strong id="dm-summary-discount">$0</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:1.18rem; margin-top:0.25rem; color:var(--primary);">
+                        <strong>Total</strong>
+                        <strong id="dm-summary-total">$0</strong>
+                    </div>
+                </div>
+
+                <div id="dm-checkout-error" style="display:none; margin-top:0.9rem; padding:0.75rem; border-radius:8px; background:#FEF2F2; border:1px solid #FCA5A5; color:#991B1B; font-size:0.86rem;"></div>
+
+                <button type="submit" id="dm-submit-checkout" class="btn btn-primary" style="width:100%; margin-top:1.1rem; padding:0.85rem;">
+                    Confirmar Pedido
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <footer>
+        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
+    </footer>
+
+    <script th:src="@{/js/cart.js}"></script>
+    <script>
+        (function () {
+            let appliedPromo = null;
+
+            function renderSummary() {
+                const items = window.DulceCart.getItems();
+                const emptyBox = document.getElementById('dm-empty-checkout');
+                const form = document.getElementById('dm-checkout-form');
+                const listEl = document.getElementById('dm-checkout-items');
+
+                if (!items || items.length === 0) {
+                    emptyBox.style.display = 'block';
+                    form.style.display = 'none';
+                    return;
+                }
+                emptyBox.style.display = 'none';
+                form.style.display = 'grid';
+
+                listEl.innerHTML = '';
+                let subtotal = 0;
+                let totalUnits = 0;
+                items.forEach(item => {
+                    const line = Number(item.price) * Number(item.quantity);
+                    subtotal += line;
+                    totalUnits += Number(item.quantity);
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; justify-content:space-between; gap:0.5rem; font-size:0.88rem; border-bottom:1px dashed #EADFCF; padding-bottom:0.45rem;';
+                    const left = document.createElement('div');
+                    left.innerHTML = `<strong>${window.DulceCart.escapeHtml(item.name)}</strong><div style="font-size:0.78rem; color:#7A6254;">${window.DulceCart.formatUnitLabel(item.quantity)} &times; ${window.DulceCart.formatMoney(item.price)}</div>`;
+                    const right = document.createElement('div');
+                    right.style.fontWeight = '700';
+                    right.textContent = window.DulceCart.formatMoney(line);
+                    row.appendChild(left);
+                    row.appendChild(right);
+                    listEl.appendChild(row);
+                });
+
+                let discount = 0;
+                if (appliedPromo && totalUnits >= Number(appliedPromo.minimumQuantity || 0)) {
+                    discount = subtotal * Number(appliedPromo.discountPercentage || 0) / 100;
+                }
+                const total = Math.max(0, subtotal - discount);
+
+                document.getElementById('dm-summary-subtotal').textContent = window.DulceCart.formatMoney(subtotal);
+                document.getElementById('dm-summary-discount').textContent = discount > 0 ? '-' + window.DulceCart.formatMoney(discount) : '$0';
+                document.getElementById('dm-summary-total').textContent = window.DulceCart.formatMoney(total);
+            }
+
+            document.querySelectorAll('input[name="paymentType"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    document.querySelectorAll('.dm-payment-option').forEach(lbl => lbl.classList.remove('selected'));
+                    const parent = radio.closest('.dm-payment-option');
+                    if (parent) parent.classList.add('selected');
+                    const transferBox = document.getElementById('dm-transfer-details');
+                    transferBox.style.display = radio.value === 'BANK_TRANSFER' ? 'block' : 'none';
+                });
+            });
+
+            document.getElementById('dm-apply-coupon').addEventListener('click', async () => {
+                const code = (document.getElementById('couponCode').value || '').trim().toUpperCase();
+                const msgEl = document.getElementById('dm-coupon-msg');
+                if (!code) {
+                    appliedPromo = null;
+                    msgEl.textContent = '';
+                    renderSummary();
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/landing/promotions/validate?code=' + encodeURIComponent(code));
+                    const json = await res.json();
+                    if (!res.ok || !json.success) {
+                        appliedPromo = null;
+                        msgEl.style.color = '#DC2626';
+                        msgEl.textContent = json.message || 'Cupón inválido o vencido.';
+                    } else {
+                        appliedPromo = json.data;
+                        const totalUnits = window.DulceCart.getItems().reduce((a, b) => a + Number(b.quantity), 0);
+                        if (totalUnits < Number(appliedPromo.minimumQuantity || 0)) {
+                            msgEl.style.color = '#D97706';
+                            msgEl.textContent = `Cupón válido (${appliedPromo.discountPercentage}%): requiere mínimo ${window.DulceCart.formatUnitLabel(appliedPromo.minimumQuantity)}.`;
+                        } else {
+                            msgEl.style.color = '#059669';
+                            msgEl.textContent = `Cupón ${code} aplicado (${appliedPromo.discountPercentage}% OFF).`;
+                        }
+                    }
+                    renderSummary();
+                } catch (e) {
+                    msgEl.style.color = '#DC2626';
+                    msgEl.textContent = 'No se pudo validar el cupón.';
+                }
+            });
+
+            document.getElementById('dm-checkout-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const errBox = document.getElementById('dm-checkout-error');
+                const btn = document.getElementById('dm-submit-checkout');
+                errBox.style.display = 'none';
+
+                const items = window.DulceCart.getItems();
+                if (!items || items.length === 0) {
+                    errBox.textContent = 'El carrito está vacío.';
+                    errBox.style.display = 'block';
+                    return;
+                }
+
+                const paymentType = document.querySelector('input[name="paymentType"]:checked').value;
+                const payload = {
+                    customerName: document.getElementById('customerName').value.trim(),
+                    storeName: document.getElementById('storeName').value.trim(),
+                    customerEmail: document.getElementById('customerEmail').value.trim(),
+                    customerPhone: document.getElementById('customerPhone').value.trim(),
+                    taxIdOrDni: document.getElementById('taxIdOrDni').value.trim(),
+                    deliveryCity: document.getElementById('deliveryCity').value,
+                    deliveryAddress: document.getElementById('deliveryAddress').value.trim(),
+                    deliveryNeighborhood: document.getElementById('deliveryNeighborhood').value.trim(),
+                    notes: document.getElementById('notes').value.trim(),
+                    couponCode: (document.getElementById('couponCode').value || '').trim().toUpperCase(),
+                    paymentType: paymentType,
+                    returnBaseUrl: window.location.origin,
+                    items: items.map(i => ({ productId: i.id, quantity: Number(i.quantity) }))
+                };
+
+                btn.disabled = true;
+                btn.textContent = 'Procesando pedido...';
+                try {
+                    const res = await fetch('/api/landing/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json.success) {
+                        errBox.textContent = json.message || 'No se pudo registrar el pedido.';
+                        errBox.style.display = 'block';
+                        btn.disabled = false;
+                        btn.textContent = 'Confirmar Pedido';
+                        return;
+                    }
+
+                    const data = json.data;
+                    window.DulceCart.addRecentOrder({
+                        orderId: data.orderId,
+                        orderNumber: data.orderNumber,
+                        total: data.total,
+                        paymentType: data.paymentType
+                    });
+                    window.DulceCart.clear();
+
+                    if (paymentType === 'MERCADO_PAGO' && data.initPoint) {
+                        window.location.href = data.initPoint;
+                        return;
+                    }
+                    window.location.href = '/checkout/pending?orderId=' + encodeURIComponent(data.orderId);
+                } catch (err) {
+                    errBox.textContent = 'Error de conexión al confirmar el pedido.';
+                    errBox.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Confirmar Pedido';
+                }
+            });
+
+            window.addEventListener('dulce-cart-updated', renderSummary);
+            document.addEventListener('DOMContentLoaded', renderSummary);
+        })();
+    </script>
+</body>
+</html>
+

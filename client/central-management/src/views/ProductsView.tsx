@@ -233,7 +233,7 @@ export const ProductsView: React.FC = () => {
       <div className="view-header">
         <div>
           <h2>Control de Depósito y Catálogo Mayorista</h2>
-          <p className="text-muted">Gestión integral de bultos, fotos de productos, stock disponible y precios vigentes</p>
+          <p className="text-muted">Gestión integral de unidades, fotos de productos, stock disponible y precios vigentes</p>
         </div>
         <div className="header-actions">
           <button onClick={openCreateModal} className="btn btn-primary">
@@ -333,7 +333,7 @@ export const ProductsView: React.FC = () => {
                       </td>
                       <td>
                         <span className={`badge ${isLow ? 'badge-danger' : 'badge-success'}`}>
-                          {p.currentStock} bultos
+                          {p.currentStock} {p.currentStock === 1 ? 'unidad' : 'unidades'}
                         </span>
                       </td>
                       <td>
@@ -472,7 +472,7 @@ export const ProductsView: React.FC = () => {
                 <span className="detail-label">Stock en Depósito Central</span>
                 <span className="detail-value">
                   <span className={`badge ${viewProduct.currentStock <= 20 ? 'badge-danger' : 'badge-success'}`}>
-                    {viewProduct.currentStock} bultos disponibles
+                    {viewProduct.currentStock} {viewProduct.currentStock === 1 ? 'unidad disponible' : 'unidades disponibles'}
                   </span>
                 </span>
               </div>
@@ -582,7 +582,7 @@ export const ProductsView: React.FC = () => {
                 </label>
 
                 <label>
-                  Stock Inicial (Bultos) *
+                  Stock Inicial (Unidades) *
                   <input
                     type="number"
                     min="0"
@@ -902,12 +902,12 @@ export const ProductsView: React.FC = () => {
               Producto: <strong>{stockProduct.name}</strong> ({stockProduct.code})
             </p>
             <p style={{ marginBottom: '1rem' }}>
-              Stock actual: <strong>{stockProduct.currentStock} bultos</strong>
+              Stock actual: <strong>{stockProduct.currentStock} {stockProduct.currentStock === 1 ? 'unidad' : 'unidades'}</strong>
             </p>
 
             <form onSubmit={handleAdjustStock} className="modal-form">
               <label>
-                Cantidad de Bultos a Ingresar:
+                Cantidad de Unidades a Ingresar:
                 <input
                   type="number"
                   min="1"

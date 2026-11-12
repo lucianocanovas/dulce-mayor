@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { fetchProducts, fetchPointsOfSale, submitOrderToBackend } from '../services/api';
-import type { PointOfSale, OrderItem, Product } from '../types/models';
+import {
+  fetchProducts,
+  fetchPointsOfSale,
+  submitOrderToBackend,
+  fetchPaymentConfig,
+} from '../services/api';
+import type { PointOfSale, OrderItem, Product, PaymentConfig } from '../types/models';
 import { PaymentType } from '../types/enums';
 import { useAuth } from '../context/AuthContext';
+import { MercadoPagoQrModal } from '../components/MercadoPagoQrModal';
 import {
   Search,
   Plus,
@@ -12,6 +18,7 @@ import {
   Store,
   X,
   Loader2,
+  QrCode,
 } from 'lucide-react';
 
 interface CatalogOrderViewProps {
@@ -37,19 +44,31 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   const [discountPercent, setDiscountPercent] = useState(0);
   const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.CASH);
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlacedMsg, setOrderPlacedMsg] = useState<string | null>(null);
+  const [orderErrorMsg, setOrderErrorMsg] = useState<string | null>(null);
+  const [qrModalOrder, setQrModalOrder] = useState<{
+    orderId: string;
+    orderNumber: string | number;
+    storeName: string;
+    total: number;
+    initPoint?: string;
+    qrImageBase64?: string;
+  } | null>(null);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const [loadedProds, loadedPos] = await Promise.all([
+        const [loadedProds, loadedPos, loadedPayConfig] = await Promise.all([
           fetchProducts(),
           fetchPointsOfSale(),
+          fetchPaymentConfig(),
         ]);
         setProducts(loadedProds);
         setAllPOS(loadedPos);
+        setPaymentConfig(loadedPayConfig);
         if (!selectedPOS && loadedPos.length > 0) {
           setSelectedPOS(loadedPos[0]);
         }
@@ -125,6 +144,7 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0 || !selectedPOS) return;
 
+    setOrderErrorMsg(null);
     setIsSubmitting(true);
     try {
       const orderItems = Object.entries(cart).map(([productId, quantity]) => ({
@@ -144,13 +164,41 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
 
       setCart({});
       setIsCartOpen(false);
-      setOrderPlacedMsg(`¡Pedido ${created.orderNumber} registrado exitosamente para ${selectedPOS.name}!`);
+
+      if (
+        paymentType === PaymentType.MERCADO_PAGO ||
+        paymentType === PaymentType.DIGITAL_WALLET
+      ) {
+        setQrModalOrder({
+          orderId: created.id,
+          orderNumber: created.numericOrderNumber || created.orderNumber,
+          storeName: selectedPOS.name,
+          total: created.total,
+          initPoint: created.mpInitPoint,
+          qrImageBase64: created.qrImageBase64,
+        });
+        return;
+      }
+
+      if (paymentType === PaymentType.BANK_TRANSFER) {
+        setOrderPlacedMsg(
+          `Pedido ${created.orderNumber} guardado como Pendiente de Transferencia (Alias: ${
+            created.bankAlias || paymentConfig?.bankAlias || 'DULCE.MAYOR.MZA'
+          }).`
+        );
+      } else {
+        setOrderPlacedMsg(
+          `¡Pedido ${created.orderNumber} registrado exitosamente para ${selectedPOS.name}!`
+        );
+      }
 
       setTimeout(() => {
         setOrderPlacedMsg(null);
         if (onOrderSuccess) onOrderSuccess();
       }, 2500);
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al registrar el pedido';
+      setOrderErrorMsg(msg);
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -270,7 +318,7 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
                     className="btn btn-sm btn-outline-primary w-full"
                   >
                     <Plus size={16} />
-                    <span>Agregar bulto</span>
+                    <span>Agregar unidad</span>
                   </button>
                 ) : (
                   <div className="qty-stepper">
@@ -382,30 +430,60 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
                 <label>Forma de pago:</label>
                 <div className="payment-pills">
                   <button
+                    type="button"
                     onClick={() => setPaymentType(PaymentType.CASH)}
                     className={`pay-pill ${paymentType === PaymentType.CASH ? 'active' : ''}`}
                   >
                     Efectivo
                   </button>
                   <button
+                    type="button"
                     onClick={() => setPaymentType(PaymentType.BANK_TRANSFER)}
                     className={`pay-pill ${paymentType === PaymentType.BANK_TRANSFER ? 'active' : ''}`}
                   >
                     Transferencia
                   </button>
                   <button
-                    onClick={() => setPaymentType(PaymentType.DIGITAL_WALLET)}
-                    className={`pay-pill ${paymentType === PaymentType.DIGITAL_WALLET ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => setPaymentType(PaymentType.MERCADO_PAGO)}
+                    className={`pay-pill ${
+                      paymentType === PaymentType.MERCADO_PAGO ||
+                      paymentType === PaymentType.DIGITAL_WALLET
+                        ? 'active'
+                        : ''
+                    }`}
                   >
-                    Billetera Virtual
+                    <QrCode size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                    QR Mercado Pago
                   </button>
                 </div>
+
+                {paymentType === PaymentType.BANK_TRANSFER && (
+                  <div className="bank-alias-card">
+                    <div>
+                      <strong>Alias:</strong> {paymentConfig?.bankAlias || 'DULCE.MAYOR.MZA'}
+                    </div>
+                    <div>
+                      <strong>CBU:</strong> {paymentConfig?.bankCbu || '0000003100084920193842'}
+                    </div>
+                    <div>
+                      <strong>Titular:</strong> {paymentConfig?.bankHolder || 'Dulce Mayor S.A.'}
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: '0.76rem' }}>
+                      El pedido quedará pendiente hasta que administración confirme el comprobante.
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {orderErrorMsg && (
+                <div className="order-error-banner">{orderErrorMsg}</div>
+              )}
 
               {/* Totals */}
               <div className="summary-breakdown">
                 <div className="summary-line">
-                  <span>Subtotal ({totalPacks} bultos)</span>
+                  <span>Subtotal ({totalPacks} {totalPacks === 1 ? 'unidad' : 'unidades'})</span>
                   <span>${rawSubtotal.toLocaleString('es-AR')}</span>
                 </div>
                 {discountPercent > 0 && (
@@ -433,13 +511,35 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
                 ) : (
                   <>
                     <Check size={18} />
-                    <span>Confirmar y Enviar Pedido</span>
+                    <span>
+                      {paymentType === PaymentType.MERCADO_PAGO ||
+                      paymentType === PaymentType.DIGITAL_WALLET
+                        ? 'Generar QR de Cobro Mercado Pago'
+                        : 'Confirmar y Enviar Pedido'}
+                    </span>
                   </>
                 )}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {qrModalOrder && (
+        <MercadoPagoQrModal
+          orderId={qrModalOrder.orderId}
+          orderNumber={qrModalOrder.orderNumber}
+          storeName={qrModalOrder.storeName}
+          total={qrModalOrder.total}
+          initPoint={qrModalOrder.initPoint}
+          qrImageBase64={qrModalOrder.qrImageBase64}
+          onClose={() => setQrModalOrder(null)}
+          onPaymentAccredited={(status) => {
+            setOrderPlacedMsg(
+              `✓ Pago acreditado para Pedido #${status.orderNumber} (Factura #${status.invoiceNumber || '-'}). Enviado a Distribución.`
+            );
+          }}
+        />
       )}
     </div>
   );

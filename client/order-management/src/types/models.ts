@@ -28,12 +28,20 @@ export interface RouteStop {
   id: string;
   orderIndex: number;
   pointOfSale: PointOfSale;
-  status: 'PENDING' | 'VISITED' | 'DELIVERED' | 'SKIPPED';
+  status: 'PENDING' | 'PENDING_PAYMENT' | 'VISITED' | 'DELIVERED' | 'SKIPPED';
   orderId?: string;
+  orderNumber?: number;
   orderTotal?: number;
   estimatedArrival?: string;
   deliveredAt?: string;
   notes?: string;
+  paymentType?: string;
+  paid?: boolean;
+  readyForDispatch?: boolean;
+  invoiceNumber?: number;
+  sourceChannel?: string;
+  customerName?: string;
+  mpInitPoint?: string;
 }
 
 export interface DailyRoute {
@@ -70,6 +78,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   orderNumber: string;
+  numericOrderNumber?: number;
   date: string;
   pointOfSale: PointOfSale;
   items: OrderItem[];
@@ -80,4 +89,77 @@ export interface Order {
   status: OrderStatus;
   paymentType: PaymentType;
   presaleAgentName: string;
+  mpPreferenceId?: string;
+  mpInitPoint?: string;
+  mpPaymentId?: string;
+  mpPaymentStatus?: string;
+  invoiceId?: string;
+  invoiceNumber?: number;
+  qrImageBase64?: string;
+  bankAlias?: string;
+  bankCbu?: string;
+  bankHolder?: string;
+}
+
+export interface PaymentConfig {
+  mercadoPagoEnabled: boolean;
+  sandboxEnabled: boolean;
+  publicKey?: string;
+  bankAlias: string;
+  bankCbu: string;
+  bankHolder: string;
+  bankName: string;
+}
+
+export interface MercadoPagoQrResponse {
+  orderId: string;
+  orderNumber: number;
+  status: OrderStatus;
+  total: number;
+  preferenceId?: string;
+  initPoint?: string;
+  qrPayload?: string;
+  qrImageBase64?: string;
+}
+
+export interface OrderPaymentStatus {
+  orderId: string;
+  orderNumber: number;
+  orderStatus: OrderStatus;
+  paymentType: PaymentType;
+  paid: boolean;
+  readyForDispatch: boolean;
+  stockDeducted: boolean;
+  subtotal: number;
+  discount: number;
+  total: number;
+  mpPreferenceId?: string;
+  mpInitPoint?: string;
+  mpPaymentId?: string;
+  mpPaymentStatus?: string;
+  paidAt?: string;
+  invoiceId?: string;
+  invoiceNumber?: number;
+  storeName?: string;
+  customerName?: string;
+  bankAlias?: string;
+  bankCbu?: string;
+  bankHolder?: string;
+  message?: string;
+}
+
+export interface BackendOrderSummary {
+  id: string;
+  orderNumber: number;
+  orderDateTime: string;
+  total: number;
+  status: OrderStatus;
+  storeName: string;
+  retailerName?: string;
+  paymentType?: PaymentType;
+  sourceChannel?: string;
+  mpPreferenceId?: string;
+  mpInitPoint?: string;
+  invoiceNumber?: number;
+  readyForDispatch?: boolean;
 }

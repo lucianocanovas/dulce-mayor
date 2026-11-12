@@ -7,7 +7,9 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const OrderStatus = {
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
   LOADED: 'LOADED',
+  PAID: 'PAID',
   OUT_OF_STOCK: 'OUT_OF_STOCK',
   INVOICED: 'INVOICED',
   IN_DELIVERY: 'IN_DELIVERY',
@@ -35,5 +37,6 @@ export const PaymentType = {
   CASH: 'CASH',
   BANK_TRANSFER: 'BANK_TRANSFER',
   DIGITAL_WALLET: 'DIGITAL_WALLET',
+  MERCADO_PAGO: 'MERCADO_PAGO',
 } as const;
 export type PaymentType = (typeof PaymentType)[keyof typeof PaymentType];

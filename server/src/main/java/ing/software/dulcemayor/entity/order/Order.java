@@ -53,6 +53,64 @@ public class Order extends BaseEntity {
     @Column(name = "status", nullable = false, length = 50)
     private OrderStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", length = 50)
+    private ing.software.dulcemayor.enums.PaymentType paymentType;
+
+    @Column(name = "source_channel", length = 50)
+    private String sourceChannel;
+
+    @Column(name = "customer_name", length = 150)
+    private String customerName;
+
+    @Column(name = "customer_email", length = 150)
+    private String customerEmail;
+
+    @Column(name = "customer_phone", length = 60)
+    private String customerPhone;
+
+    @Column(name = "delivery_address", length = 255)
+    private String deliveryAddress;
+
+    @Column(name = "delivery_neighborhood", length = 120)
+    private String deliveryNeighborhood;
+
+    @Column(name = "delivery_city", length = 120)
+    private String deliveryCity;
+
+    @Column(name = "mp_preference_id", length = 150)
+    private String mpPreferenceId;
+
+    @Column(name = "mp_init_point", length = 1000)
+    private String mpInitPoint;
+
+    @Column(name = "mp_payment_id", length = 100)
+    private String mpPaymentId;
+
+    @Column(name = "mp_payment_status", length = 60)
+    private String mpPaymentStatus;
+
+    @Column(name = "paid_at")
+    private java.time.LocalDateTime paidAt;
+
+    @Builder.Default
+    @Column(name = "stock_deducted", nullable = false)
+    private boolean stockDeducted = false;
+
+    @Builder.Default
+    @Column(name = "ready_for_dispatch", nullable = false)
+    private boolean readyForDispatch = false;
+
+    @Column(name = "dispatch_enabled_at")
+    private java.time.LocalDateTime dispatchEnabledAt;
+
+    @Column(name = "payment_note", length = 500)
+    private String paymentNote;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_route_id")
+    private ing.software.dulcemayor.entity.logistics.DeliveryRoute deliveryRoute;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "point_of_sale_id", nullable = false)
     private PointOfSale pointOfSale;

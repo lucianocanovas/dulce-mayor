@@ -59,274 +59,367 @@ import java.util.ArrayList;
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
-    private final UserRepository userRepository;
-    private final EmployeeRepository employeeRepository;
-    private final SalesRepresentativeRepository salesRepRepository;
-    private final DeliveryAgentRepository deliveryAgentRepository;
-    private final RetailerRepository retailerRepository;
-    private final CountryRepository countryRepository;
-    private final StateRepository stateRepository;
-    private final DepartmentRepository departmentRepository;
-    private final CityRepository cityRepository;
-    private final AddressRepository addressRepository;
-    private final CategoryRepository categoryRepository;
-    private final SubCategoryRepository subCategoryRepository;
-    private final ProductRepository productRepository;
-    private final PriceValidityRepository priceValidityRepository;
-    private final StockRepository stockRepository;
-    private final PointOfSaleRepository pointOfSaleRepository;
-    private final OrderRepository orderRepository;
-    private final OrderDetailRepository orderDetailRepository;
-    private final PromotionRepository promotionRepository;
-    private final PasswordEncoder passwordEncoder;
+        private final UserRepository userRepository;
+        private final EmployeeRepository employeeRepository;
+        private final SalesRepresentativeRepository salesRepRepository;
+        private final DeliveryAgentRepository deliveryAgentRepository;
+        private final RetailerRepository retailerRepository;
+        private final CountryRepository countryRepository;
+        private final StateRepository stateRepository;
+        private final DepartmentRepository departmentRepository;
+        private final CityRepository cityRepository;
+        private final AddressRepository addressRepository;
+        private final CategoryRepository categoryRepository;
+        private final SubCategoryRepository subCategoryRepository;
+        private final ProductRepository productRepository;
+        private final PriceValidityRepository priceValidityRepository;
+        private final StockRepository stockRepository;
+        private final PointOfSaleRepository pointOfSaleRepository;
+        private final OrderRepository orderRepository;
+        private final OrderDetailRepository orderDetailRepository;
+        private final PromotionRepository promotionRepository;
+        private final PasswordEncoder passwordEncoder;
 
-    @Override
-    @Transactional
-    public void run(String... args) {
-        if (userRepository.count() > 0) {
-            return;
+        @Override
+        @Transactional
+        public void run(String... args) {
+                if (userRepository.count() > 0) {
+                        return;
+                }
+
+                log.info("Seeding initial database data for Dulce Mayor..."); // Valores iniciales de prueba, carga
+                                                                              // inicial.
+
+                // 1. Locations (Greater Mendoza)
+                Country country = countryRepository.save(Country.builder().name("Argentina").build());
+                State state = stateRepository.save(State.builder().name("Mendoza").country(country).build());
+                Department depCapital = departmentRepository
+                                .save(Department.builder().name("Capital").state(state).build());
+                Department depGodoyCruz = departmentRepository
+                                .save(Department.builder().name("Godoy Cruz").state(state).build());
+                Department depGuaymallen = departmentRepository
+                                .save(Department.builder().name("Guaymallén").state(state).build());
+                Department depMaipu = departmentRepository
+                                .save(Department.builder().name("Maipú").state(state).build());
+                Department depLasHeras = departmentRepository
+                                .save(Department.builder().name("Las Heras").state(state).build());
+
+                City cityCapital = cityRepository.save(City.builder().name("Mendoza Capital").postalCode("5500")
+                                .department(depCapital).build());
+                City cityGodoyCruz = cityRepository.save(
+                                City.builder().name("Godoy Cruz").postalCode("5501").department(depGodoyCruz).build());
+                City cityGuaymallen = cityRepository.save(
+                                City.builder().name("Guaymallén").postalCode("5519").department(depGuaymallen).build());
+                City cityMaipu = cityRepository
+                                .save(City.builder().name("Maipú").postalCode("5515").department(depMaipu).build());
+                City cityLasHeras = cityRepository.save(
+                                City.builder().name("Las Heras").postalCode("5539").department(depLasHeras).build());
+
+                // 2. Users & Employees
+                // Admin
+                Employee adminEmployee = employeeRepository.save(Employee.builder()
+                                .firstName("Jefe")
+                                .lastName("Administrativo")
+                                .birthDate(LocalDate.of(1980, 1, 1))
+                                .documentType(DocumentType.DNI)
+                                .documentNumber("28123456")
+                                .employeeIdNumber("ADM-001")
+                                .build());
+
+                userRepository.save(User.builder()
+                                .username("admin")
+                                .password(passwordEncoder.encode("dulcemayor"))
+                                .role(UserRole.MANAGER)
+                                .isTemporaryPassword(false)
+                                .authProvider(AuthProvider.LOCAL)
+                                .person(adminEmployee)
+                                .build());
+
+                // Sales Rep (Preventor)
+                SalesRepresentative rep = salesRepRepository.save(SalesRepresentative.builder()
+                                .firstName("Juan Manuel")
+                                .lastName("Torres")
+                                .birthDate(LocalDate.of(1992, 4, 12))
+                                .documentType(DocumentType.DNI)
+                                .documentNumber("36789123")
+                                .employeeIdNumber("PREV-010")
+                                .build());
+
+                userRepository.save(User.builder()
+                                .username("preventor")
+                                .password(passwordEncoder.encode("dulcemayor"))
+                                .role(UserRole.PRESALE_AGENT)
+                                .isTemporaryPassword(false)
+                                .authProvider(AuthProvider.LOCAL)
+                                .person(rep)
+                                .build());
+
+                // Delivery Agent (Repartidor)
+                DeliveryAgent deliveryAgent = deliveryAgentRepository.save(DeliveryAgent.builder()
+                                .firstName("Carlos")
+                                .lastName("Mendoza")
+                                .birthDate(LocalDate.of(1989, 7, 19))
+                                .documentType(DocumentType.DNI)
+                                .documentNumber("34567890")
+                                .employeeIdNumber("REP-005")
+                                .build());
+
+                userRepository.save(User.builder()
+                                .username("repartidor")
+                                .password(passwordEncoder.encode("dulcemayor"))
+                                .role(UserRole.DELIVERY_AGENT)
+                                .isTemporaryPassword(false)
+                                .authProvider(AuthProvider.LOCAL)
+                                .person(deliveryAgent)
+                                .build());
+
+                // 3. Retailers & Points of Sale (5 across Greater Mendoza)
+                Retailer r1 = retailerRepository.save(Retailer.builder().firstName("Roberto").lastName("Gómez")
+                                .documentType(DocumentType.DNI).documentNumber("20-28491823-4").build());
+                Address a1 = addressRepository
+                                .save(Address.builder().street("Av. San Martín 1420").neighborhood("Centro")
+                                                .city(cityCapital).latitude(-32.8895).longitude(-68.8458).build());
+                PointOfSale pos1 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Kiosco El Trébol")
+                                .retailer(r1).address(a1).salesRep(rep).build());
+
+                Retailer r2 = retailerRepository.save(Retailer.builder().firstName("Marta").lastName("Villalobos")
+                                .documentType(DocumentType.DNI).documentNumber("27-31298451-2").build());
+                Address a2 = addressRepository.save(Address.builder().street("Belgrano 840").neighborhood("Bombal")
+                                .city(cityGodoyCruz).latitude(-32.9052).longitude(-68.8431).build());
+                PointOfSale pos2 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Almacén Dulce Hogar")
+                                .retailer(r2).address(a2).salesRep(rep).build());
+
+                Retailer r3 = retailerRepository.save(Retailer.builder().firstName("Esteban").lastName("Paz")
+                                .documentType(DocumentType.DNI).documentNumber("20-33418729-1").build());
+                Address a3 = addressRepository
+                                .save(Address.builder().street("Bandera de los Andes 2150").neighborhood("San José")
+                                                .city(cityGuaymallen).latitude(-32.8942).longitude(-68.8189).build());
+                PointOfSale pos3 = pointOfSaleRepository
+                                .save(PointOfSale.builder().storeName("Golosinas & Kiosco Central").retailer(r3)
+                                                .address(a3).salesRep(rep).build());
+
+                Retailer r4 = retailerRepository.save(Retailer.builder().firstName("Carla").lastName("Ferreyra")
+                                .documentType(DocumentType.DNI).documentNumber("27-35619482-9").build());
+                Address a4 = addressRepository.save(Address.builder().street("Pescara 350").neighborhood("Centro")
+                                .city(cityMaipu).latitude(-32.9814).longitude(-68.7845).build());
+                PointOfSale pos4 = pointOfSaleRepository.save(PointOfSale.builder()
+                                .storeName("Kiosco 24 Horas La Plaza").retailer(r4).address(a4).salesRep(rep).build());
+
+                Retailer r5 = retailerRepository.save(Retailer.builder().firstName("Luciano").lastName("Rossi")
+                                .documentType(DocumentType.DNI).documentNumber("20-29841720-3").build());
+                Address a5 = addressRepository.save(Address.builder().street("San Miguel 1120").neighborhood("Centro")
+                                .city(cityLasHeras).latitude(-32.8521).longitude(-68.8312).build());
+                PointOfSale pos5 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Kiosco El Chiche")
+                                .retailer(r5).address(a5).salesRep(rep).build());
+
+                // 4. Categories & SubCategories
+                Category catChocolates = categoryRepository
+                                .save(Category.builder().name("Bombones y Chocolates").build());
+                Category catGalletitas = categoryRepository
+                                .save(Category.builder().name("Galletitas y Obleas").build());
+                Category catGomitas = categoryRepository.save(Category.builder().name("Gomitas y Caramelos").build());
+                Category catChicles = categoryRepository.save(Category.builder().name("Chicles y Pastillas").build());
+
+                SubCategory subBombones = subCategoryRepository
+                                .save(SubCategory.builder().name("Bombones").category(catChocolates).build());
+                SubCategory subTabletas = subCategoryRepository
+                                .save(SubCategory.builder().name("Tabletas").category(catChocolates).build());
+                SubCategory subGalletitas = subCategoryRepository
+                                .save(SubCategory.builder().name("Galletitas").category(catGalletitas).build());
+                SubCategory subObleas = subCategoryRepository
+                                .save(SubCategory.builder().name("Obleas").category(catGalletitas).build());
+                SubCategory subGomitasSub = subCategoryRepository
+                                .save(SubCategory.builder().name("Gomitas").category(catGomitas).build());
+                SubCategory subCaramelos = subCategoryRepository
+                                .save(SubCategory.builder().name("Caramelos").category(catGomitas).build());
+                SubCategory subChiclesSub = subCategoryRepository
+                                .save(SubCategory.builder().name("Chicles").category(catChicles).build());
+
+                // 5. Authentic FMCG Confectionery Products (Arcor, Bagley, Mondelez, Terrabusi)
+                Product p1 = createProduct("ARC-BON-01", "Bon o Bon Leche",
+                                "Bombón con relleno de pasta de maní bañado en chocolate de leche.", "Display x 24 u.",
+                                24, true, subBombones, 14200.0, 180,
+                                "https://images.unsplash.com/photo-1548741487-18d363dc4469?w=400&auto=format&fit=crop&q=80");
+                Product p2 = createProduct("BAG-SUR-02", "Surtido Bagley Clásico",
+                                "Pack familiar surtido con las tradicionales galletitas Bagley surtidas.",
+                                "Caja x 15 paq. (390g)", 15, false, subGalletitas, 22500.0, 95,
+                                "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&auto=format&fit=crop&q=80");
+                Product p3 = createProduct("MDZ-ORE-03", "Oreo Original Regular",
+                                "Galletitas rellenas de crema con sabor a vainilla.", "Caja x 28 paq. (118g)", 28, true,
+                                subGalletitas, 33600.0, 140,
+                                "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=400&auto=format&fit=crop&q=80");
+                Product p4 = createProduct("ARC-MOG-04", "Mogul Gomitas Frutales",
+                                "Gomitas sabor frutas surtidas libres de gluten.", "Display x 12 bolsas (150g)", 12,
+                                false, subGomitasSub, 12800.0, 210,
+                                "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&auto=format&fit=crop&q=80");
+                Product p5 = createProduct("MDZ-MIL-05", "Milka Chocolate con Leche 100g",
+                                "Auténtico chocolate suizo con leche de los Alpes.", "Display x 16 tabletas", 16, true,
+                                subTabletas, 28800.0, 65,
+                                "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&auto=format&fit=crop&q=80");
+                Product p6 = createProduct("TER-RHOD-06", "Rhodesia Oblea Bañada",
+                                "Oblea rellena con crema sabor limón bañada con chocolate con leche.",
+                                "Display x 36 u.", 36, false, subObleas, 19800.0, 120,
+                                "https://images.unsplash.com/photo-1579372786545-d24232daf58c?w=400&auto=format&fit=crop&q=80");
+                Product p7 = createProduct("ARC-TOP-07", "Topline Menta Fuerte",
+                                "Chicles sabor menta fuerte sin azúcar de máxima frescura.", "Display x 20 paq.", 20,
+                                false, subChiclesSub, 11000.0, 340,
+                                "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&auto=format&fit=crop&q=80");
+                Product p8 = createProduct("TER-TITA-08", "Tita Galletita Bañada con Limón",
+                                "Galletita crocante rellena de limón con cobertura chocolatosa.", "Display x 36 u.", 36,
+                                false, subObleas, 18000.0, 15,
+                                "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&auto=format&fit=crop&q=80"); // LOW
+                                                                                                                                 // STOCK
+                Product p9 = createProduct("BAG-CHO-09", "Chocolinas Clásicas 250g",
+                                "Galletitas dulces con sabor a chocolate ideales para chocotorta.", "Caja x 20 paq.",
+                                20, false, subGalletitas, 26000.0, 8,
+                                "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&auto=format&fit=crop&q=80"); // LOW
+                                                                                                                                 // STOCK
+                Product p10 = createProduct("ARC-COF-10", "Cofler Block Chocolate 300g",
+                                "Chocolate con leche y maní tostado seleccionado.", "Pack x 10 u.", 10, true,
+                                subTabletas, 35000.0, 55,
+                                "https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&auto=format&fit=crop&q=80");
+                Product p11 = createProduct("MDZ-BEL-11", "Beldent Infinit Menta",
+                                "Chicles sin azúcar extra duración sabor menta fresca.", "Display x 18 paq.", 18, false,
+                                subChiclesSub, 16200.0, 190,
+                                "https://images.unsplash.com/photo-1621996346565-e3d5d6281699?w=400&auto=format&fit=crop&q=80");
+                Product p12 = createProduct("ARC-ROC-12", "Rocklets Chocolate Confitado",
+                                "Pastillas confitadas con centro de rico chocolate con leche.", "Display x 24 tubos",
+                                24, true, subBombones, 21600.0, 110,
+                                "https://images.unsplash.com/photo-1575224300306-1b8da36134ec?w=400&auto=format&fit=crop&q=80");
+                Product p13 = createProduct("BAG-SON-13", "Sonrisas Frambuesa 118g",
+                                "Galletitas dulces con jalea sabor frambuesa.", "Caja x 24 paq.", 24, false,
+                                subGalletitas, 24000.0, 14,
+                                "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=400&auto=format&fit=crop&q=80"); // LOW
+                                                                                                                                 // STOCK
+                Product p14 = createProduct("BAG-CRI-14", "Criollitas Galletitas de Agua",
+                                "Galletitas crocantes de agua tradicionales.", "Caja x 30 paq.", 30, false,
+                                subGalletitas, 27000.0, 85,
+                                "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80");
+                Product p15 = createProduct("TER-VAR-15", "Variedad Terrabusi 400g",
+                                "Surtido dulce de galletitas Terrabusi.", "Caja x 14 paq.", 14, false, subGalletitas,
+                                23800.0, 70,
+                                "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&auto=format&fit=crop&q=80");
+
+                // 6. Orders
+                Order o1 = orderRepository.save(Order.builder()
+                                .orderNumber(1001L)
+                                .orderDateTime(LocalDateTime.now().minusHours(4))
+                                .subtotal(47800.0)
+                                .discount(0.0)
+                                .total(47800.0)
+                                .status(OrderStatus.DELIVERED)
+                                .pointOfSale(pos1)
+                                .salesRep(rep)
+                                .orderDetails(new ArrayList<>())
+                                .build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(14200.0).subtotal(28400.0)
+                                .product(p1).order(o1).build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(19800.0).subtotal(19800.0)
+                                .product(p6).order(o1).build());
+
+                Order o2 = orderRepository.save(Order.builder()
+                                .orderNumber(1002L)
+                                .orderDateTime(LocalDateTime.now().minusHours(2))
+                                .subtotal(33600.0)
+                                .discount(0.0)
+                                .total(33600.0)
+                                .status(OrderStatus.LOADED)
+                                .pointOfSale(pos2)
+                                .salesRep(rep)
+                                .orderDetails(new ArrayList<>())
+                                .build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(33600.0).subtotal(33600.0)
+                                .product(p3).order(o2).build());
+
+                Order o3 = orderRepository.save(Order.builder()
+                                .orderNumber(1003L)
+                                .orderDateTime(LocalDateTime.now().minusDays(1))
+                                .subtotal(30000.0)
+                                .discount(3000.0)
+                                .total(27000.0)
+                                .status(OrderStatus.INVOICED)
+                                .pointOfSale(pos3)
+                                .salesRep(rep)
+                                .couponCode("BIENVENIDA")
+                                .orderDetails(new ArrayList<>())
+                                .build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(15000.0).subtotal(30000.0)
+                                .product(p1).order(o3).build());
+
+                Order o4 = orderRepository.save(Order.builder()
+                                .orderNumber(1004L)
+                                .orderDateTime(LocalDateTime.now().minusHours(1))
+                                .subtotal(71000.0)
+                                .discount(0.0)
+                                .total(71000.0)
+                                .status(OrderStatus.LOADED)
+                                .pointOfSale(pos4)
+                                .salesRep(rep)
+                                .orderDetails(new ArrayList<>())
+                                .build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(35000.0).subtotal(70000.0)
+                                .product(p10).order(o4).build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(11000.0).subtotal(11000.0)
+                                .product(p7).order(o4).build());
+
+                // 7. Promotions
+                promotionRepository.save(Promotion.builder()
+                                .code("BIENVENIDA")
+                                .description("10% de descuento en la primera compra mayorista")
+                                .discountPercentage(10.0)
+                                .minimumQuantity(1)
+                                .startDate(LocalDate.now().minusDays(30))
+                                .endDate(LocalDate.now().plusMonths(6))
+                                .build());
+
+                promotionRepository.save(Promotion.builder()
+                                .code("ALFAJORFEST")
+                                .description("15% off especial en compras por bulto de Bon o Bon")
+                                .discountPercentage(15.0)
+                                .minimumQuantity(2)
+                                .startDate(LocalDate.now().minusDays(10))
+                                .endDate(LocalDate.now().plusMonths(2))
+                                .product(p1)
+                                .build());
+
+                promotionRepository.save(Promotion.builder()
+                                .code("MAYORISTA2026")
+                                .description("20% off en pedidos de más de 3 bultos de Chocolates")
+                                .discountPercentage(20.0)
+                                .minimumQuantity(3)
+                                .startDate(LocalDate.now().minusDays(5))
+                                .endDate(LocalDate.now().plusMonths(3))
+                                .build());
+
+                log.info("Database successfully seeded with 15 products, 5 Mendoza POS, 4 sample orders, 3 promotions, and users (admin, preventor, repartidor)!");
         }
 
-        log.info("Seeding initial database data for Dulce Mayor...");
+        private Product createProduct(String code, String name, String desc, String pack, int units, boolean onSale,
+                        SubCategory subCat, double price, int stock, String imageUrl) {
+                Product product = productRepository.save(Product.builder()
+                                .code(code)
+                                .name(name)
+                                .description(desc)
+                                .packaging(pack)
+                                .unitsPerPack(units)
+                                .isOnSale(onSale)
+                                .subCategory(subCat)
+                                .imageUrl(imageUrl)
+                                .build());
 
-        // 1. Locations (Greater Mendoza)
-        Country country = countryRepository.save(Country.builder().name("Argentina").build());
-        State state = stateRepository.save(State.builder().name("Mendoza").country(country).build());
-        Department depCapital = departmentRepository.save(Department.builder().name("Capital").state(state).build());
-        Department depGodoyCruz = departmentRepository.save(Department.builder().name("Godoy Cruz").state(state).build());
-        Department depGuaymallen = departmentRepository.save(Department.builder().name("Guaymallén").state(state).build());
-        Department depMaipu = departmentRepository.save(Department.builder().name("Maipú").state(state).build());
-        Department depLasHeras = departmentRepository.save(Department.builder().name("Las Heras").state(state).build());
+                priceValidityRepository.save(PriceValidity.builder()
+                                .startDate(LocalDate.now().minusMonths(1))
+                                .endDate(null)
+                                .price(price)
+                                .product(product)
+                                .build());
 
-        City cityCapital = cityRepository.save(City.builder().name("Mendoza Capital").postalCode("5500").department(depCapital).build());
-        City cityGodoyCruz = cityRepository.save(City.builder().name("Godoy Cruz").postalCode("5501").department(depGodoyCruz).build());
-        City cityGuaymallen = cityRepository.save(City.builder().name("Guaymallén").postalCode("5519").department(depGuaymallen).build());
-        City cityMaipu = cityRepository.save(City.builder().name("Maipú").postalCode("5515").department(depMaipu).build());
-        City cityLasHeras = cityRepository.save(City.builder().name("Las Heras").postalCode("5539").department(depLasHeras).build());
+                stockRepository.save(Stock.builder()
+                                .currentQuantity(stock)
+                                .note("Initial seed inventory")
+                                .product(product)
+                                .build());
 
-        // 2. Users & Employees
-        // Admin
-        Employee adminEmployee = employeeRepository.save(Employee.builder()
-                .firstName("Jefe")
-                .lastName("Administrativo")
-                .birthDate(LocalDate.of(1980, 1, 1))
-                .documentType(DocumentType.DNI)
-                .documentNumber("28123456")
-                .employeeIdNumber("ADM-001")
-                .build());
-
-        userRepository.save(User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("dulcemayor"))
-                .role(UserRole.MANAGER)
-                .isTemporaryPassword(false)
-                .authProvider(AuthProvider.LOCAL)
-                .person(adminEmployee)
-                .build());
-
-        // Sales Rep (Preventor)
-        SalesRepresentative rep = salesRepRepository.save(SalesRepresentative.builder()
-                .firstName("Juan Manuel")
-                .lastName("Torres")
-                .birthDate(LocalDate.of(1992, 4, 12))
-                .documentType(DocumentType.DNI)
-                .documentNumber("36789123")
-                .employeeIdNumber("PREV-010")
-                .build());
-
-        userRepository.save(User.builder()
-                .username("preventor")
-                .password(passwordEncoder.encode("dulcemayor"))
-                .role(UserRole.PRESALE_AGENT)
-                .isTemporaryPassword(false)
-                .authProvider(AuthProvider.LOCAL)
-                .person(rep)
-                .build());
-
-        // Delivery Agent (Repartidor)
-        DeliveryAgent deliveryAgent = deliveryAgentRepository.save(DeliveryAgent.builder()
-                .firstName("Carlos")
-                .lastName("Mendoza")
-                .birthDate(LocalDate.of(1989, 7, 19))
-                .documentType(DocumentType.DNI)
-                .documentNumber("34567890")
-                .employeeIdNumber("REP-005")
-                .build());
-
-        userRepository.save(User.builder()
-                .username("repartidor")
-                .password(passwordEncoder.encode("dulcemayor"))
-                .role(UserRole.DELIVERY_AGENT)
-                .isTemporaryPassword(false)
-                .authProvider(AuthProvider.LOCAL)
-                .person(deliveryAgent)
-                .build());
-
-        // 3. Retailers & Points of Sale (5 across Greater Mendoza)
-        Retailer r1 = retailerRepository.save(Retailer.builder().firstName("Roberto").lastName("Gómez").documentType(DocumentType.DNI).documentNumber("20-28491823-4").build());
-        Address a1 = addressRepository.save(Address.builder().street("Av. San Martín 1420").neighborhood("Centro").city(cityCapital).latitude(-32.8895).longitude(-68.8458).build());
-        PointOfSale pos1 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Kiosco El Trébol").retailer(r1).address(a1).salesRep(rep).build());
-
-        Retailer r2 = retailerRepository.save(Retailer.builder().firstName("Marta").lastName("Villalobos").documentType(DocumentType.DNI).documentNumber("27-31298451-2").build());
-        Address a2 = addressRepository.save(Address.builder().street("Belgrano 840").neighborhood("Bombal").city(cityGodoyCruz).latitude(-32.9052).longitude(-68.8431).build());
-        PointOfSale pos2 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Almacén Dulce Hogar").retailer(r2).address(a2).salesRep(rep).build());
-
-        Retailer r3 = retailerRepository.save(Retailer.builder().firstName("Esteban").lastName("Paz").documentType(DocumentType.DNI).documentNumber("20-33418729-1").build());
-        Address a3 = addressRepository.save(Address.builder().street("Bandera de los Andes 2150").neighborhood("San José").city(cityGuaymallen).latitude(-32.8942).longitude(-68.8189).build());
-        PointOfSale pos3 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Golosinas & Kiosco Central").retailer(r3).address(a3).salesRep(rep).build());
-
-        Retailer r4 = retailerRepository.save(Retailer.builder().firstName("Carla").lastName("Ferreyra").documentType(DocumentType.DNI).documentNumber("27-35619482-9").build());
-        Address a4 = addressRepository.save(Address.builder().street("Pescara 350").neighborhood("Centro").city(cityMaipu).latitude(-32.9814).longitude(-68.7845).build());
-        PointOfSale pos4 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Kiosco 24 Horas La Plaza").retailer(r4).address(a4).salesRep(rep).build());
-
-        Retailer r5 = retailerRepository.save(Retailer.builder().firstName("Luciano").lastName("Rossi").documentType(DocumentType.DNI).documentNumber("20-29841720-3").build());
-        Address a5 = addressRepository.save(Address.builder().street("San Miguel 1120").neighborhood("Centro").city(cityLasHeras).latitude(-32.8521).longitude(-68.8312).build());
-        PointOfSale pos5 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Kiosco El Chiche").retailer(r5).address(a5).salesRep(rep).build());
-
-        // 4. Categories & SubCategories
-        Category catChocolates = categoryRepository.save(Category.builder().name("Bombones y Chocolates").build());
-        Category catGalletitas = categoryRepository.save(Category.builder().name("Galletitas y Obleas").build());
-        Category catGomitas = categoryRepository.save(Category.builder().name("Gomitas y Caramelos").build());
-        Category catChicles = categoryRepository.save(Category.builder().name("Chicles y Pastillas").build());
-
-        SubCategory subBombones = subCategoryRepository.save(SubCategory.builder().name("Bombones").category(catChocolates).build());
-        SubCategory subTabletas = subCategoryRepository.save(SubCategory.builder().name("Tabletas").category(catChocolates).build());
-        SubCategory subGalletitas = subCategoryRepository.save(SubCategory.builder().name("Galletitas").category(catGalletitas).build());
-        SubCategory subObleas = subCategoryRepository.save(SubCategory.builder().name("Obleas").category(catGalletitas).build());
-        SubCategory subGomitasSub = subCategoryRepository.save(SubCategory.builder().name("Gomitas").category(catGomitas).build());
-        SubCategory subCaramelos = subCategoryRepository.save(SubCategory.builder().name("Caramelos").category(catGomitas).build());
-        SubCategory subChiclesSub = subCategoryRepository.save(SubCategory.builder().name("Chicles").category(catChicles).build());
-
-        // 5. Authentic FMCG Confectionery Products (Arcor, Bagley, Mondelez, Terrabusi)
-        Product p1 = createProduct("ARC-BON-01", "Bon o Bon Leche", "Bombón con relleno de pasta de maní bañado en chocolate de leche.", "Display x 24 u.", 24, true, subBombones, 14200.0, 180, "https://images.unsplash.com/photo-1548741487-18d363dc4469?w=400&auto=format&fit=crop&q=80");
-        Product p2 = createProduct("BAG-SUR-02", "Surtido Bagley Clásico", "Pack familiar surtido con las tradicionales galletitas Bagley surtidas.", "Caja x 15 paq. (390g)", 15, false, subGalletitas, 22500.0, 95, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&auto=format&fit=crop&q=80");
-        Product p3 = createProduct("MDZ-ORE-03", "Oreo Original Regular", "Galletitas rellenas de crema con sabor a vainilla.", "Caja x 28 paq. (118g)", 28, true, subGalletitas, 33600.0, 140, "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=400&auto=format&fit=crop&q=80");
-        Product p4 = createProduct("ARC-MOG-04", "Mogul Gomitas Frutales", "Gomitas sabor frutas surtidas libres de gluten.", "Display x 12 bolsas (150g)", 12, false, subGomitasSub, 12800.0, 210, "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&auto=format&fit=crop&q=80");
-        Product p5 = createProduct("MDZ-MIL-05", "Milka Chocolate con Leche 100g", "Auténtico chocolate suizo con leche de los Alpes.", "Display x 16 tabletas", 16, true, subTabletas, 28800.0, 65, "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&auto=format&fit=crop&q=80");
-        Product p6 = createProduct("TER-RHOD-06", "Rhodesia Oblea Bañada", "Oblea rellena con crema sabor limón bañada con chocolate con leche.", "Display x 36 u.", 36, false, subObleas, 19800.0, 120, "https://images.unsplash.com/photo-1579372786545-d24232daf58c?w=400&auto=format&fit=crop&q=80");
-        Product p7 = createProduct("ARC-TOP-07", "Topline Menta Fuerte", "Chicles sabor menta fuerte sin azúcar de máxima frescura.", "Display x 20 paq.", 20, false, subChiclesSub, 11000.0, 340, "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&auto=format&fit=crop&q=80");
-        Product p8 = createProduct("TER-TITA-08", "Tita Galletita Bañada con Limón", "Galletita crocante rellena de limón con cobertura chocolatosa.", "Display x 36 u.", 36, false, subObleas, 18000.0, 15, "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&auto=format&fit=crop&q=80"); // LOW STOCK
-        Product p9 = createProduct("BAG-CHO-09", "Chocolinas Clásicas 250g", "Galletitas dulces con sabor a chocolate ideales para chocotorta.", "Caja x 20 paq.", 20, false, subGalletitas, 26000.0, 8, "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&auto=format&fit=crop&q=80"); // LOW STOCK
-        Product p10 = createProduct("ARC-COF-10", "Cofler Block Chocolate 300g", "Chocolate con leche y maní tostado seleccionado.", "Pack x 10 u.", 10, true, subTabletas, 35000.0, 55, "https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&auto=format&fit=crop&q=80");
-        Product p11 = createProduct("MDZ-BEL-11", "Beldent Infinit Menta", "Chicles sin azúcar extra duración sabor menta fresca.", "Display x 18 paq.", 18, false, subChiclesSub, 16200.0, 190, "https://images.unsplash.com/photo-1621996346565-e3d5d6281699?w=400&auto=format&fit=crop&q=80");
-        Product p12 = createProduct("ARC-ROC-12", "Rocklets Chocolate Confitado", "Pastillas confitadas con centro de rico chocolate con leche.", "Display x 24 tubos", 24, true, subBombones, 21600.0, 110, "https://images.unsplash.com/photo-1575224300306-1b8da36134ec?w=400&auto=format&fit=crop&q=80");
-        Product p13 = createProduct("BAG-SON-13", "Sonrisas Frambuesa 118g", "Galletitas dulces con jalea sabor frambuesa.", "Caja x 24 paq.", 24, false, subGalletitas, 24000.0, 14, "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=400&auto=format&fit=crop&q=80"); // LOW STOCK
-        Product p14 = createProduct("BAG-CRI-14", "Criollitas Galletitas de Agua", "Galletitas crocantes de agua tradicionales.", "Caja x 30 paq.", 30, false, subGalletitas, 27000.0, 85, "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80");
-        Product p15 = createProduct("TER-VAR-15", "Variedad Terrabusi 400g", "Surtido dulce de galletitas Terrabusi.", "Caja x 14 paq.", 14, false, subGalletitas, 23800.0, 70, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&auto=format&fit=crop&q=80");
-
-        // 6. Orders
-        Order o1 = orderRepository.save(Order.builder()
-                .orderNumber(1001L)
-                .orderDateTime(LocalDateTime.now().minusHours(4))
-                .subtotal(47800.0)
-                .discount(0.0)
-                .total(47800.0)
-                .status(OrderStatus.DELIVERED)
-                .pointOfSale(pos1)
-                .salesRep(rep)
-                .orderDetails(new ArrayList<>())
-                .build());
-        orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(14200.0).subtotal(28400.0).product(p1).order(o1).build());
-        orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(19800.0).subtotal(19800.0).product(p6).order(o1).build());
-
-        Order o2 = orderRepository.save(Order.builder()
-                .orderNumber(1002L)
-                .orderDateTime(LocalDateTime.now().minusHours(2))
-                .subtotal(33600.0)
-                .discount(0.0)
-                .total(33600.0)
-                .status(OrderStatus.LOADED)
-                .pointOfSale(pos2)
-                .salesRep(rep)
-                .orderDetails(new ArrayList<>())
-                .build());
-        orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(33600.0).subtotal(33600.0).product(p3).order(o2).build());
-
-        Order o3 = orderRepository.save(Order.builder()
-                .orderNumber(1003L)
-                .orderDateTime(LocalDateTime.now().minusDays(1))
-                .subtotal(30000.0)
-                .discount(3000.0)
-                .total(27000.0)
-                .status(OrderStatus.INVOICED)
-                .pointOfSale(pos3)
-                .salesRep(rep)
-                .couponCode("BIENVENIDA")
-                .orderDetails(new ArrayList<>())
-                .build());
-        orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(15000.0).subtotal(30000.0).product(p1).order(o3).build());
-
-        Order o4 = orderRepository.save(Order.builder()
-                .orderNumber(1004L)
-                .orderDateTime(LocalDateTime.now().minusHours(1))
-                .subtotal(71000.0)
-                .discount(0.0)
-                .total(71000.0)
-                .status(OrderStatus.LOADED)
-                .pointOfSale(pos4)
-                .salesRep(rep)
-                .orderDetails(new ArrayList<>())
-                .build());
-        orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(35000.0).subtotal(70000.0).product(p10).order(o4).build());
-        orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(11000.0).subtotal(11000.0).product(p7).order(o4).build());
-
-        // 7. Promotions
-        promotionRepository.save(Promotion.builder()
-                .code("BIENVENIDA")
-                .description("10% de descuento en la primera compra mayorista")
-                .discountPercentage(10.0)
-                .minimumQuantity(1)
-                .startDate(LocalDate.now().minusDays(30))
-                .endDate(LocalDate.now().plusMonths(6))
-                .build());
-
-        promotionRepository.save(Promotion.builder()
-                .code("ALFAJORFEST")
-                .description("15% off especial en compras por bulto de Bon o Bon")
-                .discountPercentage(15.0)
-                .minimumQuantity(2)
-                .startDate(LocalDate.now().minusDays(10))
-                .endDate(LocalDate.now().plusMonths(2))
-                .product(p1)
-                .build());
-
-        promotionRepository.save(Promotion.builder()
-                .code("MAYORISTA2026")
-                .description("20% off en pedidos de más de 3 bultos de Chocolates")
-                .discountPercentage(20.0)
-                .minimumQuantity(3)
-                .startDate(LocalDate.now().minusDays(5))
-                .endDate(LocalDate.now().plusMonths(3))
-                .build());
-
-        log.info("Database successfully seeded with 15 products, 5 Mendoza POS, 4 sample orders, 3 promotions, and users (admin, preventor, repartidor)!");
-    }
-
-    private Product createProduct(String code, String name, String desc, String pack, int units, boolean onSale, SubCategory subCat, double price, int stock, String imageUrl) {
-        Product product = productRepository.save(Product.builder()
-                .code(code)
-                .name(name)
-                .description(desc)
-                .packaging(pack)
-                .unitsPerPack(units)
-                .isOnSale(onSale)
-                .subCategory(subCat)
-                .imageUrl(imageUrl)
-                .build());
-
-        priceValidityRepository.save(PriceValidity.builder()
-                .startDate(LocalDate.now().minusMonths(1))
-                .endDate(null)
-                .price(price)
-                .product(product)
-                .build());
-
-        stockRepository.save(Stock.builder()
-                .currentQuantity(stock)
-                .note("Initial seed inventory")
-                .product(product)
-                .build());
-
-        return product;
-    }
+                return product;
+        }
 }

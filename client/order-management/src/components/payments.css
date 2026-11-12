@@ -1,0 +1,158 @@
+.mp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 24, 16, 0.58);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.mp-modal-card {
+  background: #FFFFFF;
+  width: min(460px, 100%);
+  border-radius: 16px;
+  border: 1px solid #EADFCF;
+  box-shadow: 0 20px 50px rgba(43, 24, 16, 0.25);
+  overflow: hidden;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: #FAF6F0;
+  border-bottom: 1px solid #EADFCF;
+}
+
+.mp-modal-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #2B1810;
+  margin: 0;
+}
+
+.mp-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #7A6254;
+}
+
+.mp-modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.mp-qr-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.15rem;
+  background: #FFF9F2;
+  border: 1.5px dashed #F58721;
+  border-radius: 12px;
+  gap: 0.65rem;
+}
+
+.mp-amount-badge {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #F58721;
+}
+
+.mp-polling-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mp-paid-box {
+  background: #ECFDF5;
+  border: 1.5px solid #6EE7B7;
+  border-radius: 12px;
+  padding: 1.1rem;
+  color: #065F46;
+  text-align: center;
+}
+
+.bank-alias-card {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.82rem;
+  color: #1E3A8A;
+  margin-top: 0.5rem;
+}
+
+.order-error-banner {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #991B1B;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  margin-bottom: 0.75rem;
+}
+
+.stop-badges-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.4rem 0;
+}
+
+.dm-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.dm-mini-badge.web {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+.dm-mini-badge.field {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.dm-mini-badge.paid {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.dm-mini-badge.pending {
+  background: #FFFBEB;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.dm-mini-badge.cash {
+  background: #F3F4F6;
+  color: #374151;
+}
+

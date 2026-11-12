@@ -12,10 +12,14 @@
         <a th:href="@{/}" class="logo">
             <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
         </a>
-        <nav style="display: flex; align-items: center; gap: 1rem;">
+        <nav style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <a th:href="@{/}">Inicio</a>
             <a th:href="@{/catalog}">Catálogo Completo</a>
-            <a th:href="@{/contact}">Contacto & Sucursales</a>
+            <a th:href="@{/my-orders}">Mis Pedidos</a>
+            <a th:href="@{/contact}">Contacto &amp; Sucursales</a>
+            <button type="button" id="dm-open-cart-btn" class="dm-cart-btn">
+                🛒 Carrito <span id="dm-cart-count" class="dm-cart-badge">0</span>
+            </button>
             <a href="http://localhost:5174" class="btn btn-outline" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Acceso Campo</a>
             <a href="http://localhost:5173" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">Ingreso Backoffice</a>
         </nav>
@@ -43,18 +47,27 @@
                 <span class="product-code" th:text="${prod.code}">COD</span>
                 <h3 class="product-title" th:text="${prod.name}">Nombre</h3>
                 <p class="product-desc" th:text="${prod.description}">Descripción...</p>
-                <div class="product-pack" th:text="${prod.packaging} + ' (' + ${prod.unitsPerPack} + ' u/bulto)'">Pack</div>
+                <div class="product-pack" th:text="${prod.packaging} + ' (' + ${prod.unitsPerPack} + (${prod.unitsPerPack == 1} ? ' unidad/pack)' : ' unidades/pack)')">Pack</div>
                 <div class="product-price" th:text="'$' + ${#numbers.formatDecimal(prod.currentPrice, 0, 'POINT', 0, 'COMMA')}">$0</div>
                 <div style="margin-top: 0.75rem;">
-                    <span class="stock-pill" th:text="${prod.currentStock} + ' bultos disponibles'">En Stock</span>
+                    <span class="stock-pill" th:text="${prod.currentStock} + (${prod.currentStock == 1} ? ' unidad disponible' : ' unidades disponibles')">En Stock</span>
+                </div>
+                <div class="dm-card-actions">
+                    <input type="number" class="dm-card-qty-input" value="1" min="1" th:max="${prod.currentStock}" />
+                    <button type="button" class="dm-add-btn"
+                            th:attr="data-id=${prod.id},data-code=${prod.code},data-name=${prod.name},data-price=${prod.currentPrice},data-stock=${prod.currentStock},data-packaging=${prod.packaging}">
+                        + Agregar al Carrito
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Minoristas</p>
+        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
         <p>Mendoza, Argentina</p>
     </footer>
+
+    <script th:src="@{/js/cart.js}"></script>
 </body>
 </html>

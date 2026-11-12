@@ -3,3 +3,8 @@
 
 # Environment files
 .env
+
+# AI Agent Context & Ignore Files
+.antigravityignore
+.geminiignore
+GEMINI.md

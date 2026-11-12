@@ -230,7 +230,7 @@ export const PromotionsView: React.FC = () => {
                     <th>Código Cupón</th>
                     <th>Descripción Comercial</th>
                     <th>Descuento</th>
-                    <th>Mín. Bultos</th>
+                    <th>Mín. Unidades</th>
                     <th>Vigencia</th>
                     <th>Alcance</th>
                     <th>Estado</th>
@@ -252,7 +252,7 @@ export const PromotionsView: React.FC = () => {
                         <td className="font-bold text-success" style={{ fontSize: '1.05rem' }}>
                           {p.discountPercentage}% OFF
                         </td>
-                        <td>{p.minimumQuantity ? `${p.minimumQuantity} bultos` : '1'}</td>
+                        <td>{p.minimumQuantity ? `${p.minimumQuantity} ${p.minimumQuantity === 1 ? 'unidad' : 'unidades'}` : '1 unidad'}</td>
                         <td className="text-xs text-muted">
                           <div>Desde: {p.startDate}</div>
                           <div>Hasta: {p.endDate}</div>
@@ -336,7 +336,7 @@ export const PromotionsView: React.FC = () => {
             <div className="details-grid">
               <div className="detail-item">
                 <span className="detail-label">Compra Mínima</span>
-                <span className="detail-value">{viewPromo.minimumQuantity || 1} bultos</span>
+                <span className="detail-value">{viewPromo.minimumQuantity || 1} {(viewPromo.minimumQuantity || 1) === 1 ? 'unidad' : 'unidades'}</span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">Alcance de Aplicación</span>
@@ -419,7 +419,7 @@ export const PromotionsView: React.FC = () => {
                 </label>
 
                 <label>
-                  Cantidad Mínima de Bultos *
+                  Cantidad Mínima de Unidades *
                   <input
                     type="number"
                     min="1"
@@ -527,7 +527,7 @@ export const PromotionsView: React.FC = () => {
                 </label>
 
                 <label>
-                  Cantidad Mínima de Bultos *
+                  Cantidad Mínima de Unidades *
                   <input
                     type="number"
                     min="1"

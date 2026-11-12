@@ -1,4 +1,14 @@
-import type { DailyRoute, Order, PointOfSale, Product, RouteStop } from '../types/models';
+import type {
+  DailyRoute,
+  Order,
+  PointOfSale,
+  Product,
+  RouteStop,
+  PaymentConfig,
+  OrderPaymentStatus,
+  MercadoPagoQrResponse,
+  BackendOrderSummary,
+} from '../types/models';
 import { RouteStatus, UserRole, OrderStatus, PaymentType } from '../types/enums';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8080/api';
@@ -338,12 +348,20 @@ interface BackendDailyRouteDTO {
     id: string;
     orderIndex: number;
     pointOfSale: BackendPointOfSaleDTO;
-    status: 'PENDING' | 'VISITED' | 'DELIVERED' | 'SKIPPED';
+    status: 'PENDING' | 'PENDING_PAYMENT' | 'VISITED' | 'DELIVERED' | 'SKIPPED';
     orderId?: string;
+    orderNumber?: number;
     orderTotal?: number;
     estimatedArrival?: string;
     deliveredAt?: string;
     notes?: string;
+    paymentType?: string;
+    paid?: boolean;
+    readyForDispatch?: boolean;
+    invoiceNumber?: number;
+    sourceChannel?: string;
+    customerName?: string;
+    mpInitPoint?: string;
   }>;
 }
 
@@ -493,10 +511,18 @@ export async function fetchDailyRoute(role?: UserRole): Promise<DailyRoute> {
             pointOfSale: mapPointOfSaleDTO(s.pointOfSale),
             status: s.status,
             orderId: s.orderId,
+            orderNumber: s.orderNumber,
             orderTotal: s.orderTotal,
             estimatedArrival: s.estimatedArrival,
             deliveredAt: s.deliveredAt,
             notes: s.notes,
+            paymentType: s.paymentType,
+            paid: s.paid,
+            readyForDispatch: s.readyForDispatch,
+            invoiceNumber: s.invoiceNumber,
+            sourceChannel: s.sourceChannel,
+            customerName: s.customerName,
+            mpInitPoint: s.mpInitPoint,
           })),
         };
         saveStoredStops(mappedRoute.stops);
@@ -522,78 +548,150 @@ export async function submitOrderToBackend(orderData: {
   agentName: string;
   cartProducts: { [id: string]: Product };
 }): Promise<Order> {
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE_URL}/orders`, {
+    res = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         pointOfSaleId: orderData.pointOfSaleId,
         couponCode: orderData.couponCode,
         paymentType: orderData.paymentType,
+        sourceChannel: 'ORDER_MANAGEMENT',
         items: orderData.items,
       }),
     });
+  } catch (err) {
+    console.warn('Backend POST /orders unreachable, using offline fallback for non-MP:', err);
+    if (orderData.paymentType === PaymentType.MERCADO_PAGO || orderData.paymentType === PaymentType.DIGITAL_WALLET) {
+      throw new Error('No se pudo conectar con el servidor para generar el QR de Mercado Pago.');
+    }
+    let subtotal = 0;
+    const items = orderData.items.map((i) => {
+      const prod = orderData.cartProducts[i.productId];
+      const lineTotal = (prod ? prod.bulkPrice : 10000) * i.quantity;
+      subtotal += lineTotal;
+      return {
+        product: prod,
+        quantityPacks: i.quantity,
+        subtotal: lineTotal,
+      };
+    });
+    const discount = orderData.couponCode ? subtotal * 0.1 : 0;
+    const fallbackOrder: Order = {
+      id: 'ord-' + Date.now(),
+      orderNumber: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
+      date: new Date().toISOString(),
+      pointOfSale: orderData.pointOfSale,
+      items,
+      subtotal,
+      discountPercentage: discount > 0 ? 10 : 0,
+      couponCode: orderData.couponCode,
+      total: subtotal - discount,
+      status: OrderStatus.LOADED,
+      paymentType: orderData.paymentType,
+      presaleAgentName: orderData.agentName,
+    };
+    saveStoredOrder(fallbackOrder);
+    return fallbackOrder;
+  }
 
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json?.message || `No se pudo registrar el pedido (${res.status})`);
+  }
+
+  const backendOrder = json.data;
+  const localOrder: Order = {
+    id: backendOrder.id,
+    orderNumber: 'ORD-' + backendOrder.orderNumber,
+    numericOrderNumber: backendOrder.orderNumber,
+    date: backendOrder.orderDateTime || new Date().toISOString(),
+    pointOfSale: orderData.pointOfSale,
+    items: orderData.items.map((i) => ({
+      product: orderData.cartProducts[i.productId],
+      quantityPacks: i.quantity,
+      subtotal: (orderData.cartProducts[i.productId]?.bulkPrice || 0) * i.quantity,
+    })),
+    subtotal: backendOrder.subtotal,
+    discountPercentage: backendOrder.discount > 0 && backendOrder.subtotal > 0
+      ? (backendOrder.discount / backendOrder.subtotal) * 100
+      : 0,
+    couponCode: backendOrder.couponCode,
+    total: backendOrder.total,
+    status: backendOrder.status || OrderStatus.LOADED,
+    paymentType: backendOrder.paymentType || orderData.paymentType,
+    presaleAgentName: backendOrder.salesRepName || orderData.agentName,
+    mpPreferenceId: backendOrder.mpPreferenceId,
+    mpInitPoint: backendOrder.mpInitPoint,
+    mpPaymentId: backendOrder.mpPaymentId,
+    mpPaymentStatus: backendOrder.mpPaymentStatus,
+    invoiceId: backendOrder.invoiceId,
+    invoiceNumber: backendOrder.invoiceNumber,
+    qrImageBase64: backendOrder.qrImageBase64,
+    bankAlias: backendOrder.bankAlias,
+    bankCbu: backendOrder.bankCbu,
+    bankHolder: backendOrder.bankHolder,
+  };
+  saveStoredOrder(localOrder);
+  return localOrder;
+}
+
+export async function fetchPaymentConfig(): Promise<PaymentConfig> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/payments/config`);
     if (res.ok) {
       const json = await res.json();
       if (json.success && json.data) {
-        const backendOrder = json.data;
-        const localOrder: Order = {
-          id: backendOrder.id,
-          orderNumber: 'ORD-' + backendOrder.orderNumber,
-          date: backendOrder.orderDateTime || new Date().toISOString(),
-          pointOfSale: orderData.pointOfSale,
-          items: orderData.items.map((i) => ({
-            product: orderData.cartProducts[i.productId],
-            quantityPacks: i.quantity,
-            subtotal: (orderData.cartProducts[i.productId]?.bulkPrice || 0) * i.quantity,
-          })),
-          subtotal: backendOrder.subtotal,
-          discountPercentage: backendOrder.discount > 0 ? (backendOrder.discount / backendOrder.subtotal) * 100 : 0,
-          couponCode: backendOrder.couponCode,
-          total: backendOrder.total,
-          status: backendOrder.status || OrderStatus.LOADED,
-          paymentType: orderData.paymentType,
-          presaleAgentName: backendOrder.salesRepName || orderData.agentName,
-        };
-        saveStoredOrder(localOrder);
-        return localOrder;
+        return json.data as PaymentConfig;
       }
     }
   } catch (err) {
-    console.warn('Backend POST /orders failed, saving locally:', err);
+    console.warn('Could not load payment config:', err);
   }
-
-  // Fallback calculation
-  let subtotal = 0;
-  const items = orderData.items.map((i) => {
-    const prod = orderData.cartProducts[i.productId];
-    const lineTotal = (prod ? prod.bulkPrice : 10000) * i.quantity;
-    subtotal += lineTotal;
-    return {
-      product: prod,
-      quantityPacks: i.quantity,
-      subtotal: lineTotal,
-    };
-  });
-
-  const discount = orderData.couponCode ? subtotal * 0.1 : 0;
-  const fallbackOrder: Order = {
-    id: 'ord-' + Date.now(),
-    orderNumber: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
-    date: new Date().toISOString(),
-    pointOfSale: orderData.pointOfSale,
-    items,
-    subtotal,
-    discountPercentage: discount > 0 ? 10 : 0,
-    couponCode: orderData.couponCode,
-    total: subtotal - discount,
-    status: OrderStatus.LOADED,
-    paymentType: orderData.paymentType,
-    presaleAgentName: orderData.agentName,
+  return {
+    mercadoPagoEnabled: false,
+    sandboxEnabled: true,
+    bankAlias: 'DULCE.MAYOR.MZA',
+    bankCbu: '0000003100084920193842',
+    bankHolder: 'Dulce Mayor S.A.',
+    bankName: 'Banco de la Nación Argentina',
   };
-  saveStoredOrder(fallbackOrder);
-  return fallbackOrder;
+}
+
+export async function fetchOrCreateMercadoPagoQr(orderId: string): Promise<MercadoPagoQrResponse> {
+  const res = await fetch(`${API_BASE_URL}/payments/orders/${encodeURIComponent(orderId)}/mp/qr`, {
+    method: 'POST',
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json?.message || 'No se pudo generar el QR de Mercado Pago.');
+  }
+  return json.data as MercadoPagoQrResponse;
+}
+
+export async function pollOrderPaymentStatus(orderId: string): Promise<OrderPaymentStatus> {
+  const res = await fetch(`${API_BASE_URL}/payments/mp/status/${encodeURIComponent(orderId)}`);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json?.message || 'Error consultando el estado del pago.');
+  }
+  return json.data as OrderPaymentStatus;
+}
+
+export async function fetchOrdersFromBackend(): Promise<BackendOrderSummary[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/orders`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        return json.data as BackendOrderSummary[];
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load backend orders:', err);
+  }
+  return [];
 }
 
 export async function markDeliveryOnBackend(orderId: string): Promise<void> {

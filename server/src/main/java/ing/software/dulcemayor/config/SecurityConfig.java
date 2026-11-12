@@ -34,6 +34,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/payments/mp/webhook", "/api/payments/mp/verify", "/api/payments/mp/status/**", "/api/payments/config").permitAll()
+                        .requestMatchers("/api/checkout/**").permitAll()
                         .requestMatchers("/api/**").permitAll() // Open for initial dashboard integration
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()

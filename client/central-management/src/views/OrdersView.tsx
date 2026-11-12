@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '../services/api';
-import { OrderStatus } from '../types/enums';
+import { OrderStatus, PaymentType } from '../types/enums';
+import './orders-badges.css';
 import {
   RefreshCw,
   FileText,
@@ -12,6 +13,8 @@ import {
   Store,
   User,
   ShoppingBag,
+  CheckCircle2,
+  CreditCard,
 } from 'lucide-react';
 
 interface OrderDetailItem {
@@ -39,6 +42,14 @@ interface OrderItem {
   couponCode?: string;
   itemCount: number;
   items?: OrderDetailItem[];
+  paymentType?: PaymentType | string;
+  sourceChannel?: string;
+  mpPaymentId?: string;
+  mpPaymentStatus?: string;
+  invoiceNumber?: number;
+  readyForDispatch?: boolean;
+  bankAlias?: string;
+  deliveryAddress?: string;
 }
 
 export const OrdersView: React.FC = () => {
@@ -51,6 +62,9 @@ export const OrdersView: React.FC = () => {
   const [editStatusOrder, setEditStatusOrder] = useState<OrderItem | null>(null);
   const [newStatus, setNewStatus] = useState<OrderStatus>(OrderStatus.INVOICED);
   const [statusNote, setStatusNote] = useState('');
+  const [confirmPayOrder, setConfirmPayOrder] = useState<OrderItem | null>(null);
+  const [payRefInput, setPayRefInput] = useState('');
+  const [payNoteInput, setPayNoteInput] = useState('');
   const [deleteOrder, setDeleteOrder] = useState<OrderItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -105,6 +119,44 @@ export const OrdersView: React.FC = () => {
     }
   };
 
+  const handleConfirmManualPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirmPayOrder) return;
+    try {
+      setSubmitting(true);
+      await apiRequest(`/payments/orders/${confirmPayOrder.id}/confirm-manual`, {
+        method: 'POST',
+        body: JSON.stringify({
+          paymentType: confirmPayOrder.paymentType || PaymentType.BANK_TRANSFER,
+          reference: payRefInput.trim() || `TRF-${confirmPayOrder.orderNumber}`,
+          note: payNoteInput.trim() || 'Confirmación administrativa de transferencia/pago',
+        }),
+      });
+      setConfirmPayOrder(null);
+      setPayRefInput('');
+      setPayNoteInput('');
+      await fetchOrders();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al confirmar el pago');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatPaymentLabel = (type?: string) => {
+    switch (type) {
+      case PaymentType.MERCADO_PAGO:
+        return 'Mercado Pago';
+      case PaymentType.DIGITAL_WALLET:
+        return 'Billetera QR (MP)';
+      case PaymentType.BANK_TRANSFER:
+        return 'Transferencia';
+      case PaymentType.CASH:
+      default:
+        return 'Efectivo';
+    }
+  };
+
   const filteredOrders = orders.filter(
     (o) => selectedStatus === 'ALL' || o.status === selectedStatus
   );
@@ -127,6 +179,8 @@ export const OrdersView: React.FC = () => {
       <div className="filter-tabs">
         {[
           'ALL',
+          OrderStatus.PENDING_PAYMENT,
+          OrderStatus.PAID,
           OrderStatus.LOADED,
           OrderStatus.INVOICED,
           OrderStatus.IN_DELIVERY,
@@ -162,11 +216,10 @@ export const OrdersView: React.FC = () => {
                   <tr>
                     <th># Pedido</th>
                     <th>Fecha / Hora</th>
-                    <th>Comercio Minorista</th>
+                    <th>Comercio / Canal</th>
                     <th>Preventor</th>
+                    <th>Pago / Factura</th>
                     <th>Ítems</th>
-                    <th>Subtotal</th>
-                    <th>Descuento</th>
                     <th>Total</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -179,21 +232,27 @@ export const OrdersView: React.FC = () => {
                       <td>{new Date(o.orderDateTime).toLocaleString('es-AR')}</td>
                       <td>
                         <strong>{o.storeName}</strong>
-                        <div className="text-xs text-muted">Cliente: {o.retailerName}</div>
+                        <div className="text-xs text-muted">
+                          {o.retailerName} • {o.sourceChannel === 'LANDING' ? 'Tienda Web' : 'Preventa'}
+                        </div>
                       </td>
                       <td>{o.salesRepName}</td>
                       <td>
-                        <span className="badge badge-neutral">{o.itemCount} bultos</span>
+                        <div className="text-xs font-semibold">{formatPaymentLabel(o.paymentType)}</div>
+                        <div className="text-xs text-muted">
+                          {o.invoiceNumber
+                            ? `Factura #${o.invoiceNumber}`
+                            : o.paymentType === PaymentType.BANK_TRANSFER && o.bankAlias
+                            ? `Alias: ${o.bankAlias}`
+                            : o.readyForDispatch
+                            ? 'Listo despacho'
+                            : 'Sin facturar'}
+                        </div>
                       </td>
-                      <td>${o.subtotal.toLocaleString('es-AR')}</td>
                       <td>
-                        {o.discount > 0 ? (
-                          <span className="text-success font-semibold">
-                            -${o.discount.toLocaleString('es-AR')} ({o.couponCode})
-                          </span>
-                        ) : (
-                          '-'
-                        )}
+                        <span className="badge badge-neutral">
+                          {o.itemCount} {o.itemCount === 1 ? 'unidad' : 'unidades'}
+                        </span>
                       </td>
                       <td className="font-bold text-lg">${o.total.toLocaleString('es-AR')}</td>
                       <td>
@@ -211,6 +270,21 @@ export const OrdersView: React.FC = () => {
                             <Eye size={14} />
                             <span>Ver</span>
                           </button>
+
+                          {o.status === OrderStatus.PENDING_PAYMENT && (
+                            <button
+                              onClick={() => {
+                                setConfirmPayOrder(o);
+                                setPayRefInput(`TRF-${o.orderNumber}`);
+                                setPayNoteInput('');
+                              }}
+                              className="action-icon-btn edit"
+                              title="Confirmar acreditación manual (Transferencia / Pago)"
+                            >
+                              <CheckCircle2 size={14} />
+                              <span>Confirmar</span>
+                            </button>
+                          )}
 
                           <button
                             onClick={() => {
@@ -286,6 +360,19 @@ export const OrdersView: React.FC = () => {
                   </span>
                 </span>
               </div>
+              <div className="detail-item">
+                <span className="detail-label">Medio de Pago / Canal</span>
+                <span className="detail-value">
+                  {formatPaymentLabel(viewOrder.paymentType)} • {viewOrder.sourceChannel === 'LANDING' ? 'Tienda Web' : 'Preventa Campo'}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Comprobante / Ref.</span>
+                <span className="detail-value">
+                  {viewOrder.invoiceNumber ? `Factura #${viewOrder.invoiceNumber}` : 'Pendiente'}{' '}
+                  {viewOrder.mpPaymentId ? `(Ref: ${viewOrder.mpPaymentId})` : ''}
+                </span>
+              </div>
             </div>
 
             {/* Items Table */}
@@ -311,7 +398,7 @@ export const OrdersView: React.FC = () => {
                       <tr key={item.id}>
                         <td className="font-mono text-xs">{item.productCode}</td>
                         <td className="font-semibold">{item.productName}</td>
-                        <td className="text-muted">{item.packaging || 'Bulto'}</td>
+                        <td className="text-muted">{item.packaging || 'Unidad'}</td>
                         <td className="font-bold">{item.quantity} u.</td>
                         <td>${item.unitPrice.toLocaleString('es-AR')}</td>
                         <td className="font-semibold">${item.subtotal.toLocaleString('es-AR')}</td>
@@ -320,7 +407,7 @@ export const OrdersView: React.FC = () => {
                   ) : (
                     <tr>
                       <td colSpan={6} style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)' }}>
-                        Pedido mayorista global ({viewOrder.itemCount} bultos en total).
+                        Pedido mayorista global ({viewOrder.itemCount} {viewOrder.itemCount === 1 ? 'unidad' : 'unidades'} en total).
                       </td>
                     </tr>
                   )}
@@ -347,6 +434,19 @@ export const OrdersView: React.FC = () => {
             </div>
 
             <div className="modal-actions" style={{ marginTop: '1.25rem' }}>
+              {viewOrder.status === OrderStatus.PENDING_PAYMENT && (
+                <button
+                  onClick={() => {
+                    setConfirmPayOrder(viewOrder);
+                    setPayRefInput(`TRF-${viewOrder.orderNumber}`);
+                    setPayNoteInput('');
+                    setViewOrder(null);
+                  }}
+                  className="btn btn-primary"
+                >
+                  <CreditCard size={16} /> Confirmar Pago y Facturar
+                </button>
+              )}
               {viewOrder.status === OrderStatus.LOADED && (
                 <button
                   onClick={() => {
@@ -362,6 +462,55 @@ export const OrdersView: React.FC = () => {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: CONFIRMAR PAGO MANUAL (TRANSFERENCIA / ADMIN) */}
+      {confirmPayOrder && (
+        <div className="modal-backdrop" onClick={() => setConfirmPayOrder(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <h3>Confirmar Pago Pedido #{confirmPayOrder.orderNumber}</h3>
+              <button onClick={() => setConfirmPayOrder(null)} className="modal-close-btn">
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-muted" style={{ fontSize: '0.88rem', marginBottom: '0.9rem' }}>
+              Al confirmar el pago de <strong>${confirmPayOrder.total.toLocaleString('es-AR')}</strong> ({formatPaymentLabel(confirmPayOrder.paymentType)}), se descontará el stock, se emitirá la factura electrónica y el pedido pasará a <strong>Distribución</strong>.
+            </p>
+            <form onSubmit={handleConfirmManualPayment} className="modal-form">
+              <label>
+                Referencia / Comprobante Bancario:
+                <input
+                  type="text"
+                  value={payRefInput}
+                  onChange={(e) => setPayRefInput(e.target.value)}
+                  placeholder="Ej. TRF-00491823"
+                />
+              </label>
+              <label>
+                Observación Administrativa:
+                <input
+                  type="text"
+                  value={payNoteInput}
+                  onChange={(e) => setPayNoteInput(e.target.value)}
+                  placeholder="Transferencia acreditada en cuenta corriente"
+                />
+              </label>
+              <div className="modal-actions">
+                <button type="submit" disabled={submitting} className="btn btn-primary">
+                  {submitting ? 'Acreditando...' : 'Acreditar, Facturar y Despachar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmPayOrder(null)}
+                  className="btn btn-secondary"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -391,6 +540,8 @@ export const OrdersView: React.FC = () => {
                   onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
                   style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid var(--border)' }}
                 >
+                  <option value={OrderStatus.PENDING_PAYMENT}>PENDING_PAYMENT (Esperando Pago)</option>
+                  <option value={OrderStatus.PAID}>PAID (Pago Acreditado)</option>
                   <option value={OrderStatus.LOADED}>LOADED (Cargado en Preventa)</option>
                   <option value={OrderStatus.INVOICED}>INVOICED (Facturado / Deducción de Stock)</option>
                   <option value={OrderStatus.IN_DELIVERY}>IN_DELIVERY (En Camión de Reparto)</option>

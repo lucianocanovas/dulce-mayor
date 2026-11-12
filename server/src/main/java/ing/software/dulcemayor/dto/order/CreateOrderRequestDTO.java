@@ -16,5 +16,7 @@ public class CreateOrderRequestDTO {
     private String salesRepId;
     private String couponCode;
     private String paymentType;
+    private String sourceChannel;
+    private String paymentNote;
     private List<CreateOrderItemDTO> items;
 }

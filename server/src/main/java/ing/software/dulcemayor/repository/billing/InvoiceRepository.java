@@ -10,4 +10,7 @@ import java.util.Optional;
 public interface InvoiceRepository extends BaseRepository<Invoice> {
     Optional<Invoice> findByOrderIdAndIsDeletedFalse(String orderId);
     Optional<Invoice> findByInvoiceNumberAndIsDeletedFalse(Long invoiceNumber);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(MAX(i.invoiceNumber), 10000) FROM Invoice i")
+    Long findMaxInvoiceNumber();
 }
