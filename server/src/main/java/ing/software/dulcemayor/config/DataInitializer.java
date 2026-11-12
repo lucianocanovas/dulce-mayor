@@ -175,12 +175,22 @@ public class DataInitializer implements CommandLineRunner {
 
                 // 3. Retailers & Points of Sale (5 across Greater Mendoza)
                 Retailer r1 = retailerRepository.save(Retailer.builder().firstName("Roberto").lastName("Gómez")
-                                .documentType(DocumentType.DNI).documentNumber("20-28491823-4").build());
+                                .documentType(DocumentType.DNI).documentNumber("20-28491823-4")
+                                .phone("+54 9 261 420-1122").build());
                 Address a1 = addressRepository
                                 .save(Address.builder().street("Av. San Martín 1420").neighborhood("Centro")
                                                 .city(cityCapital).latitude(-32.8895).longitude(-68.8458).build());
                 PointOfSale pos1 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Kiosco El Trébol")
                                 .retailer(r1).address(a1).salesRep(rep).build());
+
+                userRepository.save(User.builder()
+                                .username("cliente@dulcemayor.com.ar")
+                                .password(passwordEncoder.encode("cliente123"))
+                                .role(UserRole.RETAILER)
+                                .isTemporaryPassword(false)
+                                .authProvider(AuthProvider.LOCAL)
+                                .person(r1)
+                                .build());
 
                 Retailer r2 = retailerRepository.save(Retailer.builder().firstName("Marta").lastName("Villalobos")
                                 .documentType(DocumentType.DNI).documentNumber("27-31298451-2").build());
@@ -308,6 +318,12 @@ public class DataInitializer implements CommandLineRunner {
                                 .discount(0.0)
                                 .total(47800.0)
                                 .status(OrderStatus.DELIVERED)
+                                .customerName("Roberto Gómez")
+                                .customerEmail("cliente@dulcemayor.com.ar")
+                                .customerPhone("+54 9 261 420-1122")
+                                .deliveryAddress("Av. San Martín 1420")
+                                .deliveryNeighborhood("Centro")
+                                .deliveryCity("Capital")
                                 .pointOfSale(pos1)
                                 .salesRep(rep)
                                 .orderDetails(new ArrayList<>())

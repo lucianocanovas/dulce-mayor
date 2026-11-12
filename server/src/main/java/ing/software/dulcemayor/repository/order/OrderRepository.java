@@ -35,5 +35,7 @@ public interface OrderRepository extends BaseRepository<Order> {
 
     List<Order> findByCustomerEmailIgnoreCaseAndIsDeletedFalseOrderByOrderDateTimeDesc(String customerEmail);
 
+    List<Order> findByPointOfSaleRetailerIdAndIsDeletedFalseOrderByOrderDateTimeDesc(String retailerId);
+
     List<Order> findByIsDeletedFalseOrderByOrderDateTimeDesc();
 }

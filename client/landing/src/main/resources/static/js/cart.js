@@ -1,6 +1,5 @@
 (function () {
     const CART_KEY = 'dulce_mayor_cart_v1';
-    const ORDERS_KEY = 'dulce_mayor_recent_orders_v1';
 
     function safeJsonParse(raw, fallback) {
         try {
@@ -98,24 +97,6 @@
     function removeItem(productId) {
         const items = getItems().filter(i => i.id !== productId);
         saveItems(items);
-    }
-
-    function addRecentOrder(orderSummary) {
-        if (!orderSummary || !orderSummary.orderId) return;
-        const list = safeJsonParse(localStorage.getItem(ORDERS_KEY), []);
-        const filtered = list.filter(o => o.orderId !== orderSummary.orderId);
-        filtered.unshift({
-            orderId: orderSummary.orderId,
-            orderNumber: orderSummary.orderNumber || null,
-            total: orderSummary.total || 0,
-            paymentType: orderSummary.paymentType || '',
-            createdAt: new Date().toISOString()
-        });
-        localStorage.setItem(ORDERS_KEY, JSON.stringify(filtered.slice(0, 12)));
-    }
-
-    function getRecentOrders() {
-        return safeJsonParse(localStorage.getItem(ORDERS_KEY), []);
     }
 
     function showToast(msg) {
@@ -278,8 +259,6 @@
         clear,
         openDrawer,
         closeDrawer,
-        addRecentOrder,
-        getRecentOrders,
         formatMoney,
         formatUnitLabel,
         escapeHtml

@@ -1,5 +1,6 @@
 package ing.software.dulcemayor.controller;
 
+import ing.software.dulcemayor.dto.actor.ClientSummaryDTO;
 import ing.software.dulcemayor.dto.actor.CreateUserRequestDTO;
 import ing.software.dulcemayor.dto.actor.UserResponseDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
@@ -21,6 +22,11 @@ public class UserController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<UserResponseDTO>>> getAll() {
         return ResponseEntity.ok(ApiResponse.ok(userService.findAll()));
+    }
+
+    @GetMapping("/clients")
+    public ResponseEntity<ApiResponse<List<ClientSummaryDTO>>> getAllClients() {
+        return ResponseEntity.ok(ApiResponse.ok(userService.findAllClients()));
     }
 
     @PostMapping

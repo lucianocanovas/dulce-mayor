@@ -47,8 +47,9 @@ public class CheckoutController {
     @GetMapping("/orders/search")
     public ResponseEntity<ApiResponse<List<OrderResponseDTO>>> searchCustomerOrders(
             @RequestParam(required = false) String email,
-            @RequestParam(required = false) Long orderNumber) {
-        List<OrderResponseDTO> orders = checkoutService.findCustomerOrders(email, orderNumber);
+            @RequestParam(required = false) Long orderNumber,
+            @RequestParam(required = false) String userId) {
+        List<OrderResponseDTO> orders = checkoutService.findCustomerOrders(email, orderNumber, userId);
         return ResponseEntity.ok(ApiResponse.ok(orders));
     }
 }

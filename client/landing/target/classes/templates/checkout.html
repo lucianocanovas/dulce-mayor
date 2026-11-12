@@ -8,20 +8,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <header>
-        <a th:href="@{/}" class="logo">
-            <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
-        </a>
-        <nav style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            <a th:href="@{/}">Inicio</a>
-            <a th:href="@{/catalog}">Catálogo Completo</a>
-            <a th:href="@{/my-orders}">Mis Pedidos</a>
-            <a th:href="@{/contact}">Contacto &amp; Sucursales</a>
-            <button type="button" id="dm-open-cart-btn" class="dm-cart-btn">
-                🛒 Carrito <span id="dm-cart-count" class="dm-cart-badge">0</span>
-            </button>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
 
     <div class="container">
         <h1 class="section-title">Finalizar Compra Mayorista</h1>
@@ -39,23 +26,28 @@
                     <div class="dm-form-grid">
                         <div class="dm-field">
                             <label for="customerName">Nombre y Apellido *</label>
-                            <input id="customerName" name="customerName" required placeholder="Ej: Lucía Fernández" />
+                            <input id="customerName" name="customerName" required placeholder="Ej: Lucía Fernández"
+                                   th:value="${currentCustomer != null ? currentCustomer.fullName : ''}" />
                         </div>
                         <div class="dm-field">
                             <label for="storeName">Nombre del Kiosco / Comercio</label>
-                            <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol" />
+                            <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol"
+                                   th:value="${currentCustomer != null ? currentCustomer.storeName : ''}" />
                         </div>
                         <div class="dm-field">
                             <label for="customerEmail">Correo Electrónico (confirmación y seguimiento)</label>
-                            <input id="customerEmail" name="customerEmail" type="email" placeholder="cliente@kiosco.com" />
+                            <input id="customerEmail" name="customerEmail" type="email" placeholder="cliente@kiosco.com"
+                                   th:value="${currentCustomer != null ? currentCustomer.email : ''}" />
                         </div>
                         <div class="dm-field">
                             <label for="customerPhone">Teléfono / WhatsApp *</label>
-                            <input id="customerPhone" name="customerPhone" required placeholder="261-555-0000" />
+                            <input id="customerPhone" name="customerPhone" required placeholder="261-555-0000"
+                                   th:value="${currentCustomer != null ? currentCustomer.phone : ''}" />
                         </div>
                         <div class="dm-field">
                             <label for="taxIdOrDni">CUIT o DNI</label>
-                            <input id="taxIdOrDni" name="taxIdOrDni" placeholder="20-34567890-1" />
+                            <input id="taxIdOrDni" name="taxIdOrDni" placeholder="20-34567890-1"
+                                   th:value="${currentCustomer != null ? currentCustomer.taxIdOrDni : ''}" />
                         </div>
                         <div class="dm-field">
                             <label for="deliveryCity">Departamento / Localidad *</label>
@@ -69,11 +61,13 @@
                         </div>
                         <div class="dm-field">
                             <label for="deliveryAddress">Dirección de Entrega *</label>
-                            <input id="deliveryAddress" name="deliveryAddress" required placeholder="Av. San Martín 1450" />
+                            <input id="deliveryAddress" name="deliveryAddress" required placeholder="Av. San Martín 1450"
+                                   th:value="${currentCustomer != null ? currentCustomer.deliveryAddress : ''}" />
                         </div>
                         <div class="dm-field">
                             <label for="deliveryNeighborhood">Barrio / Referencia de Zona</label>
-                            <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro" />
+                            <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro"
+                                   th:value="${currentCustomer != null ? currentCustomer.deliveryNeighborhood : ''}" />
                         </div>
                     </div>
                     <div class="dm-field" style="margin-top:0.85rem;">
@@ -308,12 +302,6 @@
                     }
 
                     const data = json.data;
-                    window.DulceCart.addRecentOrder({
-                        orderId: data.orderId,
-                        orderNumber: data.orderNumber,
-                        total: data.total,
-                        paymentType: data.paymentType
-                    });
                     window.DulceCart.clear();
 
                     if (paymentType === 'MERCADO_PAGO' && data.initPoint) {
@@ -340,6 +328,7 @@
             document.addEventListener('DOMContentLoaded', renderSummary);
         })();
     </script>
+    <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>
 </body>
 </html>
 

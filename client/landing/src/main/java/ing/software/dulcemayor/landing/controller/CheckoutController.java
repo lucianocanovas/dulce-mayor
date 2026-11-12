@@ -3,10 +3,12 @@ package ing.software.dulcemayor.landing.controller;
 import ing.software.dulcemayor.landing.client.BackendApiClient;
 import ing.software.dulcemayor.landing.dto.CheckoutRequestDTO;
 import ing.software.dulcemayor.landing.dto.CheckoutResponseDTO;
+import ing.software.dulcemayor.landing.dto.CustomerProfileDTO;
 import ing.software.dulcemayor.landing.dto.OrderPaymentStatusDTO;
 import ing.software.dulcemayor.landing.dto.OrderSummaryDTO;
 import ing.software.dulcemayor.landing.dto.PaymentConfigDTO;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -28,7 +30,10 @@ public class CheckoutController {
     private final BackendApiClient backendApiClient;
 
     @GetMapping("/checkout")
-    public String checkoutPage(Model model) {
+    public String checkoutPage(HttpSession session, Model model) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+            return "redirect:/login";
+        }
         PaymentConfigDTO paymentConfig = backendApiClient.getPaymentConfig();
         model.addAttribute("title", "Finalizar Compra — Dulce Mayor");
         model.addAttribute("paymentConfig", paymentConfig);
@@ -39,8 +44,18 @@ public class CheckoutController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> submitCheckout(
             @RequestBody CheckoutRequestDTO request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpSession session) {
         try {
+            Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
+            if (!(attr instanceof CustomerProfileDTO customer)) {
+                return ResponseEntity.status(401).body(Map.of(
+                        "success", false,
+                        "requiresAuth", true,
+                        "message", "Debés iniciar sesión con tu cuenta para realizar un pedido."
+                ));
+            }
+            request.setUserId(customer.getUserId());
             if (request.getReturnBaseUrl() == null || request.getReturnBaseUrl().isBlank()) {
                 String baseUrl = httpRequest.getScheme() + "://" + httpRequest.getServerName()
                         + (httpRequest.getServerPort() == 80 || httpRequest.getServerPort() == 443
@@ -121,8 +136,16 @@ public class CheckoutController {
     public String myOrders(
             @RequestParam(required = false) String email,
             @RequestParam(required = false) Long orderNumber,
+            HttpSession session,
             Model model) {
-        List<OrderSummaryDTO> orders = backendApiClient.searchOrders(email, orderNumber);
+        List<OrderSummaryDTO> orders;
+        boolean hasExplicitFilter = (email != null && !email.isBlank()) || orderNumber != null;
+        Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
+        if (!hasExplicitFilter && attr instanceof CustomerProfileDTO customer) {
+            orders = backendApiClient.searchOrdersByUserId(customer.getUserId());
+        } else {
+            orders = backendApiClient.searchOrders(email, orderNumber);
+        }
         model.addAttribute("title", "Mis Pedidos — Dulce Mayor");
         model.addAttribute("orders", orders);
         model.addAttribute("searchEmail", email != null ? email : "");

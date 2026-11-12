@@ -2,11 +2,16 @@ package ing.software.dulcemayor.controller;
 
 import ing.software.dulcemayor.dto.auth.AuthResponseDTO;
 import ing.software.dulcemayor.dto.auth.ChangePasswordRequestDTO;
+import ing.software.dulcemayor.dto.auth.CustomerProfileDTO;
+import ing.software.dulcemayor.dto.auth.CustomerRegisterRequestDTO;
 import ing.software.dulcemayor.dto.auth.LoginRequestDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
 import ing.software.dulcemayor.service.actor.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,5 +48,21 @@ public class AuthController {
             @RequestBody ChangePasswordRequestDTO request) {
         authService.changePassword(userId, request);
         return ResponseEntity.ok(ApiResponse.ok("Password changed successfully", null));
+    }
+
+    // Registro de cliente minorista para el portal web (landing)
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<AuthResponseDTO>> registerCustomer(
+            @RequestBody CustomerRegisterRequestDTO request) {
+        AuthResponseDTO response = authService.registerCustomer(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Customer registered successfully", response));
+    }
+
+    // Perfil del cliente autenticado (datos personales, comercio y dirección)
+    @GetMapping("/customer/{userId}")
+    public ResponseEntity<ApiResponse<CustomerProfileDTO>> getCustomerProfile(@PathVariable String userId) {
+        CustomerProfileDTO profile = authService.getCustomerProfile(userId);
+        return ResponseEntity.ok(ApiResponse.ok(profile));
     }
 }

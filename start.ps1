@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Iniciador del Ecosistema Dulce Mayor para Windows (PowerShell)
 .DESCRIPTION
@@ -44,19 +44,25 @@ function Stop-Ports {
     $ports = @(8080, 8081, 5173, 5174)
     foreach ($port in $ports) {
         try {
-            $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+            $connections = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
             if ($connections) {
                 $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
                 foreach ($procId in $pids) {
                     if ($procId -gt 0 -and $procId -ne $PID) {
                         try {
-                            Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+                            cmd.exe /c "taskkill /PID $procId /T /F" 2>&1 | Out-Null
                             Write-Host "[STOP] Proceso $procId liberado en puerto $port" -ForegroundColor Yellow
                         } catch { }
                     }
                 }
             }
         } catch { }
+    }
+    # Wait briefly for OS to release listening sockets
+    for ($i = 0; $i -lt 10; $i++) {
+        $stillListening = Get-NetTCPConnection -LocalPort $ports -State Listen -ErrorAction SilentlyContinue
+        if (-not $stillListening) { break }
+        Start-Sleep -Milliseconds 300
     }
 }
 
@@ -176,18 +182,25 @@ function Start-LoggedService($name, $color, $workDir, $logName, $execPath, $args
     $process.StartInfo = $psi
     $process.EnableRaisingEvents = $true
 
+    $msgData = @{
+        Name    = $name
+        Color   = $color
+        LogPath = $logPath
+    }
+
     $outAction = {
-        param($sender, $e)
-        if ($e.Data) {
+        $data = $EventArgs.Data
+        if ($data) {
+            $meta = $Event.MessageData
             $timestamp = (Get-Date).ToString("HH:mm:ss")
-            $line = "[$timestamp] $name : $($e.Data)"
-            Write-Host $line -ForegroundColor $color
-            Add-Content -Path $logPath -Value $e.Data -ErrorAction SilentlyContinue
+            $line = "[$timestamp] $($meta.Name) : $data"
+            Write-Host $line -ForegroundColor $meta.Color
+            Add-Content -Path $meta.LogPath -Value $data -ErrorAction SilentlyContinue
         }
     }
 
-    Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action $outAction | Out-Null
-    Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action $outAction | Out-Null
+    Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action $outAction -MessageData $msgData | Out-Null
+    Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action $outAction -MessageData $msgData | Out-Null
 
     [void]$process.Start()
     $process.BeginOutputReadLine()

@@ -8,23 +8,44 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <header>
-        <a th:href="@{/}" class="logo">
-            <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
-        </a>
-        <nav style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            <a th:href="@{/}">Inicio</a>
-            <a th:href="@{/catalog}">Catálogo Completo</a>
-            <a th:href="@{/my-orders}">Mis Pedidos</a>
-            <a th:href="@{/contact}">Contacto &amp; Sucursales</a>
-            <button type="button" id="dm-open-cart-btn" class="dm-cart-btn">
-                🛒 Carrito <span id="dm-cart-count" class="dm-cart-badge">0</span>
-            </button>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
 
     <div class="container" style="max-width: 900px;">
         <h1 class="section-title">Seguimiento de Mis Pedidos</h1>
+
+        <div th:if="${currentCustomer != null}" class="dm-panel" style="margin-bottom:1.5rem; background: var(--primary-light); border-color: rgba(27,68,156,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                <div>
+                    <div style="font-weight:800; color:var(--primary); font-size:1.05rem;">
+                        👤 Cuenta de <span th:text="${currentCustomer.fullName}">Cliente</span>
+                    </div>
+                    <div style="font-size:0.86rem; color:var(--muted); margin-top:0.2rem;">
+                        <span th:text="${currentCustomer.email}">email</span>
+                        <span th:if="${currentCustomer.storeName != null}"> • Comercio: <strong th:text="${currentCustomer.storeName}">Kiosco</strong></span>
+                        <span th:if="${currentCustomer.deliveryAddress != null}"> • Entrega: <span th:text="${currentCustomer.deliveryAddress}">Dir</span></span>
+                    </div>
+                </div>
+                <span class="stock-pill">Asistente IA conectado a tu cuenta</span>
+            </div>
+            <div th:if="${portalUrl != null}" style="margin-top:0.85rem; padding-top:0.85rem; border-top:1px solid rgba(27,68,156,0.18); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                <span style="font-size:0.88rem; color:var(--text);">
+                    Tenés acceso habilitado como personal (<strong th:text="${currentCustomer.role}">STAFF</strong>).
+                </span>
+                <a th:href="${portalUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:0.45rem 1rem; font-size:0.86rem;" th:text="${portalLabel}">
+                    Ir al Portal
+                </a>
+            </div>
+        </div>
+
+        <div th:if="${currentCustomer == null}" class="dm-panel" style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+            <div style="font-size:0.9rem; color:var(--muted);">
+                ¿Tenés cuenta mayorista? Ingresá para ver todos tus pedidos automáticamente y consultar con la IA.
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <a th:href="@{/login}" class="btn btn-primary" style="padding:0.42rem 0.9rem; font-size:0.84rem;">Ingresar</a>
+                <a th:href="@{/register}" class="btn btn-outline" style="padding:0.42rem 0.9rem; font-size:0.84rem;">Crear Cuenta</a>
+            </div>
+        </div>
 
         <div class="dm-panel" style="margin-bottom:1.5rem;">
             <form th:action="@{/my-orders}" method="get" class="dm-form-grid" style="align-items:end;">
@@ -42,13 +63,8 @@
             </form>
         </div>
 
-        <div id="dm-recent-browser-orders" class="dm-panel" style="margin-bottom:1.5rem; display:none;">
-            <h3 style="margin-bottom:0.65rem; font-size:1rem;">Pedidos recientes desde este navegador</h3>
-            <div id="dm-recent-links" style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
-        </div>
-
-        <div th:if="${#lists.isEmpty(orders) and (!#strings.isEmpty(searchEmail) or searchOrderNumber != null)}" class="dm-panel" style="text-align:center;">
-            No se encontraron pedidos con esos datos de búsqueda.
+        <div th:if="${#lists.isEmpty(orders) and (!#strings.isEmpty(searchEmail) or searchOrderNumber != null or currentCustomer != null)}" class="dm-panel" style="text-align:center;">
+            No se encontraron pedidos registrados todavía.
         </div>
 
         <div style="display:flex; flex-direction:column; gap:1rem;" th:unless="${#lists.isEmpty(orders)}">
@@ -85,27 +101,7 @@
     </footer>
 
     <script th:src="@{/js/cart.js}"></script>
-    <script>
-        (function () {
-            document.addEventListener('DOMContentLoaded', () => {
-                if (!window.DulceCart) return;
-                const recent = window.DulceCart.getRecentOrders();
-                const box = document.getElementById('dm-recent-browser-orders');
-                const links = document.getElementById('dm-recent-links');
-                if (!recent || recent.length === 0 || !box || !links) return;
-                box.style.display = 'block';
-                recent.forEach(o => {
-                    const a = document.createElement('a');
-                    a.href = '/checkout/pending?orderId=' + encodeURIComponent(o.orderId);
-                    a.className = 'btn btn-outline';
-                    a.style.cssText = 'padding:0.35rem 0.75rem; font-size:0.82rem;';
-                    const label = o.orderNumber ? `Pedido #${o.orderNumber}` : `Pedido ${o.orderId.slice(0, 8)}...`;
-                    a.textContent = label;
-                    links.appendChild(a);
-                });
-            });
-        })();
-    </script>
+    <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>
 </body>
 </html>
 

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Ingresar — Dulce Mayor</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
+
+    <div class="dm-auth-container">
+        <div class="dm-panel">
+            <h1 class="section-title" style="margin-bottom: 0.4rem;">Ingresar a Mi Cuenta</h1>
+            <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 1.25rem;">
+                Consultá tus pedidos mayoristas, agiliza el checkout y dejá que nuestro asistente IA acceda a tu historial.
+            </p>
+
+            <div th:if="${error}" class="dm-alert-error" th:text="${error}">Error</div>
+            <div id="dm-google-error" class="dm-alert-error" style="display:none;"></div>
+
+            <form th:action="@{/login}" method="post" style="display:flex; flex-direction:column; gap:1rem;">
+                <div class="dm-field">
+                    <label for="email">Correo Electrónico o Usuario</label>
+                    <input id="email" type="text" name="email" th:value="${email}" placeholder="cliente@kiosco.com o usuario" required />
+                </div>
+                <div class="dm-field">
+                    <label for="password">Contraseña</label>
+                    <input id="password" type="password" name="password" placeholder="••••••••" required />
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Ingresar</button>
+            </form>
+
+            <div style="display:flex; align-items:center; gap:0.75rem; margin:1.1rem 0; color:var(--muted); font-size:0.8rem;">
+                <div style="flex:1; height:1px; background:var(--border);"></div>
+                <span>o ingresá con</span>
+                <div style="flex:1; height:1px; background:var(--border);"></div>
+            </div>
+
+            <button type="button" id="dm-google-login-btn" class="btn btn-outline"
+                    th:attr="data-auth0-domain=${auth0Domain},data-auth0-client-id=${auth0ClientId}"
+                    style="width:100%; display:flex; align-items:center; justify-content:center; gap:0.6rem; font-weight:600; background:#fff;">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Continuar con Google</span>
+            </button>
+
+            <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted);">
+                <div>¿Todavía no tenés cuenta? <a th:href="@{/register}" style="color: var(--primary); font-weight: 700;">Crear cuenta mayorista</a></div>
+                <div style="margin-top: 0.6rem; background: var(--secondary-light); padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid var(--border);">
+                    <strong>Cuenta demo:</strong> <code>cliente@dulcemayor.com.ar</code> / <code>cliente123</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
+    </footer>
+
+    <script th:src="@{/js/cart.js}"></script>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.min.js"></script>
+    <script th:src="@{/js/google-auth.js}"></script>
+    <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>
+</body>
+</html>

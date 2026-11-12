@@ -24,11 +24,54 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ORDER_PORTAL_ROLES: UserRole[] = [UserRole.PRESALE_AGENT, UserRole.DELIVERY_AGENT];
+
+function readSsoOrderSession(): User | null {
+  try {
+    const hash = window.location.hash || '';
+    const match = hash.match(/sso=([^&]+)/);
+    if (!match) return null;
+    const json = decodeURIComponent(escape(atob(match[1].replace(/-/g, '+').replace(/_/g, '/'))));
+    const parsed = JSON.parse(json) as {
+      userId?: string;
+      username?: string;
+      fullName?: string;
+      role?: UserRole;
+      token?: string;
+    };
+    if (!parsed || !parsed.userId || !parsed.role || !ORDER_PORTAL_ROLES.includes(parsed.role)) {
+      return null;
+    }
+    const ssoUser: User = {
+      id: parsed.userId,
+      username: parsed.username || 'operador',
+      fullName: parsed.fullName || parsed.username || 'Operador',
+      role: parsed.role,
+      email: parsed.username && parsed.username.includes('@') ? parsed.username : `${parsed.username || 'operador'}@dulcemayor.com.ar`,
+      provider: AuthProvider.LOCAL,
+      token: parsed.token || 'jwt-sso-order-management',
+    };
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(ssoUser));
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    return ssoUser;
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
+    const sso = readSsoOrderSession();
+    if (sso) return sso;
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      const parsed = JSON.parse(stored) as User;
+      if ((parsed.role as string) === 'RETAILER') {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -73,7 +116,10 @@ export const AuthProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ c
       if (res.ok) {
         const json = await res.json();
         const data = json.data;
-        const assignedRole = payload.role || data.role || UserRole.PRESALE_AGENT;
+        if ((data.role as string) === 'RETAILER') {
+          throw new Error('Las cuentas de cliente no tienen acceso al portal de operaciones.');
+        }
+        const assignedRole = data.role || payload.role || UserRole.PRESALE_AGENT;
         const loggedUser: User = {
           id: data.userId || `usr-${Date.now()}`,
           username: data.username || payload.email.split('@')[0],

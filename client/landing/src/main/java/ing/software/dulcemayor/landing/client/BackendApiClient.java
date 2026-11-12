@@ -1,8 +1,13 @@
 package ing.software.dulcemayor.landing.client;
 
+import ing.software.dulcemayor.landing.dto.AiChatRequestDTO;
+import ing.software.dulcemayor.landing.dto.AiChatResponseDTO;
 import ing.software.dulcemayor.landing.dto.ApiResponse;
+import ing.software.dulcemayor.landing.dto.AuthResponseDTO;
 import ing.software.dulcemayor.landing.dto.CheckoutRequestDTO;
 import ing.software.dulcemayor.landing.dto.CheckoutResponseDTO;
+import ing.software.dulcemayor.landing.dto.CustomerProfileDTO;
+import ing.software.dulcemayor.landing.dto.CustomerRegisterRequestDTO;
 import ing.software.dulcemayor.landing.dto.OrderPaymentStatusDTO;
 import ing.software.dulcemayor.landing.dto.OrderSummaryDTO;
 import ing.software.dulcemayor.landing.dto.PaymentConfigDTO;
@@ -157,6 +162,101 @@ public class BackendApiClient {
             throw new IllegalArgumentException(extractErrorMessage(ex));
         }
         throw new IllegalArgumentException("Cupón inválido o vencido.");
+    }
+
+    public List<OrderSummaryDTO> searchOrdersByUserId(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            ApiResponse<List<OrderSummaryDTO>> response = restClient.get()
+                    .uri("/checkout/orders/search?userId={userId}", userId)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<List<OrderSummaryDTO>>>() {});
+            return response != null && response.getData() != null ? response.getData() : Collections.emptyList();
+        } catch (Exception ex) {
+            return Collections.emptyList();
+        }
+    }
+
+    public AuthResponseDTO loginCustomer(String email, String password) {
+        try {
+            ApiResponse<AuthResponseDTO> response = restClient.post()
+                    .uri("/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("username", email.trim().toLowerCase(), "password", password))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<AuthResponseDTO>>() {});
+            if (response == null || response.getData() == null) {
+                throw new IllegalArgumentException("Credenciales inválidas.");
+            }
+            return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
+        }
+    }
+
+    public AuthResponseDTO socialLogin(Map<String, Object> payload) {
+        try {
+            ApiResponse<AuthResponseDTO> response = restClient.post()
+                    .uri("/auth/social")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<AuthResponseDTO>>() {});
+            if (response == null || response.getData() == null) {
+                throw new IllegalArgumentException("No se pudo iniciar sesión con Google.");
+            }
+            return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
+        }
+    }
+
+    public AuthResponseDTO registerCustomer(CustomerRegisterRequestDTO request) {
+        try {
+            ApiResponse<AuthResponseDTO> response = restClient.post()
+                    .uri("/auth/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<AuthResponseDTO>>() {});
+            if (response == null || response.getData() == null) {
+                throw new IllegalArgumentException("No se pudo registrar la cuenta.");
+            }
+            return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
+        }
+    }
+
+    public CustomerProfileDTO getCustomerProfile(String userId) {
+        try {
+            ApiResponse<CustomerProfileDTO> response = restClient.get()
+                    .uri("/auth/customer/{userId}", userId)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<CustomerProfileDTO>>() {});
+            return response != null ? response.getData() : null;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    public AiChatResponseDTO sendAiChat(AiChatRequestDTO request) {
+        try {
+            ApiResponse<AiChatResponseDTO> response = restClient.post()
+                    .uri("/ai/quote")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<AiChatResponseDTO>>() {});
+            if (response == null || response.getData() == null) {
+                throw new IllegalStateException("El asistente no devolvió una respuesta.");
+            }
+            return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalStateException(extractErrorMessage(ex));
+        }
     }
 
     private String extractErrorMessage(RestClientResponseException ex) {

@@ -8,17 +8,7 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <header>
-        <a th:href="@{/}" class="logo">
-            <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
-        </a>
-        <nav style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            <a th:href="@{/}">Inicio</a>
-            <a th:href="@{/catalog}">Catálogo Completo</a>
-            <a th:href="@{/my-orders}">Mis Pedidos</a>
-            <a th:href="@{/contact}">Contacto &amp; Sucursales</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
 
     <div id="dm-result-meta" class="container" style="max-width: 820px;"
          th:attr="data-order-id=${orderId},data-paid=${orderStatus != null ? orderStatus.paid : false},data-status=${orderStatus != null ? orderStatus.orderStatus : ''},data-payment-type=${orderStatus != null ? orderStatus.paymentType : ''}">
@@ -121,10 +111,6 @@
             const status = meta.dataset.status;
             const paymentType = meta.dataset.paymentType;
 
-            if (orderId && window.DulceCart) {
-                window.DulceCart.addRecentOrder({ orderId: orderId, paymentType: paymentType });
-            }
-
             if (orderId && !paid && status === 'PENDING_PAYMENT' && (paymentType === 'MERCADO_PAGO' || paymentType === 'DIGITAL_WALLET')) {
                 const timer = setInterval(async () => {
                     try {
@@ -142,6 +128,7 @@
             }
         })();
     </script>
+    <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>
 </body>
 </html>
 

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+
+<!-- Reusable Header -->
+<header th:fragment="siteHeader">
+    <a th:href="@{/}" class="logo">
+        <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
+    </a>
+    <nav style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <a th:href="@{/}">Inicio</a>
+        <a th:href="@{/catalog}">Catálogo Completo</a>
+        <a th:href="@{/my-orders}">Mis Pedidos</a>
+        <a th:href="@{/contact}">Contacto &amp; Sucursales</a>
+        <button type="button" id="dm-open-cart-btn" class="dm-cart-btn">
+            🛒 Carrito <span id="dm-cart-count" class="dm-cart-badge">0</span>
+        </button>
+
+        <th:block th:if="${currentCustomer != null}">
+            <a th:if="${portalUrl != null}"
+               th:href="${portalUrl}"
+               target="_blank"
+               rel="noopener"
+               class="btn btn-primary"
+               style="padding: 0.38rem 0.85rem; font-size: 0.82rem; font-weight: 700;"
+               th:text="${portalLabel}">
+                Ir al Portal
+            </a>
+            <a th:href="@{/my-orders}" class="dm-account-pill" title="Mi Cuenta y Pedidos">
+                👤 <span th:text="${currentCustomer.fullName}">Cliente</span>
+            </a>
+            <a th:href="@{/logout}" class="btn btn-outline" style="padding: 0.38rem 0.75rem; font-size: 0.8rem;">
+                Salir
+            </a>
+        </th:block>
+        <th:block th:if="${currentCustomer == null}">
+            <a th:href="@{/login}" class="btn btn-outline" style="padding: 0.38rem 0.8rem; font-size: 0.82rem;">
+                Ingresar
+            </a>
+            <a th:href="@{/register}" class="btn btn-primary" style="padding: 0.38rem 0.8rem; font-size: 0.82rem;">
+                Crear Cuenta
+            </a>
+        </th:block>
+    </nav>
+</header>
+
+<!-- Reusable AI Chat Widget -->
+<div th:fragment="aiChatWidget" id="dm-ai-chat-root"
+     th:attr="data-authenticated=${currentCustomer != null},data-customer-name=${currentCustomer != null ? currentCustomer.fullName : ''}">
+    <button type="button" id="dm-chat-toggle" class="dm-chat-fab" aria-label="Abrir asistente virtual con IA">
+        <span class="dm-chat-fab-icon">✨</span>
+        <span class="dm-chat-fab-text">Asistente IA</span>
+    </button>
+
+    <section id="dm-chat-window" class="dm-chat-window" aria-hidden="true">
+        <header class="dm-chat-header">
+            <div>
+                <div class="dm-chat-title">✨ Asistente Mayorista IA</div>
+                <div class="dm-chat-subtitle" th:if="${currentCustomer != null}">
+                    Conectado como <strong th:text="${currentCustomer.firstName != null && !#strings.isEmpty(currentCustomer.firstName) ? currentCustomer.firstName : currentCustomer.fullName}">Cliente</strong> • Acceso a tus pedidos
+                </div>
+                <div class="dm-chat-subtitle" th:if="${currentCustomer == null}">
+                    Presupuestos al instante • <a th:href="@{/login}" style="color:#FDE68A; text-decoration:underline;">Iniciá sesión</a> para ver tus pedidos
+                </div>
+            </div>
+            <button type="button" id="dm-chat-close" class="dm-chat-close" aria-label="Cerrar chat">&times;</button>
+        </header>
+
+        <div id="dm-chat-messages" class="dm-chat-messages"></div>
+
+        <div id="dm-chat-suggestions" class="dm-chat-suggestions">
+            <button type="button" class="dm-chip" data-prompt="Quiero armar un surtido de alfajores y chocolates por $50.000">Surtido por $50.000</button>
+            <button type="button" class="dm-chip" data-prompt="¿Qué promociones y cupones hay vigentes hoy?">Cupones vigentes</button>
+            <button type="button" class="dm-chip" th:if="${currentCustomer != null}" data-prompt="¿Cuál es el estado de mi último pedido?">Estado de mi pedido</button>
+            <button type="button" class="dm-chip" th:if="${currentCustomer != null}" data-prompt="Armame un presupuesto similar a mi último pedido">Repetir último pedido</button>
+            <button type="button" class="dm-chip" th:if="${currentCustomer == null}" data-prompt="¿Cuál es la cotización del dólar de referencia?">Cotización USD</button>
+        </div>
+
+        <form id="dm-chat-form" class="dm-chat-form">
+            <input type="text" id="dm-chat-input" class="dm-chat-input"
+                   placeholder="Escribí tu consulta o presupuesto..." autocomplete="off" required />
+            <button type="submit" id="dm-chat-send" class="dm-chat-send">Enviar</button>
+        </form>
+    </section>
+
+    <script th:src="@{/js/ai-chat.js}"></script>
+</div>
+
+</body>
+</html>

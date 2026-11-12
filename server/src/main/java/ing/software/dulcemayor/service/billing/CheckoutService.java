@@ -4,6 +4,7 @@ import ing.software.dulcemayor.dto.billing.CheckoutRequestDTO;
 import ing.software.dulcemayor.dto.billing.CheckoutResponseDTO;
 import ing.software.dulcemayor.dto.order.OrderResponseDTO;
 import ing.software.dulcemayor.entity.actor.Retailer;
+import ing.software.dulcemayor.entity.actor.User;
 import ing.software.dulcemayor.entity.location.Address;
 import ing.software.dulcemayor.entity.location.City;
 import ing.software.dulcemayor.entity.order.Order;
@@ -11,6 +12,7 @@ import ing.software.dulcemayor.entity.order.PointOfSale;
 import ing.software.dulcemayor.enums.DocumentType;
 import ing.software.dulcemayor.enums.PaymentType;
 import ing.software.dulcemayor.repository.actor.RetailerRepository;
+import ing.software.dulcemayor.repository.actor.UserRepository;
 import ing.software.dulcemayor.repository.location.AddressRepository;
 import ing.software.dulcemayor.repository.location.CityRepository;
 import ing.software.dulcemayor.repository.order.OrderRepository;
@@ -21,7 +23,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Handles customer web checkouts originating from the Landing Storefront (:8081).
@@ -33,6 +37,7 @@ public class CheckoutService {
     private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final RetailerRepository retailerRepository;
+    private final UserRepository userRepository;
     private final AddressRepository addressRepository;
     private final CityRepository cityRepository;
     private final PointOfSaleRepository pointOfSaleRepository;
@@ -99,11 +104,34 @@ public class CheckoutService {
 
     @Transactional(readOnly = true)
     public List<OrderResponseDTO> findCustomerOrders(String email, Long orderNumber) {
+        return findCustomerOrders(email, orderNumber, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponseDTO> findCustomerOrders(String email, Long orderNumber, String userId) {
         if (orderNumber != null) {
             return orderRepository.findByOrderNumberAndIsDeletedFalse(orderNumber)
                     .map(orderService::toResponseDto)
                     .map(List::of)
                     .orElse(List.of());
+        }
+        if (userId != null && !userId.isBlank()) {
+            User user = userRepository.findByIdAndIsDeletedFalse(userId).orElse(null);
+            if (user != null) {
+                Map<String, Order> merged = new LinkedHashMap<>();
+                if (user.getPerson() instanceof Retailer retailer) {
+                    orderRepository.findByPointOfSaleRetailerIdAndIsDeletedFalseOrderByOrderDateTimeDesc(retailer.getId())
+                            .forEach(o -> merged.put(o.getId(), o));
+                }
+                if (user.getUsername() != null && !user.getUsername().isBlank()) {
+                    orderRepository.findByCustomerEmailIgnoreCaseAndIsDeletedFalseOrderByOrderDateTimeDesc(user.getUsername())
+                            .forEach(o -> merged.putIfAbsent(o.getId(), o));
+                }
+                return merged.values().stream()
+                        .sorted((a, b) -> b.getOrderDateTime().compareTo(a.getOrderDateTime()))
+                        .map(orderService::toResponseDto)
+                        .toList();
+            }
         }
         if (email != null && !email.isBlank()) {
             return orderRepository.findByCustomerEmailIgnoreCaseAndIsDeletedFalseOrderByOrderDateTimeDesc(email.trim())
@@ -115,6 +143,18 @@ public class CheckoutService {
     }
 
     private PointOfSale createOrResolveWebPointOfSale(CheckoutRequestDTO request) {
+        Retailer existingRetailer = null;
+        if (request.getUserId() != null && !request.getUserId().isBlank()) {
+            User user = userRepository.findByIdAndIsDeletedFalse(request.getUserId()).orElse(null);
+            if (user != null && user.getPerson() instanceof Retailer retailer) {
+                existingRetailer = retailer;
+                List<PointOfSale> posList = pointOfSaleRepository.findByRetailerIdAndIsDeletedFalse(retailer.getId());
+                if (!posList.isEmpty()) {
+                    return posList.get(0);
+                }
+            }
+        }
+
         String fullName = request.getCustomerName().trim();
         String[] parts = fullName.split("\\s+", 2);
         String firstName = parts[0];
@@ -123,11 +163,12 @@ public class CheckoutService {
                 ? request.getTaxIdOrDni().trim()
                 : "WEB-" + System.currentTimeMillis();
 
-        Retailer retailer = retailerRepository.save(Retailer.builder()
+        Retailer retailer = (existingRetailer != null) ? existingRetailer : retailerRepository.save(Retailer.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .documentType(DocumentType.DNI)
                 .documentNumber(doc)
+                .phone(request.getCustomerPhone() != null ? request.getCustomerPhone().trim() : null)
                 .build());
 
         List<City> cities = cityRepository.findByIsDeletedFalse();

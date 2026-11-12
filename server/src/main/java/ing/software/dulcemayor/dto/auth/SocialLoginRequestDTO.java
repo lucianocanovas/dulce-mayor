@@ -1,6 +1,7 @@
 package ing.software.dulcemayor.dto.auth;
 
 import ing.software.dulcemayor.enums.AuthProvider;
+import ing.software.dulcemayor.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,4 +17,5 @@ public class SocialLoginRequestDTO {
     private String sub;
     private AuthProvider provider;
     private String picture;
+    private UserRole defaultRole;
 }

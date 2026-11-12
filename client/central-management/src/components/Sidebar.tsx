@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, Package, ShoppingCart, Users, Tag, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Store, Tag, Settings } from 'lucide-react';
 
-export type NavTab = 'dashboard' | 'products' | 'orders' | 'promotions' | 'users' | 'settings';
+export type NavTab = 'dashboard' | 'products' | 'orders' | 'promotions' | 'clients' | 'users' | 'settings';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -14,6 +14,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
     { id: 'products' as NavTab, label: 'Catálogo & Stock', icon: Package },
     { id: 'orders' as NavTab, label: 'Pedidos Mayoristas', icon: ShoppingCart },
     { id: 'promotions' as NavTab, label: 'Promociones', icon: Tag },
+    { id: 'clients' as NavTab, label: 'Clientes', icon: Store },
     { id: 'users' as NavTab, label: 'Personal & Roles', icon: Users },
     { id: 'settings' as NavTab, label: 'Configuración', icon: Settings },
   ];

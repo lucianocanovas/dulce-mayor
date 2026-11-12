@@ -29,13 +29,46 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const STAFF_CENTRAL_ROLES: UserRole[] = ['MANAGER', 'ADMINISTRATIVE'];
+
+function readSsoSession(): UserSession | null {
+  try {
+    const hash = window.location.hash || '';
+    const match = hash.match(/sso=([^&]+)/);
+    if (!match) return null;
+    const json = decodeURIComponent(escape(atob(match[1].replace(/-/g, '+').replace(/_/g, '/'))));
+    const parsed = JSON.parse(json) as UserSession;
+    if (!parsed || !parsed.userId || !STAFF_CENTRAL_ROLES.includes(parsed.role)) {
+      return null;
+    }
+    localStorage.setItem('dulcemayor_user', JSON.stringify(parsed));
+    localStorage.setItem('dulcemayor_token', parsed.token || '');
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserSession | null>(() => {
+    const sso = readSsoSession();
+    if (sso) return sso;
     const saved = localStorage.getItem('dulcemayor_user');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    const parsed = JSON.parse(saved) as UserSession;
+    if (parsed.role === 'RETAILER') {
+      localStorage.removeItem('dulcemayor_user');
+      localStorage.removeItem('dulcemayor_token');
+      return null;
+    }
+    return parsed;
   });
 
   const login = (session: UserSession) => {
+    if (session.role === 'RETAILER') {
+      throw new Error('Las cuentas de cliente no tienen acceso al panel de administración.');
+    }
     setUser(session);
     localStorage.setItem('dulcemayor_user', JSON.stringify(session));
     localStorage.setItem('dulcemayor_token', session.token);
@@ -47,8 +80,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         body: JSON.stringify(data),
       });
+      if (session.role === 'RETAILER') {
+        throw new Error('Las cuentas de cliente no tienen acceso al panel de administración.');
+      }
       login(session);
     } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('cuentas de cliente')) {
+        throw err;
+      }
       console.warn('Backend /auth/social no disponible en puerto 8080. Usando sesión offline de Auth0.', err);
       // Fallback session so user can enter the dashboard smoothly even if backend is not yet started
       const fallbackSession: UserSession = {

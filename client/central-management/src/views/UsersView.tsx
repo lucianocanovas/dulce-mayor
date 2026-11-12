@@ -50,7 +50,8 @@ export const UsersView: React.FC = () => {
     try {
       setLoading(true);
       const data = await apiRequest<UserResponse[]>('/users');
-      setUsers(data);
+      // Separar clientes (RETAILER) del personal interno
+      setUsers(data.filter((u) => u.role !== 'RETAILER'));
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

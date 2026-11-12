@@ -7,6 +7,7 @@ import { DashboardView } from './views/DashboardView';
 import { ProductsView } from './views/ProductsView';
 import { OrdersView } from './views/OrdersView';
 import { PromotionsView } from './views/PromotionsView';
+import { ClientsView } from './views/ClientsView';
 import { UsersView } from './views/UsersView';
 import { LoginView } from './views/LoginView';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
@@ -30,6 +31,7 @@ const MainLayout: React.FC = () => {
           {activeTab === 'products' && <ProductsView />}
           {activeTab === 'orders' && <OrdersView />}
           {activeTab === 'promotions' && <PromotionsView />}
+          {activeTab === 'clients' && <ClientsView />}
           {activeTab === 'users' && <UsersView />}
           {activeTab === 'settings' && (
             <div className="panel p-8 text-center">
