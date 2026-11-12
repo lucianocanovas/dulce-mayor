@@ -3,19 +3,19 @@
     "home": {
       "body": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
-        "backgroundColor": "rgb(250, 246, 240)",
+        "color": "rgb(15, 29, 56)",
+        "backgroundColor": "rgb(250, 245, 233)",
         "borderRadius": "0px"
       },
       "primaryBtn": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
+        "color": "rgb(15, 29, 56)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "borderRadius": "10px"
       },
       "heading": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
+        "color": "rgb(15, 29, 56)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "borderRadius": "0px"
       }
@@ -23,19 +23,19 @@
     "catalog": {
       "body": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
-        "backgroundColor": "rgb(250, 246, 240)",
+        "color": "rgb(15, 29, 56)",
+        "backgroundColor": "rgb(250, 245, 233)",
         "borderRadius": "0px"
       },
       "primaryBtn": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
+        "color": "rgb(15, 29, 56)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "borderRadius": "10px"
       },
       "heading": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
+        "color": "rgb(15, 29, 56)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "borderRadius": "0px"
       }
@@ -45,19 +45,19 @@
     "dashboard": {
       "body": {
         "fontFamily": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-        "color": "rgb(43, 24, 16)",
-        "backgroundColor": "rgb(250, 246, 240)",
+        "color": "rgb(15, 29, 56)",
+        "backgroundColor": "rgb(250, 245, 233)",
         "borderRadius": "0px"
       },
       "primaryBtn": {
         "fontFamily": "Arial",
-        "color": "rgb(102, 83, 73)",
+        "color": "rgb(71, 85, 105)",
         "backgroundColor": "rgb(241, 245, 249)",
         "borderRadius": "8px"
       },
       "heading": {
         "fontFamily": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-        "color": "rgb(245, 135, 33)",
+        "color": "rgb(27, 68, 156)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "borderRadius": "0px"
       }
@@ -65,19 +65,19 @@
     "products": {
       "body": {
         "fontFamily": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-        "color": "rgb(43, 24, 16)",
-        "backgroundColor": "rgb(250, 246, 240)",
+        "color": "rgb(15, 29, 56)",
+        "backgroundColor": "rgb(250, 245, 233)",
         "borderRadius": "0px"
       },
       "primaryBtn": {
         "fontFamily": "Arial",
-        "color": "rgb(102, 83, 73)",
+        "color": "rgb(71, 85, 105)",
         "backgroundColor": "rgb(241, 245, 249)",
         "borderRadius": "8px"
       },
       "heading": {
         "fontFamily": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-        "color": "rgb(245, 135, 33)",
+        "color": "rgb(27, 68, 156)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "borderRadius": "0px"
       }
@@ -87,14 +87,14 @@
     "routes": {
       "body": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
-        "backgroundColor": "rgb(250, 246, 240)",
+        "color": "rgb(15, 29, 56)",
+        "backgroundColor": "rgb(250, 245, 233)",
         "borderRadius": "0px"
       },
       "primaryBtn": {
         "fontFamily": "Arial",
-        "color": "rgb(216, 88, 23)",
-        "backgroundColor": "rgb(254, 246, 215)",
+        "color": "rgb(181, 125, 40)",
+        "backgroundColor": "rgb(253, 246, 233)",
         "borderRadius": "9999px"
       },
       "heading": null
@@ -102,14 +102,14 @@
     "catalog": {
       "body": {
         "fontFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
-        "color": "rgb(43, 24, 16)",
-        "backgroundColor": "rgb(250, 246, 240)",
+        "color": "rgb(15, 29, 56)",
+        "backgroundColor": "rgb(250, 245, 233)",
         "borderRadius": "0px"
       },
       "primaryBtn": {
         "fontFamily": "Arial",
-        "color": "rgb(216, 88, 23)",
-        "backgroundColor": "rgb(254, 246, 215)",
+        "color": "rgb(181, 125, 40)",
+        "backgroundColor": "rgb(253, 246, 233)",
         "borderRadius": "9999px"
       },
       "heading": null

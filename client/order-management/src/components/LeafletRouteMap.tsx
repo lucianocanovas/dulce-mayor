@@ -70,8 +70,8 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
       const isDelivered = status === 'DELIVERED' || status === 'VISITED';
       const isSelected = selectedStopId === stop.id;
 
-      // Color coding per Design System
-      const bgColor = isDelivered ? '#28A745' : isSelected ? '#D85817' : '#F58721';
+      // Color coding per Design System (Azul Real & Oro Caramelo)
+      const bgColor = isDelivered ? '#16A34A' : isSelected ? '#C88D33' : '#1B449C';
 
       // Custom Clean HTML Marker Icon with stop sequence number
       const customIcon = L.divIcon({
@@ -89,7 +89,7 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
             font-weight: 700;
             font-size: 13px;
             border: 2.5px solid #FFFFFF;
-            box-shadow: 0 3px 8px rgba(43,24,16,0.3);
+            box-shadow: 0 3px 8px rgba(15, 29, 56, 0.25);
             cursor: pointer;
             transition: transform 0.15s ease;
           ">
@@ -106,26 +106,26 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
       // Popup Content
       const popupHtml = `
         <div style="font-family: system-ui, sans-serif; min-width: 180px; padding: 2px;">
-          <div style="font-size: 11px; font-weight: 700; color: #D85817; text-transform: uppercase;">
+          <div style="font-size: 11px; font-weight: 700; color: #1B449C; text-transform: uppercase;">
             Parada #${index + 1}
           </div>
-          <div style="font-size: 14px; font-weight: 700; color: #2B1810; margin: 2px 0;">
+          <div style="font-size: 14px; font-weight: 700; color: #0F1D38; margin: 2px 0;">
             ${pointOfSale.name}
           </div>
-          <div style="font-size: 12px; color: #665349; margin-bottom: 6px;">
+          <div style="font-size: 12px; color: #475569; margin-bottom: 6px;">
             ${pointOfSale.address}, ${pointOfSale.city}
           </div>
           ${
             stop.orderTotal
-              ? `<div style="font-size: 12px; font-weight: 600; color: #2B1810; margin-bottom: 6px;">
+              ? `<div style="font-size: 12px; font-weight: 600; color: #0F1D38; margin-bottom: 6px;">
                   Total: $${stop.orderTotal.toLocaleString('es-AR')}
                  </div>`
               : ''
           }
           <div style="font-size: 11px; padding: 2px 6px; border-radius: 4px; display: inline-block; font-weight: 600; ${
             isDelivered
-              ? 'background: #E8F5E9; color: #28A745;'
-              : 'background: #FFF8E1; color: #E69500;'
+              ? 'background: #F0FDF4; color: #16A34A;'
+              : 'background: #FFFBEB; color: #D97706;'
           }">
             ${isDelivered ? '● Entregado / Visitado' : '⏳ Pendiente'}
           </div>
@@ -146,7 +146,7 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
     // Draw route polyline between stops
     if (latLngs.length > 1) {
       polylineRef.current = L.polyline(latLngs, {
-        color: '#F58721',
+        color: '#1B449C',
         weight: 3.5,
         opacity: 0.85,
         dashArray: '6, 8',

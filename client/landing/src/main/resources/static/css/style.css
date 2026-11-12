@@ -1,36 +1,36 @@
 /* ==========================================================================
    Dulce Mayor — Storefront Stylesheet (Spring Boot + Thymeleaf)
-   Canonical Reference: docs/DESIGN_SYSTEM.md
+   Canonical Reference: docs/DESIGN_SYSTEM.md (Azul Real & Oro Caramelo)
    ========================================================================== */
 
 :root {
   /* Brand Tokens */
-  --primary: #F58721;
-  --primary-hover: #E07312;
-  --primary-light: #FDE8D4;
-  --secondary: #FAC933;
-  --secondary-light: #FEF6D7;
-  --rust: #D85817;
-  --gold: #C0831F;
+  --primary: #1B449C;
+  --primary-hover: #15367D;
+  --primary-light: #EBF1FB;
+  --secondary: #C88D33;
+  --secondary-light: #FDF6E9;
+  --rust: #B57D28;
+  --gold: #C88D33;
 
   /* Surfaces & Canvas */
-  --bg: #FAF6F0;
+  --bg: #FAF5E9;
   --card-bg: #FFFFFF;
-  --card-subtle: #F5EEE4;
-  --border: #EADFCF;
-  --border-strong: #D5C2AA;
+  --card-subtle: #F3EBD9;
+  --border: #E5DCC9;
+  --border-strong: #D4C6AB;
 
   /* Typography */
-  --text: #2B1810;
-  --muted: #665349;
+  --text: #0F1D38;
+  --muted: #475569;
   --text-inverse: #FFFFFF;
 
   /* Semantics */
-  --success: #28A745;
-  --success-bg: #E8F5E9;
-  --warning: #E69500;
-  --danger: #DC3545;
-  --info: #2B6CB0;
+  --success: #16A34A;
+  --success-bg: #F0FDF4;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #2563EB;
 }
 
 * {
@@ -58,7 +58,7 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 4px rgba(43, 24, 16, 0.05);
+  box-shadow: 0 1px 4px rgba(15, 29, 56, 0.05);
 }
 
 .logo {
@@ -68,7 +68,7 @@ header {
 }
 
 .logo img {
-  height: 40px;
+  height: 42px;
   width: auto;
   display: block;
 }
@@ -86,9 +86,9 @@ nav a:hover {
   color: var(--primary);
 }
 
-/* Hero Section (Warm, appetizing, punchy) */
+/* Hero Section (Elegancia Patrimonial, Confiable, Apetecible) */
 .hero {
-  background: linear-gradient(135deg, #FEF6D7 0%, #FDE8D4 100%);
+  background: linear-gradient(135deg, #FAF5E9 0%, #EBF1FB 100%);
   padding: 3.5rem 2rem;
   text-align: center;
   border-bottom: 1.5px solid var(--border);
@@ -128,8 +128,8 @@ nav a:hover {
 .btn-primary {
   background: var(--primary);
   color: #fff;
-  border: 1px solid var(--rust);
-  box-shadow: 0 2px 4px rgba(216, 88, 23, 0.2);
+  border: 1px solid var(--primary-hover);
+  box-shadow: 0 2px 4px rgba(27, 68, 156, 0.2);
 }
 
 .btn-primary:hover {
@@ -169,19 +169,19 @@ nav a:hover {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 6px rgba(43, 24, 16, 0.04);
+  box-shadow: 0 2px 6px rgba(15, 29, 56, 0.04);
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .product-card:hover {
   transform: translateY(-3px);
   border-color: var(--primary);
-  box-shadow: 0 8px 16px rgba(43, 24, 16, 0.08);
+  box-shadow: 0 8px 16px rgba(15, 29, 56, 0.08);
 }
 
 .badge-sale {
   align-self: flex-start;
-  background: var(--rust);
+  background: var(--secondary);
   color: white;
   font-size: 0.72rem;
   font-weight: 800;
@@ -217,7 +217,7 @@ nav a:hover {
 .product-pack {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--rust);
+  color: var(--primary);
   background: var(--primary-light);
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
@@ -243,14 +243,14 @@ nav a:hover {
   border: 1px solid #A3E9B8;
 }
 
-/* Footer (Warm Chocolate) */
+/* Footer (Deep Navy Patrimonial) */
 footer {
-  background: #2B1810;
-  color: #EADFCF;
+  background: #0F1D38;
+  color: #E2E8F0;
   padding: 3rem 2rem;
   text-align: center;
   margin-top: 4rem;
-  border-top: 3px solid var(--primary);
+  border-top: 3px solid var(--secondary);
 }
 
 footer p {
@@ -259,5 +259,5 @@ footer p {
 }
 
 footer strong {
-  color: var(--secondary);
+  color: #F1C27D;
 }
