@@ -34,6 +34,10 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
   const [selectedStopId, setSelectedStopId] = useState<string>('');
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
+
   // Driver GPS Location
   const [driverLocation, setDriverLocation] = useState<[number, number]>([-32.8895, -68.8458]);
   const [gpsStatus, setGpsStatus] = useState<'live' | 'fallback' | 'locating'>('locating');
@@ -241,10 +245,10 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
           marginTop: '0.75rem',
           color: '#FFFFFF',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: 700, color: '#F8C36A' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.45rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 700, color: '#F8C36A' }}>
               <Zap size={15} />
-              <span>Ruta Óptima Calculada (TSP)</span>
+              <span>Ruta Óptima (TSP)</span>
             </div>
             <button
               type="button"
@@ -254,28 +258,29 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
                 color: '#0F1D38',
                 border: 'none',
                 borderRadius: '6px',
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.74rem',
+                padding: '0.3rem 0.6rem',
+                fontSize: '0.72rem',
                 fontWeight: 800,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.3rem',
+                whiteSpace: 'nowrap',
               }}
             >
               <RefreshCw size={12} />
-              <span>Recalcular desde GPS</span>
+              <span>Recalcular GPS</span>
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.45rem', fontSize: '0.78rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem 0.9rem', marginTop: '0.5rem', fontSize: '0.76rem' }}>
             <div>
-              <span style={{ color: '#CBD5E1' }}>Distancia Total: </span>
-              <strong>{optMetrics?.totalDistanceKm || 12.4} km</strong>
+              <span style={{ color: '#CBD5E1' }}>Distancia: </span>
+              <strong>{optMetrics?.totalDistanceKm || 0} km</strong>
             </div>
             <div>
-              <span style={{ color: '#CBD5E1' }}>Tiempo Estimado: </span>
-              <strong>~{optMetrics?.estimatedDurationMin || 35} min</strong>
+              <span style={{ color: '#CBD5E1' }}>Tiempo: </span>
+              <strong>~{optMetrics?.estimatedDurationMin || 0} min</strong>
             </div>
             {optMetrics && optMetrics.savingsPercent > 0 && (
               <div>
@@ -288,15 +293,16 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
       </div>
 
       {/* Sub Tabs: Mapa GPS | Pendientes | Entregados */}
-      <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.75rem' }}>
         <button
           type="button"
           onClick={() => setActiveSubTab('map')}
           style={{
             flex: 1,
-            padding: '0.55rem',
+            minWidth: 0,
+            padding: '0.5rem 0.25rem',
             borderRadius: '8px',
-            fontSize: '0.8rem',
+            fontSize: '0.72rem',
             fontWeight: 800,
             border: activeSubTab === 'map' ? '1.5px solid #1B449C' : '1px solid #CBD5E1',
             background: activeSubTab === 'map' ? '#1B449C' : '#FFFFFF',
@@ -304,12 +310,13 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.35rem',
+            gap: '0.25rem',
+            whiteSpace: 'nowrap',
             cursor: 'pointer',
           }}
         >
-          <Navigation size={15} />
-          <span>Ruta & Mapa GPS</span>
+          <Navigation size={14} style={{ flexShrink: 0 }} />
+          <span>Mapa GPS</span>
         </button>
 
         <button
@@ -317,9 +324,10 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
           onClick={() => setActiveSubTab('pending')}
           style={{
             flex: 1,
-            padding: '0.55rem',
+            minWidth: 0,
+            padding: '0.5rem 0.25rem',
             borderRadius: '8px',
-            fontSize: '0.8rem',
+            fontSize: '0.72rem',
             fontWeight: 800,
             border: activeSubTab === 'pending' ? '1.5px solid #C88D33' : '1px solid #CBD5E1',
             background: activeSubTab === 'pending' ? '#C88D33' : '#FFFFFF',
@@ -327,11 +335,12 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.35rem',
+            gap: '0.25rem',
+            whiteSpace: 'nowrap',
             cursor: 'pointer',
           }}
         >
-          <Package size={15} />
+          <Package size={14} style={{ flexShrink: 0 }} />
           <span>Pendientes ({pendingStops.length})</span>
         </button>
 
@@ -340,9 +349,10 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
           onClick={() => setActiveSubTab('delivered')}
           style={{
             flex: 1,
-            padding: '0.55rem',
+            minWidth: 0,
+            padding: '0.5rem 0.25rem',
             borderRadius: '8px',
-            fontSize: '0.8rem',
+            fontSize: '0.72rem',
             fontWeight: 800,
             border: activeSubTab === 'delivered' ? '1.5px solid #16A34A' : '1px solid #CBD5E1',
             background: activeSubTab === 'delivered' ? '#16A34A' : '#FFFFFF',
@@ -350,11 +360,12 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.35rem',
+            gap: '0.25rem',
+            whiteSpace: 'nowrap',
             cursor: 'pointer',
           }}
         >
-          <CheckCircle2 size={15} />
+          <CheckCircle2 size={14} style={{ flexShrink: 0 }} />
           <span>Entregados ({deliveredStops.length})</span>
         </button>
       </div>
@@ -409,25 +420,27 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.5rem', marginTop: '0.75rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStop.pointOfSale.latitude},${selectedStop.pointOfSale.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-outline"
                   style={{
+                    flex: '1 1 120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.35rem',
                     padding: '0.65rem 0.5rem',
-                    fontSize: '0.8rem',
+                    fontSize: '0.78rem',
                     textDecoration: 'none',
                     fontWeight: 700,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <Navigation size={15} />
-                  <span>Navegar GPS</span>
+                  <span>Abrir GPS</span>
                 </a>
 
                 <button
@@ -436,15 +449,17 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
                   disabled={selectedStop.status === 'DELIVERED'}
                   className="btn btn-primary"
                   style={{
+                    flex: '2 1 160px',
                     backgroundColor: selectedStop.status === 'DELIVERED' ? '#94A3B8' : '#16A34A',
                     borderColor: selectedStop.status === 'DELIVERED' ? '#94A3B8' : '#16A34A',
                     color: '#FFFFFF',
                     fontWeight: 800,
-                    fontSize: '0.85rem',
+                    fontSize: '0.82rem',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.4rem',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <CheckCircle2 size={16} />

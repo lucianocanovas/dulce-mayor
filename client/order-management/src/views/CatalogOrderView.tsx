@@ -220,11 +220,11 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   return (
     <div className="view-container">
       {/* Customer Header Selector & Quick Register */}
-      <div className="order-target-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.65rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="order-target-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
           <div className="target-label">
-            <Store size={16} />
-            <span>Local / Kiosco a Visitar:</span>
+            <Store size={15} />
+            <span>Comercio:</span>
           </div>
           <button
             type="button"
@@ -234,17 +234,18 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
               border: '1.5px solid #C88D33',
               color: '#0F1D38',
               borderRadius: '6px',
-              padding: '0.3rem 0.6rem',
-              fontSize: '0.76rem',
+              padding: '0.3rem 0.55rem',
+              fontSize: '0.74rem',
               fontWeight: 800,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
+              whiteSpace: 'nowrap',
             }}
           >
             <PlusCircle size={14} style={{ color: '#C88D33' }} />
-            <span>+ Cargar Nuevo Local</span>
+            <span>+ Nuevo Local</span>
           </button>
         </div>
 

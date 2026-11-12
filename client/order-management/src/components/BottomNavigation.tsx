@@ -42,7 +42,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
           className={`nav-tab-btn ${activeTab === 'delivery-route' ? 'active' : ''}`}
         >
           <Navigation size={20} />
-          <span>Ruta & GPS</span>
+          <span>Ruta GPS</span>
         </button>
 
         <button
@@ -83,7 +83,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
           <ShoppingBag size={20} />
           {cartCount > 0 && <span className="tab-cart-badge">{cartCount}</span>}
         </div>
-        <span>Tomar Pedido</span>
+        <span>Pedido</span>
       </button>
 
       <button
