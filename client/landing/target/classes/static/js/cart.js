@@ -155,12 +155,17 @@
                 </div>
                 <div class="dm-drawer-actions">
                     <a href="/checkout" id="dm-go-checkout" class="btn btn-primary" style="width:100%; text-align:center;">Finalizar Compra →</a>
+                    <button type="button" id="dm-clear-cart-btn" style="background:none; border:none; color:var(--muted); font-size:0.78rem; text-decoration:underline; cursor:pointer; width:100%; text-align:center; padding:0.4rem 0;">Vaciar carrito</button>
                 </div>
             </div>
         `;
         document.body.appendChild(backdrop);
         document.body.appendChild(drawer);
         document.getElementById('dm-close-drawer').addEventListener('click', closeDrawer);
+        document.getElementById('dm-clear-cart-btn').addEventListener('click', () => {
+            clear();
+            showToast('Carrito vaciado.');
+        });
     }
 
     function openDrawer() {

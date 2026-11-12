@@ -32,6 +32,7 @@ public class CheckoutRequestDTO {
     @AllArgsConstructor
     public static class CartItemDTO {
         private String productId;
+        private String productCode;
         private int quantity;
     }
 }

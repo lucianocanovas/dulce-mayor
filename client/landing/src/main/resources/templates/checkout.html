@@ -280,7 +280,7 @@
                     couponCode: (document.getElementById('couponCode').value || '').trim().toUpperCase(),
                     paymentType: paymentType,
                     returnBaseUrl: window.location.origin,
-                    items: items.map(i => ({ productId: i.id, quantity: Number(i.quantity) }))
+                    items: items.map(i => ({ productId: i.id, productCode: i.code, quantity: Number(i.quantity) }))
                 };
 
                 btn.disabled = true;
@@ -293,7 +293,14 @@
                     });
                     const json = await res.json();
                     if (!res.ok || !json.success) {
-                        errBox.textContent = json.message || 'No se pudo registrar el pedido.';
+                        errBox.innerHTML = `
+                            <div>${window.DulceCart.escapeHtml(json.message || 'No se pudo registrar el pedido.')}</div>
+                            <div style="margin-top:0.75rem;">
+                                <button type="button" class="btn btn-outline" style="font-size:0.82rem; padding:0.35rem 0.85rem; background:#fff;" onclick="window.DulceCart.clear(); window.location.href='/catalog';">
+                                    🗑️ Vaciar Carrito y Recargar Catálogo
+                                </button>
+                            </div>
+                        `;
                         errBox.style.display = 'block';
                         btn.disabled = false;
                         btn.textContent = 'Confirmar Pedido';
@@ -315,7 +322,14 @@
                     }
                     window.location.href = '/checkout/pending?orderId=' + encodeURIComponent(data.orderId);
                 } catch (err) {
-                    errBox.textContent = 'Error de conexión al confirmar el pedido.';
+                    errBox.innerHTML = `
+                        <div>Error de conexión al confirmar el pedido.</div>
+                        <div style="margin-top:0.75rem;">
+                            <button type="button" class="btn btn-outline" style="font-size:0.82rem; padding:0.35rem 0.85rem; background:#fff;" onclick="window.DulceCart.clear(); window.location.href='/catalog';">
+                                🗑️ Vaciar Carrito y Recargar Catálogo
+                            </button>
+                        </div>
+                    `;
                     errBox.style.display = 'block';
                     btn.disabled = false;
                     btn.textContent = 'Confirmar Pedido';

@@ -170,8 +170,18 @@ public class OrderService {
                 continue;
             }
 
-            Product product = productRepository.findByIdAndIsDeletedFalse(itemReq.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found: " + itemReq.getProductId()));
+            Product product = null;
+            if (itemReq.getProductId() != null && !itemReq.getProductId().isBlank()) {
+                product = productRepository.findByIdAndIsDeletedFalse(itemReq.getProductId()).orElse(null);
+            }
+            if (product == null && itemReq.getProductCode() != null && !itemReq.getProductCode().isBlank()) {
+                product = productRepository.findByCodeAndIsDeletedFalse(itemReq.getProductCode().trim()).orElse(null);
+            }
+            if (product == null) {
+                String ref = itemReq.getProductCode() != null ? itemReq.getProductCode() : itemReq.getProductId();
+                throw new IllegalArgumentException("El producto solicitado ya no está disponible en el catálogo (" + ref
+                        + "). Por favor vacíe su carrito y vuelva a agregarlo.");
+            }
 
             Stock stock = stockRepository.findByProductIdAndIsDeletedFalse(product.getId()).orElse(null);
             int available = stock != null ? stock.getCurrentQuantity() : 0;

@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateOrderItemDTO {
     private String productId;
+    private String productCode;
     private int quantity;
 }
