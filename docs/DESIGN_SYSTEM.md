@@ -59,42 +59,48 @@ El estilo visual toma inspiración directa de las grandes compañías alimentici
 
 ---
 
-## 3. Identidad de Marca: Isologo Vectorial
+## 3. Identidad de Marca: Isologo Vectorial (Sello Clásico Est. 1926)
 
-El imagotipo oficial combina dos conceptos:
+El imagotipo oficial adopta la estética de un **sello o emblema circular de confitería patrimonial**, evocando las latas y envoltorios históricos de grandes fábricas argentinas (Bagley, Arcor, Terrabusi, Suchard):
 
-1. **El Caramelo Espiral (Swirl):** Pinwheel de 12 aspas curvas en espiral áurea (6 Naranja Caramelo alternadas con 6 Amarillo Miel), rematado con aro terracota. Simboliza dinamismo, sabor y alegría.
-2. **La Corona Real (Crown):** Corona heráldica de 3 puntas con orbes esféricos y pliegue facetado (luz dorada a la izquierda, sombra ámbar a la derecha). Simboliza liderazgo de volumen, calidad mayorista ("Mayor").
+1. **El Sello Circular Patrimonial:** Aro exterior en Azul Real Confitería (`#1B449C`) sobre fondo Crema Vainilla (`#FAF5E9`), con tipografía arqueada de estilo slab-serif clásico: **"DULCE"** en la parte superior y **"MAYOR"** en la inferior.
+2. **El Bombón Central (Caramelo Clásico):** Bombón esférico azul con destello curvado marfil y envoltorio festoneado en los extremos laterales.
+3. **La Corona y Cintas de Honor:** Corona heráldica y lazos en Oro Caramelo (`#C88D33`) detrás del bombón, simbolizando jerarquía mayorista y calidad de fabricación.
+4. **Legado y Trayectoria:** Leyenda lateral **"EST. 1926"** flanqueada por doble filete dorado.
 
 ### Ubicación de los Archivos en el Repositorio
 
 | Asset | Ruta de Archivo | Aplicación / Uso |
 | :--- | :--- | :--- |
-| **Logo Canónico (SVG)** | [`docs/assets/logo.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/logo.svg) | Manual de marca, referencia de diseño |
-| **Logo Horizontal (SVG)** | [`docs/assets/logo-horizontal.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/logo-horizontal.svg) | Cabeceras, navbars, pantallas de login |
+| **Logo Canónico (SVG)** | [`docs/assets/logo.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/logo.svg) | Manual de marca, referencia oficial |
+| **Logo Transparente (SVG)** | [`docs/assets/logo-transparent.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/logo-transparent.svg) | Para montajes sobre fondos de color |
+| **Logo Horizontal (SVG)** | [`docs/assets/logo-horizontal.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/logo-horizontal.svg) | Cabeceras, navbars, login |
+| **Logo Horizontal Blanco (SVG)** | [`docs/assets/logo-horizontal-white.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/logo-horizontal-white.svg) | Footers oscuros y cabeceras contrastadas |
+| **Logo Alta Resolución (PNG)** | [`docs/assets/logo.png`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/logo.png) | Export 512x512 transparente |
+| **Favicon (PNG)** | [`docs/assets/favicon.png`](file:///c:/Users/Lucho/Desktop/dulce-mayor/docs/assets/favicon.png) | PWA icon y pestaña de navegador (64x64) |
 | **Landing Storefront** | [`client/landing/src/main/resources/static/images/logo.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/client/landing/src/main/resources/static/images/logo.svg) | Header de Thymeleaf y favicon |
 | **Order Management (Móvil)** | [`client/order-management/public/logo.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/client/order-management/public/logo.svg) | App PWA, Navbar móvil, splash |
 | **Central Management** | [`client/central-management/public/logo.svg`](file:///c:/Users/Lucho/Desktop/dulce-mayor/client/central-management/public/logo.svg) | Sidebar de backoffice y login |
 
 ```xml
 <!-- Inclusión directa en HTML/Thymeleaf -->
-<img src="/images/logo-horizontal.svg" alt="Dulce Mayor" height="42" />
+<img src="/images/logo-horizontal.svg" alt="Dulce Mayor - Desde 1926" height="46" />
 
 <!-- Inclusión en React (Vite) -->
-<img src="/logo-horizontal.svg" alt="Dulce Mayor" className="h-10 w-auto" />
+<img src="/logo-horizontal.svg" alt="Dulce Mayor" className="h-11 w-auto" />
 ```
 
 ---
 
-## 4. Paleta de Colores Oficial
+## 4. Paleta de Colores Oficial (Azul Real & Oro Caramelo)
 
-La paleta se aleja intencionalmente de la frialdad corporativa estándar (grises metálicos o azules bancarios) para abrazar la calidez del rubro golosinero y la confitería tradicional.
+La nueva paleta se basa en la elegancia y tradición de la confitería clásica mayorista, combinando la sobriedad del **Azul Real** con la calidez del **Oro Caramelo** y el reposo visual del **Fondo Vainilla**.
 
 ```text
-       #F58721            #FAC933            #2B1810            #FAF6F0
+       #1B449C            #C88D33            #0F1D38            #FAF5E9
  ┌─────────────────┬─────────────────┬─────────────────┬─────────────────┐
  │                 │                 │                 │                 │
- │ Caramel Orange  │   Golden Honey  │  Dark Chocolate │  Vanilla Cream  │
+ │   Royal Blue    │  Golden Caramel │    Deep Navy    │  Vanilla Cream  │
  │  (Brand Accent) │  (Brand Gold)   │   (Body Text)   │    (Canvas)     │
  │                 │                 │                 │                 │
  └─────────────────┴─────────────────┴─────────────────┴─────────────────┘
@@ -104,39 +110,69 @@ La paleta se aleja intencionalmente de la frialdad corporativa estándar (grises
 
 | Rol de Diseño | Nombre | Hex | RGB | Uso Recomendado |
 | :--- | :--- | :--- | :--- | :--- |
-| **Brand Primary** | **Caramel Orange** | `#F58721` | `rgb(245, 135, 33)` | Botones principales (CTA), links activos, isotipo |
-| **Brand Secondary** | **Golden Honey** | `#FAC933` | `rgb(250, 201, 51)` | Badges de promociones, estrellas, detalles de corona |
-| **Brand Dark Rust** | **Terracotta / Rust** | `#D85817` | `rgb(216, 88, 23)` | Bordes activos, hover de botones, textos sobre fondos claros |
-| **Brand Gold Ochre** | **Amber Ochre** | `#C0831F` | `rgb(192, 131, 31)` | Delineados de coronas, detalles VIP, acentos menores |
-| **Canvas Background** | **Vanilla Cream** | `#FAF6F0` | `rgb(250, 246, 240)` | Fondo general de páginas (`<body>`), descansa la vista |
-| **Surface Card** | **Warm White** | `#FFFFFF` | `rgb(255, 255, 255)` | Tarjetas de producto, modales, paneles de formulario |
-| **Text Primary** | **Dark Chocolate** | `#2B1810` | `rgb(43, 24, 16)` | Encabezados, títulos, precios destacados (legibilidad alta) |
-| **Text Secondary** | **Cocoa Muted** | `#665349` | `rgb(102, 83, 73)` | Subtítulos, labels de formulario, descripción de packs |
-| **Borders & Dividers** | **Toffee Border** | `#EADFCF` | `rgb(234, 223, 207)` | Líneas divisorias de tablas, bordes de inputs y cards |
-| **Success** | **Mint Green** | `#28A745` | `rgb(40, 167, 69)` | Pedido "Entregado", Stock disponible, Pago exitoso |
-| **Warning** | **Caramel Amber** | `#E69500` | `rgb(230, 149, 0)` | Pedido "Pendiente", Stock bajo, Oferta temporal |
-| **Danger** | **Cherry Berry** | `#DC3545` | `rgb(220, 53, 69)` | Pedido "Cancelado", Sin stock, Eliminar usuario |
-| **Info / Logistic** | **Marine Sugar** | `#2B6CB0` | `rgb(43, 108, 176)` | Pedido "En Ruta", Distribución, Información de ruta |
+| **Brand Primary** | **Royal Blue** | `#1B449C` | `rgb(27, 68, 156)` | Botones principales (CTA), links activos, isotipo |
+| **Brand Primary Hover** | **Deep Royal** | `#15367D` | `rgb(21, 54, 125)` | Estado hover de botones primarios |
+| **Brand Primary Light** | **Soft Ice Blue** | `#EBF1FB` | `rgb(235, 241, 251)` | Fondos de selección, active tabs, highlights |
+| **Brand Secondary** | **Golden Caramel** | `#C88D33` | `rgb(200, 141, 51)` | Badges de promociones, estrellas, acentos de corona |
+| **Brand Gold Light** | **Honey Glow** | `#FDF6E9` | `rgb(253, 246, 233)` | Fondo de cupones y ofertas especiales |
+| **Canvas Background** | **Vanilla Cream** | `#FAF5E9` | `rgb(250, 245, 233)` | Fondo general de páginas (`<body>`), descansa la vista |
+| **Surface Card** | **Warm White** | `#FFFFFF` | `rgb(255, 255, 255)` | Tarjetas de producto, modales, paneles |
+| **Text Primary** | **Deep Navy** | `#0F1D38` | `rgb(15, 29, 56)` | Encabezados, títulos, precios destacados |
+| **Text Secondary** | **Slate Navy** | `#475569` | `rgb(71, 85, 105)` | Subtítulos, labels de formulario, descripción de packs |
+| **Borders & Dividers** | **Sand Border** | `#E5DCC9` | `rgb(229, 220, 201)` | Líneas divisorias de tablas, bordes de inputs y cards |
+| **Success** | **Emerald Mint** | `#16A34A` | `rgb(22, 163, 74)` | Pedido "Entregado", Stock disponible, Pago exitoso |
+| **Warning** | **Caramel Amber** | `#D97706` | `rgb(217, 119, 6)` | Pedido "Pendiente", Stock bajo |
+| **Danger** | **Crimson Berry** | `#DC2626` | `rgb(220, 38, 38)` | Pedido "Cancelado", Sin stock, Acción de eliminar |
+| **Info / Logistic** | **Cobalt Route** | `#2563EB` | `rgb(37, 99, 235)` | Pedido "En Ruta", Distribución |
 
 ### Variables CSS Oficiales (`design-tokens.css`)
 
 ```css
 :root {
-  /* Brand */
-  --dm-primary: #F58721;
-  --dm-primary-hover: #E07312;
-  --dm-primary-light: #FDE8D4;
-  --dm-secondary: #FAC933;
-  --dm-secondary-light: #FEF6D7;
-  --dm-rust: #D85817;
-  --dm-gold: #C0831F;
+  /* Brand Tokens - Azul Real & Oro Caramelo */
+  --dm-primary: #1B449C;
+  --dm-primary-hover: #15367D;
+  --dm-primary-light: #EBF1FB;
+  --dm-secondary: #C88D33;
+  --dm-secondary-light: #FDF6E9;
+  --dm-secondary-hover: #B57D28;
+  --dm-dark-navy: #0F1D38;
 
   /* Neutrals */
-  --dm-bg-canvas: #FAF6F0;
+  --dm-bg-canvas: #FAF5E9;
   --dm-bg-surface: #FFFFFF;
-  --dm-bg-subtle: #F5EEE4;
-  --dm-border: #EADFCF;
-  --dm-border-strong: #D5C2AA;
+  --dm-bg-subtle: #F3EBD9;
+  --dm-border: #E5DCC9;
+  --dm-border-strong: #D4C6AB;
+
+  /* Typography */
+  --dm-text-primary: #0F1D38;
+  --dm-text-secondary: #475569;
+  --dm-text-muted: #64748B;
+  --dm-text-inverse: #FFFFFF;
+
+  /* Semantic */
+  --dm-success: #16A34A;
+  --dm-success-bg: #F0FDF4;
+  --dm-warning: #D97706;
+  --dm-warning-bg: #FFFBEB;
+  --dm-danger: #DC2626;
+  --dm-danger-bg: #FEF2F2;
+  --dm-info: #2563EB;
+  --dm-info-bg: #EFF6FF;
+
+  /* Shadows Cálidas */
+  --dm-shadow-sm: 0 1px 3px rgba(15, 29, 56, 0.05);
+  --dm-shadow-md: 0 4px 12px rgba(15, 29, 56, 0.07);
+  --dm-shadow-lg: 0 10px 24px rgba(15, 29, 56, 0.10);
+
+  /* Radius */
+  --dm-radius-sm: 6px;
+  --dm-radius-md: 10px;
+  --dm-radius-lg: 16px;
+  --dm-radius-full: 9999px;
+}
+```
 
   /* Typography */
   --dm-text-primary: #2B1810;
@@ -211,8 +247,8 @@ Utilizamos fuentes sans-serif modernas, legibles a cualquier resolución y con t
   font-size: 14px;
   padding: 10px 18px;
   border-radius: var(--dm-radius-md);
-  border: 1px solid var(--dm-rust);
-  box-shadow: 0 2px 4px rgba(216, 88, 23, 0.2);
+  border: 1px solid var(--dm-primary-hover);
+  box-shadow: 0 2px 4px rgba(27, 68, 156, 0.2);
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.05s ease;
 }
@@ -227,7 +263,7 @@ Utilizamos fuentes sans-serif modernas, legibles a cualquier resolución y con t
 
 .btn-secondary {
   background-color: var(--dm-secondary-light);
-  color: var(--dm-rust);
+  color: var(--dm-secondary-hover);
   font-weight: 600;
   font-size: 14px;
   padding: 10px 18px;
@@ -237,7 +273,7 @@ Utilizamos fuentes sans-serif modernas, legibles a cualquier resolución y con t
 }
 
 .btn-secondary:hover {
-  background-color: #FDEDB8;
+  background-color: #F8EAD0;
 }
 
 .btn-outline {
