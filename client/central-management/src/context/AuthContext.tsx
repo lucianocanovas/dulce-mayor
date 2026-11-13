@@ -15,7 +15,7 @@ interface SocialLoginData {
   email: string;
   name?: string;
   sub: string;
-  provider: 'GOOGLE' | 'FACEBOOK' | 'GITHUB';
+  provider: 'GOOGLE';
   picture?: string;
 }
 
@@ -85,11 +85,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       login(session);
     } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes('cuentas de cliente')) {
+      const isNetworkErr =
+        err instanceof Error &&
+        (err.message.includes('No se pudo conectar') || err.message.includes('fetch') || err.message.includes('Failed'));
+      if (!isNetworkErr) {
         throw err;
       }
       console.warn('Backend /auth/social no disponible en puerto 8080. Usando sesión offline de Auth0.', err);
-      // Fallback session so user can enter the dashboard smoothly even if backend is not yet started
       const fallbackSession: UserSession = {
         userId: 'usr-' + (data.sub ? data.sub.replace(/[^a-zA-Z0-9]/g, '_') : 'auth0'),
         username: data.email.split('@')[0],
@@ -114,6 +116,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }),
       });
     } catch (err: unknown) {
+      const isNetworkErr =
+        err instanceof Error &&
+        (err.message.includes('No se pudo conectar') || err.message.includes('fetch') || err.message.includes('Failed'));
+      if (!isNetworkErr) {
+        throw err;
+      }
       console.warn('Backend no disponible para cambiar contraseña, aplicando localmente.', err);
     }
 

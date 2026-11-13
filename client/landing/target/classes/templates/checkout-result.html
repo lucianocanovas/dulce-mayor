@@ -108,7 +108,12 @@
                 </div>
 
                 <div style="margin-top:1.25rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
-                    <a th:href="@{/catalog}" class="btn btn-primary">Seguir Comprando</a>
+                    <a th:if="${orderId != null and (orderStatus.paid or orderStatus.invoiceNumber != null or orderStatus.orderStatus == 'INVOICED' or orderStatus.orderStatus == 'IN_DELIVERY' or orderStatus.orderStatus == 'DELIVERED')}"
+                       th:href="@{'/orders/' + ${orderId} + '/invoice.pdf'}"
+                       class="btn btn-primary">
+                        📄 Descargar Factura Electrónica (PDF)
+                    </a>
+                    <a th:href="@{/catalog}" class="btn btn-outline">Seguir Comprando</a>
                     <a th:href="@{/my-orders}" class="btn btn-outline">Ver Mis Pedidos</a>
                     <a th:if="${portalUrl != null}" th:href="${portalUrl}" target="_blank" rel="noopener" class="btn btn-outline" th:text="${portalLabel}">Ir al Portal</a>
                 </div>

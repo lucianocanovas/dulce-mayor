@@ -18,7 +18,11 @@ import {
 interface UserResponse {
   id: string;
   username: string;
+  firstName?: string;
+  lastName?: string;
   fullName: string;
+  documentNumber?: string;
+  employeeIdNumber?: string;
   role: UserRole;
   authProvider: AuthProvider;
   temporaryPassword: boolean;
@@ -29,6 +33,7 @@ export const UsersView: React.FC = () => {
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +54,7 @@ export const UsersView: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await apiRequest<UserResponse[]>('/users');
       // Separar clientes (RETAILER) del personal interno
       setUsers(data.filter((u) => u.role !== 'RETAILER'));
@@ -69,25 +75,27 @@ export const UsersView: React.FC = () => {
 
   const openCreateModal = () => {
     resetForm();
+    setModalError(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (u: UserResponse) => {
+    setModalError(null);
     setEditUser(u);
     const parts = (u.fullName || '').split(' ');
     setUsername(u.username);
-    setFirstName(parts[0] || '');
-    setLastName(parts.slice(1).join(' ') || '');
-    setDocumentNumber('');
+    setFirstName(u.firstName || parts[0] || '');
+    setLastName(u.lastName || parts.slice(1).join(' ') || '');
+    setDocumentNumber(u.documentNumber || '');
     setRole(u.role);
-    setEmployeeIdNumber('');
+    setEmployeeIdNumber(u.employeeIdNumber || '');
     setPassword('');
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
+    setModalError(null);
 
     try {
       await apiRequest<UserResponse>('/users', {
@@ -107,9 +115,9 @@ export const UsersView: React.FC = () => {
       fetchUsers();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setModalError(err.message);
       } else {
-        setError('Error al registrar nuevo empleado');
+        setModalError('Error al registrar nuevo empleado');
       }
     } finally {
       setSubmitting(false);
@@ -120,7 +128,7 @@ export const UsersView: React.FC = () => {
     e.preventDefault();
     if (!editUser) return;
     setSubmitting(true);
-    setError(null);
+    setModalError(null);
 
     try {
       await apiRequest<UserResponse>(`/users/${editUser.id}`, {
@@ -130,6 +138,7 @@ export const UsersView: React.FC = () => {
           firstName,
           lastName,
           documentNumber: documentNumber || undefined,
+          employeeIdNumber: employeeIdNumber || undefined,
           role,
           password: password.trim() ? password.trim() : undefined,
         }),
@@ -140,9 +149,9 @@ export const UsersView: React.FC = () => {
       fetchUsers();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setModalError(err.message);
       } else {
-        setError('Error al actualizar datos del usuario');
+        setModalError('Error al actualizar datos del usuario');
       }
     } finally {
       setSubmitting(false);
@@ -152,6 +161,7 @@ export const UsersView: React.FC = () => {
   const handleDeleteUser = async () => {
     if (!deleteUser) return;
     setSubmitting(true);
+    setModalError(null);
     try {
       await apiRequest<void>(`/users/${deleteUser.id}`, {
         method: 'DELETE',
@@ -159,7 +169,7 @@ export const UsersView: React.FC = () => {
       setDeleteUser(null);
       fetchUsers();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al dar de baja al usuario');
+      setModalError(err instanceof Error ? err.message : 'Error al dar de baja al usuario');
     } finally {
       setSubmitting(false);
     }
@@ -216,7 +226,7 @@ export const UsersView: React.FC = () => {
         </div>
       ) : (
         <div className="panel">
-          <div className="panel-body no-padding">
+          <div className="panel-body no-padding table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
@@ -287,7 +297,10 @@ export const UsersView: React.FC = () => {
                         </button>
                         {u.username !== 'admin' && (
                           <button
-                            onClick={() => setDeleteUser(u)}
+                            onClick={() => {
+                              setModalError(null);
+                              setDeleteUser(u);
+                            }}
                             className="action-icon-btn delete"
                             title="Dar de baja usuario"
                           >
@@ -326,6 +339,18 @@ export const UsersView: React.FC = () => {
             </div>
 
             <div className="details-grid">
+              <div className="detail-item">
+                <span className="detail-label">DNI / Documento</span>
+                <span className="detail-value font-mono font-semibold">
+                  {viewUser.documentNumber || 'No registrado'}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Legajo Interno</span>
+                <span className="detail-value font-mono font-semibold">
+                  {viewUser.employeeIdNumber || 'Sin asignar'}
+                </span>
+              </div>
               <div className="detail-item">
                 <span className="detail-label">Rol y Área</span>
                 <span className="detail-value font-semibold">
@@ -380,6 +405,13 @@ export const UsersView: React.FC = () => {
               </button>
             </div>
 
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateUser} className="modal-form">
               <label>
                 Nombre de Usuario (Login) *
@@ -416,7 +448,7 @@ export const UsersView: React.FC = () => {
 
               <div className="grid-cols-2 gap-4">
                 <label>
-                  DNI *
+                  DNI (7 u 8 dígitos) *
                   <input
                     type="text"
                     value={documentNumber}
@@ -475,6 +507,13 @@ export const UsersView: React.FC = () => {
               </button>
             </div>
 
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleUpdateUser} className="modal-form">
               <div className="grid-cols-2 gap-4">
                 <label>
@@ -494,6 +533,28 @@ export const UsersView: React.FC = () => {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
+                  />
+                </label>
+              </div>
+
+              <div className="grid-cols-2 gap-4">
+                <label>
+                  DNI (7 u 8 dígitos)
+                  <input
+                    type="text"
+                    value={documentNumber}
+                    onChange={(e) => setDocumentNumber(e.target.value)}
+                    placeholder="34567890"
+                  />
+                </label>
+
+                <label>
+                  Legajo / Nro Empleado
+                  <input
+                    type="text"
+                    value={employeeIdNumber}
+                    onChange={(e) => setEmployeeIdNumber(e.target.value)}
+                    placeholder="EMP-012"
                   />
                 </label>
               </div>
@@ -518,7 +579,7 @@ export const UsersView: React.FC = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Nueva contraseña..."
+                  placeholder="Nueva contraseña (mín. 6 caracteres)..."
                 />
               </label>
 
@@ -543,6 +604,14 @@ export const UsersView: React.FC = () => {
               <AlertTriangle size={28} />
               <h3 style={{ margin: 0, color: 'var(--text-main)' }}>¿Dar de baja a {deleteUser.fullName}?</h3>
             </div>
+
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
               El usuario <strong>@{deleteUser.username}</strong> perderá el acceso a las aplicaciones de gestión y preventa de Dulce Mayor.
             </p>

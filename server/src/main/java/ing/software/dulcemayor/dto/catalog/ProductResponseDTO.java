@@ -23,6 +23,8 @@ public class ProductResponseDTO {
     private String subCategoryName;
     private String categoryName;
     private double currentPrice;
+    private Double basePriceUsd;
+    private Double exchangeRate;
     private int currentStock;
     private String imageUrl;
     private String imageBase64;

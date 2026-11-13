@@ -64,30 +64,20 @@ export const LoginView: React.FC = () => {
     setPassword('dulcemayor');
   };
 
-  const handleSimulateSocial = async (provider: 'GOOGLE' | 'FACEBOOK') => {
+  const handleSimulateSocial = async () => {
     try {
-      if (provider === 'GOOGLE') {
-        await loginSocial({
-          email: 'operador.mendoza@dulcemayor.com',
-          name: 'Carlos Mendoza',
-          sub: 'google-oauth2|109283746501928374',
-          provider: 'GOOGLE',
-          picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
-        });
-      } else {
-        await loginSocial({
-          email: 'mariana.ventas@dulcemayor.com',
-          name: 'Mariana Ventas',
-          sub: 'facebook|987654321098765',
-          provider: 'FACEBOOK',
-          picture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-        });
-      }
+      await loginSocial({
+        email: 'operador.mendoza@dulcemayor.com',
+        name: 'Carlos Mendoza',
+        sub: 'google-oauth2|109283746501928374',
+        provider: 'GOOGLE',
+        picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Error en autenticación social');
+        setError('Error en autenticación con Google');
       }
     }
   };
@@ -143,7 +133,7 @@ export const LoginView: React.FC = () => {
         </form>
 
         <div className="divider-with-text">
-          <span>O ingresar con Auth0</span>
+          <span>O ingresar con Google</span>
         </div>
 
         {isConfigured ? (
@@ -161,7 +151,7 @@ export const LoginView: React.FC = () => {
             onClick={() => setIsGuideOpen(true)}
             className="btn-text-link flex items-center gap-1"
           >
-            <HelpCircle size={14} /> ¿Cómo configurar Google y Facebook en Auth0?
+            <HelpCircle size={14} /> ¿Cómo configurar Google en Auth0?
           </button>
           <span className={`status-pill ${isConfigured ? 'status-pill-success' : 'status-pill-warning'}`}>
             {isConfigured ? 'Auth0 Activo' : 'Auth0 Modo Guía'}

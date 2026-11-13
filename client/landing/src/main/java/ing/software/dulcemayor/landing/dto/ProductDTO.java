@@ -22,6 +22,8 @@ public class ProductDTO {
     private String categoryName;
     private String subCategoryName;
     private double currentPrice;
+    private Double basePriceUsd;
+    private Double exchangeRate;
     private int currentStock;
     private String imageUrl;
 }

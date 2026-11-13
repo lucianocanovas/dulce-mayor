@@ -10,6 +10,10 @@ import ing.software.dulcemayor.landing.dto.PaymentConfigDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -146,6 +150,35 @@ public class CheckoutController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(Map.of("success", true, "data", status));
+    }
+
+    @GetMapping(value = "/orders/{orderId}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @ResponseBody
+    public ResponseEntity<byte[]> downloadCustomerInvoicePdf(
+            @PathVariable String orderId,
+            HttpSession session) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO customer)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (!isOrderOwnedByCustomer(orderId, customer)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        try {
+            ResponseEntity<byte[]> backendPdf = backendApiClient.downloadOrderInvoicePdf(orderId);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            ContentDisposition disposition = backendPdf.getHeaders().getContentDisposition();
+            if (disposition != null && disposition.getFilename() != null && !disposition.getFilename().isBlank()) {
+                headers.setContentDisposition(ContentDisposition.attachment().filename(disposition.getFilename()).build());
+            } else {
+                headers.setContentDisposition(ContentDisposition.attachment().filename("Factura-" + orderId + ".pdf").build());
+            }
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(backendPdf.getBody());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
     @GetMapping("/api/landing/promotions/validate")

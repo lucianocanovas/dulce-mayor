@@ -30,17 +30,6 @@ export const Auth0GuideModal: React.FC<Props> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const handleSimulateFacebook = async () => {
-    await loginSocial({
-      email: 'mariana.ventas@dulcemayor.com',
-      name: 'Mariana Ventas',
-      sub: 'facebook|987654321098765',
-      provider: 'FACEBOOK',
-      picture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-    });
-    onClose();
-  };
-
   return (
     <div className="modal-backdrop">
       <div className="modal-dialog guide-modal">
@@ -48,7 +37,7 @@ export const Auth0GuideModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-2">
             <Key className="text-primary" size={24} />
             <div>
-              <h3 className="font-bold text-lg">Guía de Configuración Auth0 (Google & Facebook)</h3>
+              <h3 className="font-bold text-lg">Guía de Configuración Auth0 (Google)</h3>
               <p className="text-xs text-muted">Pasos para conectar Auth0 con Central Management</p>
             </div>
           </div>
@@ -97,13 +86,10 @@ export const Auth0GuideModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <div className="guide-step">
             <div className="step-badge">3</div>
             <div className="step-content">
-              <h4 className="font-semibold text-sm">Habilitar Proveedores Sociales (Google & Facebook)</h4>
+              <h4 className="font-semibold text-sm">Habilitar Proveedor Social Google</h4>
               <ul className="text-xs text-muted mt-1 space-y-1 list-disc pl-4">
                 <li>
                   <strong>Google:</strong> En el menú Auth0 <em>Authentication → Social</em>, activa la conexión de Google. Para desarrollo ya incluye claves de prueba (<em>Auth0 Developer Keys</em>) sin configurar nada más.
-                </li>
-                <li>
-                  <strong>Facebook:</strong> En <em>Authentication → Social</em>, agrega Facebook. Requerirá tu <em>App ID</em> y <em>App Secret</em> de <a href="https://developers.facebook.com" target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-1">Meta for Developers <ExternalLink size={12} /></a>.
                 </li>
               </ul>
             </div>
@@ -127,7 +113,7 @@ export const Auth0GuideModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <span>¿Quieres probar la integración backend ahora mismo?</span>
             </div>
             <p className="text-xs text-muted mb-3">
-              Puedes simular la respuesta que Auth0 envía tras autenticarte en Google o Facebook. Esto registrará y validará inmediatamente al usuario en la base de datos Spring Boot:
+              Puedes simular la respuesta que Auth0 envía tras autenticarte en Google. Esto registrará y validará inmediatamente al usuario en la base de datos Spring Boot:
             </p>
             <div className="flex gap-2">
               <button
@@ -136,13 +122,6 @@ export const Auth0GuideModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 className="btn btn-sm btn-outline flex-1 flex items-center justify-center gap-1"
               >
                 <Globe size={14} /> Probar con Google
-              </button>
-              <button
-                type="button"
-                onClick={handleSimulateFacebook}
-                className="btn btn-sm btn-outline flex-1 flex items-center justify-center gap-1"
-              >
-                <Globe size={14} /> Probar con Facebook
               </button>
             </div>
           </div>

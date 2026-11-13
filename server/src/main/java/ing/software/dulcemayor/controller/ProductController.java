@@ -36,4 +36,9 @@ public class ProductController extends BaseController<Product, ProductRequestDTO
     public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getInStockProducts() {
         return ResponseEntity.ok(ApiResponse.ok(productService.getInStockProducts()));
     }
+
+    @GetMapping("/subcategories")
+    public ResponseEntity<ApiResponse<List<java.util.Map<String, String>>>> getSubCategories() {
+        return ResponseEntity.ok(ApiResponse.ok(productService.getAllSubCategories()));
+    }
 }

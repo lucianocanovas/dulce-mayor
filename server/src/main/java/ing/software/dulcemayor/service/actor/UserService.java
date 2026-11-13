@@ -17,6 +17,7 @@ import ing.software.dulcemayor.repository.actor.RetailerRepository;
 import ing.software.dulcemayor.repository.actor.SalesRepresentativeRepository;
 import ing.software.dulcemayor.repository.actor.UserRepository;
 import ing.software.dulcemayor.repository.order.PointOfSaleRepository;
+import ing.software.dulcemayor.util.InputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -120,31 +121,46 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO create(CreateUserRequestDTO request) {
-        if (userRepository.existsByUsernameAndIsDeletedFalse(request.getUsername())) {
-            throw new IllegalArgumentException("El nombre de usuario '" + request.getUsername() + "' ya existe.");
+        InputValidator.validateStaffUserRequest(request, true);
+        String normalizedUsername = request.getUsername().trim().toLowerCase();
+
+        if (userRepository.existsByUsernameAndIsDeletedFalse(normalizedUsername)) {
+            throw new IllegalArgumentException("El nombre de usuario '" + normalizedUsername + "' ya se encuentra registrado.");
         }
+
+        String empNumber = (request.getEmployeeIdNumber() != null && !request.getEmployeeIdNumber().isBlank())
+                ? request.getEmployeeIdNumber().trim().toUpperCase()
+                : null;
+        if (empNumber != null) {
+            employeeRepository.findByEmployeeIdNumberAndIsDeletedFalse(empNumber)
+                    .ifPresent(existing -> {
+                        throw new IllegalArgumentException("El legajo '" + empNumber + "' ya está asignado a otro empleado.");
+                    });
+        }
+
+        String cleanDni = request.getDocumentNumber().trim();
 
         Person person;
         if (request.getRole() == UserRole.PRESALE_AGENT) {
             person = salesRepRepository.save(SalesRepresentative.builder()
-                    .firstName(request.getFirstName())
-                    .lastName(request.getLastName())
+                    .firstName(request.getFirstName().trim())
+                    .lastName(request.getLastName().trim())
                     .documentType(DocumentType.DNI)
-                    .documentNumber(request.getDocumentNumber())
-                    .employeeIdNumber(request.getEmployeeIdNumber())
+                    .documentNumber(cleanDni)
+                    .employeeIdNumber(empNumber)
                     .build());
         } else {
             person = employeeRepository.save(Employee.builder()
-                    .firstName(request.getFirstName())
-                    .lastName(request.getLastName())
+                    .firstName(request.getFirstName().trim())
+                    .lastName(request.getLastName().trim())
                     .documentType(DocumentType.DNI)
-                    .documentNumber(request.getDocumentNumber())
-                    .employeeIdNumber(request.getEmployeeIdNumber())
+                    .documentNumber(cleanDni)
+                    .employeeIdNumber(empNumber)
                     .build());
         }
 
         User user = User.builder()
-                .username(request.getUsername())
+                .username(normalizedUsername)
                 .password(passwordEncoder.encode("dulcemayor"))
                 .role(request.getRole())
                 .isTemporaryPassword(true)
@@ -157,6 +173,7 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO update(String id, CreateUserRequestDTO request) {
+        InputValidator.validateStaffUserRequest(request, false);
         User user = userRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
 
@@ -165,19 +182,19 @@ public class UserService {
         }
 
         if (user.getPerson() != null) {
-            if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
-                user.getPerson().setFirstName(request.getFirstName().trim());
-            }
-            if (request.getLastName() != null && !request.getLastName().isBlank()) {
-                user.getPerson().setLastName(request.getLastName().trim());
-            }
+            user.getPerson().setFirstName(request.getFirstName().trim());
+            user.getPerson().setLastName(request.getLastName().trim());
             if (request.getDocumentNumber() != null && !request.getDocumentNumber().isBlank()) {
                 user.getPerson().setDocumentNumber(request.getDocumentNumber().trim());
+            }
+            if (user.getPerson() instanceof Employee emp && request.getEmployeeIdNumber() != null) {
+                String empNum = request.getEmployeeIdNumber().trim();
+                emp.setEmployeeIdNumber(empNum.isEmpty() ? null : empNum.toUpperCase());
             }
         }
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
             user.setTemporaryPassword(false);
         }
 
@@ -188,19 +205,31 @@ public class UserService {
     public void delete(String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        if ("admin".equalsIgnoreCase(user.getUsername())) {
+            throw new IllegalArgumentException("La cuenta principal de administración (@admin) está protegida y no puede darse de baja.");
+        }
         user.setDeleted(true);
         userRepository.save(user);
     }
 
     private UserResponseDTO mapToDTO(User user) {
-        String fullName = (user.getPerson() != null)
-                ? user.getPerson().getFirstName() + " " + user.getPerson().getLastName()
+        Person person = user.getPerson();
+        String firstName = person != null ? person.getFirstName() : null;
+        String lastName = person != null ? person.getLastName() : null;
+        String fullName = (person != null && firstName != null)
+                ? (firstName + " " + (lastName != null ? lastName : "")).trim()
                 : user.getUsername();
+        String documentNumber = person != null ? person.getDocumentNumber() : null;
+        String employeeIdNumber = (person instanceof Employee emp) ? emp.getEmployeeIdNumber() : null;
 
         return UserResponseDTO.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .fullName(fullName)
+                .firstName(firstName)
+                .lastName(lastName)
+                .documentNumber(documentNumber)
+                .employeeIdNumber(employeeIdNumber)
                 .role(user.getRole())
                 .authProvider(user.getAuthProvider())
                 .temporaryPassword(user.isTemporaryPassword())

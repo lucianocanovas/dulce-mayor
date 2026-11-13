@@ -19,6 +19,13 @@ public class ChatProxyController {
 
     private final BackendApiClient backendApiClient;
 
+    @org.springframework.web.bind.annotation.GetMapping("/api/landing/currency/dollar")
+    public ResponseEntity<Map<String, Object>> getDollarQuote(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean refresh) {
+        var quote = backendApiClient.getDollarQuote(refresh);
+        return ResponseEntity.ok(Map.of("success", true, "data", quote));
+    }
+
     @PostMapping("/api/landing/chat")
     public ResponseEntity<Map<String, Object>> chat(
             @RequestBody AiChatRequestDTO request,

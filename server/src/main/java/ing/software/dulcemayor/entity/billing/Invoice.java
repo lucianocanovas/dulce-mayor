@@ -42,6 +42,27 @@ public class Invoice extends BaseEntity {
     @Column(name = "total", nullable = false)
     private double total;
 
+    @Column(name = "net_amount")
+    private Double netAmount;
+
+    @Column(name = "vat_amount")
+    private Double vatAmount;
+
+    @Column(name = "invoice_type", length = 10)
+    private String invoiceType;
+
+    @Column(name = "afip_code", length = 10)
+    private String afipCode;
+
+    @Column(name = "tax_condition_receiver", length = 100)
+    private String taxConditionReceiver;
+
+    @Column(name = "cae_number", length = 30)
+    private String caeNumber;
+
+    @Column(name = "cae_expiration_date")
+    private java.time.LocalDate caeExpirationDate;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
     private InvoiceStatus status;

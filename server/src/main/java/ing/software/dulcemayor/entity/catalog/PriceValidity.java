@@ -33,6 +33,15 @@ public class PriceValidity extends BaseEntity {
     @Column(name = "price", nullable = false)
     private double price;
 
+    @Column(name = "usd_price")
+    private Double usdPrice;
+
+    @Column(name = "exchange_rate")
+    private Double exchangeRate;
+
+    @Column(name = "reason", length = 250)
+    private String reason;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;

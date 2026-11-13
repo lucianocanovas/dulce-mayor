@@ -11,6 +11,8 @@ import java.util.Optional;
 @Repository
 public interface PromotionRepository extends BaseRepository<Promotion> {
 
-    @Query("SELECT p FROM Promotion p WHERE p.isDeleted = false AND p.code = :code AND :today BETWEEN p.startDate AND p.endDate")
+    @Query("SELECT p FROM Promotion p WHERE p.isDeleted = false AND UPPER(p.code) = UPPER(:code) AND :today BETWEEN p.startDate AND p.endDate")
     Optional<Promotion> findActivePromotionByCode(String code, LocalDate today);
+
+    Optional<Promotion> findFirstByCodeIgnoreCaseAndIsDeletedFalse(String code);
 }

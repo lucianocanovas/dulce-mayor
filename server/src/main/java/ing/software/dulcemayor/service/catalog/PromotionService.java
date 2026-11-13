@@ -5,6 +5,7 @@ import ing.software.dulcemayor.entity.catalog.Product;
 import ing.software.dulcemayor.entity.catalog.Promotion;
 import ing.software.dulcemayor.repository.catalog.ProductRepository;
 import ing.software.dulcemayor.repository.catalog.PromotionRepository;
+import ing.software.dulcemayor.util.InputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,19 +30,27 @@ public class PromotionService {
 
     @Transactional
     public PromotionDTO create(PromotionDTO dto) {
+        InputValidator.validatePromotionRequest(dto);
+        String normalizedCode = dto.getCode().trim().toUpperCase();
+
+        promotionRepository.findFirstByCodeIgnoreCaseAndIsDeletedFalse(normalizedCode)
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException("Ya existe una promoción registrada con el código de cupón '" + normalizedCode + "'.");
+                });
+
         Product product = null;
         if (dto.getProductId() != null && !dto.getProductId().isBlank()) {
-            product = productRepository.findByIdAndIsDeletedFalse(dto.getProductId())
-                    .orElse(null);
+            product = productRepository.findByIdAndIsDeletedFalse(dto.getProductId().trim())
+                    .orElseThrow(() -> new IllegalArgumentException("El producto seleccionado para la promoción no existe o fue dado de baja."));
         }
 
         Promotion promo = Promotion.builder()
-                .code(dto.getCode().toUpperCase().trim())
-                .description(dto.getDescription())
+                .code(normalizedCode)
+                .description(dto.getDescription().trim())
                 .discountPercentage(dto.getDiscountPercentage())
                 .minimumQuantity(dto.getMinimumQuantity() != null ? dto.getMinimumQuantity() : 1)
-                .startDate(dto.getStartDate() != null ? dto.getStartDate() : LocalDate.now())
-                .endDate(dto.getEndDate() != null ? dto.getEndDate() : LocalDate.now().plusMonths(1))
+                .startDate(dto.getStartDate())
+                .endDate(dto.getEndDate())
                 .product(product)
                 .build();
 
@@ -50,35 +59,31 @@ public class PromotionService {
 
     @Transactional
     public PromotionDTO update(String id, PromotionDTO dto) {
+        InputValidator.validatePromotionRequest(dto);
         Promotion promo = promotionRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new IllegalArgumentException("Promoción no encontrada con ID: " + id));
 
-        if (dto.getCode() != null) {
-            promo.setCode(dto.getCode().toUpperCase().trim());
-        }
-        if (dto.getDescription() != null) {
-            promo.setDescription(dto.getDescription());
-        }
-        if (dto.getDiscountPercentage() > 0) {
-            promo.setDiscountPercentage(dto.getDiscountPercentage());
-        }
-        if (dto.getMinimumQuantity() != null) {
-            promo.setMinimumQuantity(dto.getMinimumQuantity());
-        }
-        if (dto.getStartDate() != null) {
-            promo.setStartDate(dto.getStartDate());
-        }
-        if (dto.getEndDate() != null) {
-            promo.setEndDate(dto.getEndDate());
-        }
+        String normalizedCode = dto.getCode().trim().toUpperCase();
+        promotionRepository.findFirstByCodeIgnoreCaseAndIsDeletedFalse(normalizedCode)
+                .ifPresent(existing -> {
+                    if (!existing.getId().equals(id)) {
+                        throw new IllegalArgumentException("Otra promoción ya utiliza el código de cupón '" + normalizedCode + "'.");
+                    }
+                });
 
-        if (dto.getProductId() != null) {
-            if (dto.getProductId().isBlank()) {
-                promo.setProduct(null);
-            } else {
-                productRepository.findByIdAndIsDeletedFalse(dto.getProductId())
-                        .ifPresent(promo::setProduct);
-            }
+        promo.setCode(normalizedCode);
+        promo.setDescription(dto.getDescription().trim());
+        promo.setDiscountPercentage(dto.getDiscountPercentage());
+        promo.setMinimumQuantity(dto.getMinimumQuantity() != null ? dto.getMinimumQuantity() : 1);
+        promo.setStartDate(dto.getStartDate());
+        promo.setEndDate(dto.getEndDate());
+
+        if (dto.getProductId() == null || dto.getProductId().isBlank()) {
+            promo.setProduct(null);
+        } else {
+            Product product = productRepository.findByIdAndIsDeletedFalse(dto.getProductId().trim())
+                    .orElseThrow(() -> new IllegalArgumentException("El producto seleccionado para la promoción no existe o fue dado de baja."));
+            promo.setProduct(product);
         }
 
         return mapToDTO(promotionRepository.save(promo));
@@ -94,8 +99,11 @@ public class PromotionService {
 
     @Transactional(readOnly = true)
     public PromotionDTO validateCode(String code) {
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("Debe ingresar un código de cupón válido.");
+        }
         Promotion promo = promotionRepository.findActivePromotionByCode(code.toUpperCase().trim(), LocalDate.now())
-                .orElseThrow(() -> new IllegalArgumentException("El cupón '" + code + "' no existe o ha expirado."));
+                .orElseThrow(() -> new IllegalArgumentException("El cupón '" + code.trim().toUpperCase() + "' no existe o ha expirado."));
         return mapToDTO(promo);
     }
 

@@ -168,7 +168,7 @@ export const ClientsView: React.FC = () => {
         </div>
       ) : (
         <div className="panel">
-          <div className="panel-body no-padding">
+          <div className="panel-body no-padding table-responsive">
             <table className="data-table">
               <thead>
                 <tr>

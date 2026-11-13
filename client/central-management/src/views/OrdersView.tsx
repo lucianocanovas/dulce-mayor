@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import { apiRequest, downloadOrderInvoicePdf } from '../services/api';
 import { OrderStatus, PaymentType } from '../types/enums';
 import './orders-badges.css';
 import {
   RefreshCw,
   FileText,
+  Download,
   Eye,
   Trash2,
   Edit2,
@@ -15,7 +16,21 @@ import {
   ShoppingBag,
   CheckCircle2,
   CreditCard,
+  AlertCircle,
 } from 'lucide-react';
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  [OrderStatus.PENDING_PAYMENT]: 'Pendiente de Pago',
+  [OrderStatus.PAID]: 'Pagado',
+  [OrderStatus.LOADED]: 'Cargado',
+  [OrderStatus.INVOICED]: 'Facturado',
+  [OrderStatus.IN_DELIVERY]: 'En Reparto',
+  [OrderStatus.DELIVERED]: 'Entregado',
+  [OrderStatus.CANCELLED]: 'Cancelado',
+};
+
+const formatOrderStatus = (status: string): string =>
+  ORDER_STATUS_LABELS[status] || status;
 
 interface OrderDetailItem {
   id: string;
@@ -56,6 +71,7 @@ export const OrdersView: React.FC = () => {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Modals state
   const [viewOrder, setViewOrder] = useState<OrderItem | null>(null);
@@ -67,6 +83,26 @@ export const OrdersView: React.FC = () => {
   const [payNoteInput, setPayNoteInput] = useState('');
   const [deleteOrder, setDeleteOrder] = useState<OrderItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
+
+  const isOrderInvoiced = (o: OrderItem): boolean =>
+    Boolean(o.invoiceNumber) ||
+    o.status === OrderStatus.PAID ||
+    o.status === OrderStatus.INVOICED ||
+    o.status === OrderStatus.IN_DELIVERY ||
+    o.status === OrderStatus.DELIVERED;
+
+  const handleDownloadInvoice = async (o: OrderItem) => {
+    try {
+      setDownloadingOrderId(o.id);
+      setModalError(null);
+      await downloadOrderInvoicePdf(o.id, o.orderNumber, o.invoiceNumber);
+    } catch (err: unknown) {
+      setModalError(err instanceof Error ? err.message : 'No se pudo descargar la factura en PDF');
+    } finally {
+      setDownloadingOrderId(null);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
@@ -87,17 +123,18 @@ export const OrdersView: React.FC = () => {
   const handleUpdateStatus = async (orderId: string, status: OrderStatus, note?: string) => {
     try {
       setSubmitting(true);
+      setModalError(null);
       await apiRequest(`/orders/${orderId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({
           newStatus: status,
-          note: note || `Estado actualizado a ${status} desde el panel de control`,
+          note: note || `Estado actualizado a ${formatOrderStatus(status)} desde el panel de control`,
         }),
       });
       setEditStatusOrder(null);
       await fetchOrders();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al actualizar estado del pedido');
+      setModalError(err instanceof Error ? err.message : 'Error al actualizar estado del pedido');
     } finally {
       setSubmitting(false);
     }
@@ -107,13 +144,14 @@ export const OrdersView: React.FC = () => {
     if (!deleteOrder) return;
     try {
       setSubmitting(true);
+      setModalError(null);
       await apiRequest(`/orders/${deleteOrder.id}`, {
         method: 'DELETE',
       });
       setDeleteOrder(null);
       await fetchOrders();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al cancelar pedido');
+      setModalError(err instanceof Error ? err.message : 'Error al cancelar pedido');
     } finally {
       setSubmitting(false);
     }
@@ -124,6 +162,7 @@ export const OrdersView: React.FC = () => {
     if (!confirmPayOrder) return;
     try {
       setSubmitting(true);
+      setModalError(null);
       await apiRequest(`/payments/orders/${confirmPayOrder.id}/confirm-manual`, {
         method: 'POST',
         body: JSON.stringify({
@@ -137,7 +176,7 @@ export const OrdersView: React.FC = () => {
       setPayNoteInput('');
       await fetchOrders();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al confirmar el pago');
+      setModalError(err instanceof Error ? err.message : 'Error al confirmar el pago');
     } finally {
       setSubmitting(false);
     }
@@ -192,7 +231,7 @@ export const OrdersView: React.FC = () => {
             className={`filter-tab-btn ${selectedStatus === st ? 'active' : ''}`}
             onClick={() => setSelectedStatus(st)}
           >
-            {st === 'ALL' ? 'Todos los Pedidos' : st}
+            {st === 'ALL' ? 'Todos los Pedidos' : formatOrderStatus(st)}
           </button>
         ))}
       </div>
@@ -205,7 +244,7 @@ export const OrdersView: React.FC = () => {
         </div>
       ) : (
         <div className="panel">
-          <div className="panel-body no-padding">
+          <div className="panel-body no-padding table-responsive">
             {filteredOrders.length === 0 ? (
               <p className="text-muted text-center py-8">
                 No hay pedidos en la categoría seleccionada.
@@ -257,13 +296,16 @@ export const OrdersView: React.FC = () => {
                       <td className="font-bold text-lg">${o.total.toLocaleString('es-AR')}</td>
                       <td>
                         <span className={`badge badge-${o.status.toLowerCase()}`}>
-                          {o.status}
+                          {formatOrderStatus(o.status)}
                         </span>
                       </td>
                       <td>
                         <div className="action-btn-group">
                           <button
-                            onClick={() => setViewOrder(o)}
+                            onClick={() => {
+                              setModalError(null);
+                              setViewOrder(o);
+                            }}
                             className="action-icon-btn view"
                             title="Ver detalles completos del pedido"
                           >
@@ -271,9 +313,22 @@ export const OrdersView: React.FC = () => {
                             <span>Ver</span>
                           </button>
 
+                          {isOrderInvoiced(o) && (
+                            <button
+                              onClick={() => handleDownloadInvoice(o)}
+                              disabled={downloadingOrderId === o.id}
+                              className="action-icon-btn view"
+                              title="Descargar Factura Electrónica (PDF)"
+                            >
+                              <Download size={14} />
+                              <span>{downloadingOrderId === o.id ? 'PDF...' : 'Factura'}</span>
+                            </button>
+                          )}
+
                           {o.status === OrderStatus.PENDING_PAYMENT && (
                             <button
                               onClick={() => {
+                                setModalError(null);
                                 setConfirmPayOrder(o);
                                 setPayRefInput(`TRF-${o.orderNumber}`);
                                 setPayNoteInput('');
@@ -286,22 +341,28 @@ export const OrdersView: React.FC = () => {
                             </button>
                           )}
 
-                          <button
-                            onClick={() => {
-                              setEditStatusOrder(o);
-                              setNewStatus(o.status);
-                              setStatusNote('');
-                            }}
-                            className="action-icon-btn edit"
-                            title="Cambiar estado del pedido"
-                          >
-                            <Edit2 size={14} />
-                            <span>Estado</span>
-                          </button>
+                          {o.status !== OrderStatus.CANCELLED && (
+                            <button
+                              onClick={() => {
+                                setModalError(null);
+                                setEditStatusOrder(o);
+                                setNewStatus(o.status);
+                                setStatusNote('');
+                              }}
+                              className="action-icon-btn edit"
+                              title="Cambiar estado del pedido"
+                            >
+                              <Edit2 size={14} />
+                              <span>Estado</span>
+                            </button>
+                          )}
 
                           {o.status !== OrderStatus.CANCELLED && (
                             <button
-                              onClick={() => setDeleteOrder(o)}
+                              onClick={() => {
+                                setModalError(null);
+                                setDeleteOrder(o);
+                              }}
                               className="action-icon-btn delete"
                               title="Anular y eliminar pedido"
                             >
@@ -356,7 +417,7 @@ export const OrdersView: React.FC = () => {
                 <span className="detail-label">Estado Actual</span>
                 <span className="detail-value">
                   <span className={`badge badge-${viewOrder.status.toLowerCase()}`}>
-                    {viewOrder.status}
+                    {formatOrderStatus(viewOrder.status)}
                   </span>
                 </span>
               </div>
@@ -433,10 +494,31 @@ export const OrdersView: React.FC = () => {
               </div>
             </div>
 
+            {modalError && (
+              <div className="modal-error-banner" style={{ marginTop: '0.75rem' }}>
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <div className="modal-actions" style={{ marginTop: '1.25rem' }}>
+              {isOrderInvoiced(viewOrder) && (
+                <button
+                  type="button"
+                  onClick={() => handleDownloadInvoice(viewOrder)}
+                  disabled={downloadingOrderId === viewOrder.id}
+                  className="btn btn-primary"
+                >
+                  <Download size={16} />{' '}
+                  {downloadingOrderId === viewOrder.id
+                    ? 'Generando Factura PDF...'
+                    : `Descargar Factura PDF${viewOrder.invoiceNumber ? ` (#${viewOrder.invoiceNumber})` : ''}`}
+                </button>
+              )}
               {viewOrder.status === OrderStatus.PENDING_PAYMENT && (
                 <button
                   onClick={() => {
+                    setModalError(null);
                     setConfirmPayOrder(viewOrder);
                     setPayRefInput(`TRF-${viewOrder.orderNumber}`);
                     setPayNoteInput('');
@@ -450,7 +532,10 @@ export const OrdersView: React.FC = () => {
               {viewOrder.status === OrderStatus.LOADED && (
                 <button
                   onClick={() => {
-                    handleUpdateStatus(viewOrder.id, OrderStatus.INVOICED, 'Facturado desde visualización de detalles');
+                    setModalError(null);
+                    setEditStatusOrder(viewOrder);
+                    setNewStatus(OrderStatus.INVOICED);
+                    setStatusNote('Facturado desde visualización de detalles');
                     setViewOrder(null);
                   }}
                   className="btn btn-primary"
@@ -476,17 +561,26 @@ export const OrdersView: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
+
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <p className="text-muted" style={{ fontSize: '0.88rem', marginBottom: '0.9rem' }}>
               Al confirmar el pago de <strong>${confirmPayOrder.total.toLocaleString('es-AR')}</strong> ({formatPaymentLabel(confirmPayOrder.paymentType)}), se descontará el stock, se emitirá la factura electrónica y el pedido pasará a <strong>Distribución</strong>.
             </p>
             <form onSubmit={handleConfirmManualPayment} className="modal-form">
               <label>
-                Referencia / Comprobante Bancario:
+                Referencia / Comprobante Bancario *:
                 <input
                   type="text"
                   value={payRefInput}
                   onChange={(e) => setPayRefInput(e.target.value)}
                   placeholder="Ej. TRF-00491823"
+                  required
                 />
               </label>
               <label>
@@ -526,6 +620,13 @@ export const OrdersView: React.FC = () => {
               </button>
             </div>
 
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -540,13 +641,13 @@ export const OrdersView: React.FC = () => {
                   onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
                   style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid var(--border)' }}
                 >
-                  <option value={OrderStatus.PENDING_PAYMENT}>PENDING_PAYMENT (Esperando Pago)</option>
-                  <option value={OrderStatus.PAID}>PAID (Pago Acreditado)</option>
-                  <option value={OrderStatus.LOADED}>LOADED (Cargado en Preventa)</option>
-                  <option value={OrderStatus.INVOICED}>INVOICED (Facturado / Deducción de Stock)</option>
-                  <option value={OrderStatus.IN_DELIVERY}>IN_DELIVERY (En Camión de Reparto)</option>
-                  <option value={OrderStatus.DELIVERED}>DELIVERED (Entregado y Cobrado)</option>
-                  <option value={OrderStatus.CANCELLED}>CANCELLED (Anulado / Cancelado)</option>
+                  <option value={OrderStatus.PENDING_PAYMENT}>Pendiente de Pago (Esperando Acreditación)</option>
+                  <option value={OrderStatus.PAID}>Pagado (Pago Acreditado)</option>
+                  <option value={OrderStatus.LOADED}>Cargado (Captado en Preventa)</option>
+                  <option value={OrderStatus.INVOICED}>Facturado (Deducción de Stock)</option>
+                  <option value={OrderStatus.IN_DELIVERY}>En Reparto (En Camión de Distribución)</option>
+                  <option value={OrderStatus.DELIVERED}>Entregado (Entregado y Cobrado)</option>
+                  <option value={OrderStatus.CANCELLED}>Cancelado (Anulado)</option>
                 </select>
               </label>
 
@@ -585,6 +686,14 @@ export const OrdersView: React.FC = () => {
               <AlertTriangle size={28} />
               <h3 style={{ margin: 0, color: 'var(--text-main)' }}>¿Anular Pedido #{deleteOrder.orderNumber}?</h3>
             </div>
+
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
               Esta acción marcará el pedido como cancelado y lo removerá del listado operativo de preventa y logística.
             </p>

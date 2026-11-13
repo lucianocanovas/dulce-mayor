@@ -28,15 +28,26 @@ interface ProductItem {
   subCategoryName: string;
   categoryName: string;
   currentPrice: number;
+  basePriceUsd?: number;
+  exchangeRate?: number;
   currentStock: number;
   imageUrl?: string;
   imageBase64?: string;
 }
 
+interface SubCategoryOption {
+  id: string;
+  name: string;
+  categoryId?: string;
+  categoryName?: string;
+}
+
 export const ProductsView: React.FC = () => {
   const [products, setProducts] = useState<ProductItem[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Modals state
   const [viewProduct, setViewProduct] = useState<ProductItem | null>(null);
@@ -46,6 +57,7 @@ export const ProductsView: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Stock Adjustment Form
+  const [adjustMode, setAdjustMode] = useState<'add' | 'subtract'>('add');
   const [adjustQty, setAdjustQty] = useState(50);
   const [adjustNote, setAdjustNote] = useState('Ingreso de mercadería desde proveedor');
   const [isAdjusting, setIsAdjusting] = useState(false);
@@ -60,6 +72,7 @@ export const ProductsView: React.FC = () => {
     price: 10000,
     initialStock: 100,
     onSale: false,
+    subCategoryId: '',
     imageUrl: '',
   });
   const [imageUploadMode, setImageUploadMode] = useState<'url' | 'file'>('url');
@@ -68,8 +81,12 @@ export const ProductsView: React.FC = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const data = await apiRequest<ProductItem[]>('/products');
-      setProducts(data);
+      const [productsData, subCatData] = await Promise.all([
+        apiRequest<ProductItem[]>('/products'),
+        apiRequest<SubCategoryOption[]>('/products/subcategories').catch(() => []),
+      ]);
+      setProducts(productsData);
+      setSubCategories(subCatData);
     } catch (err) {
       console.error('Failed to load products', err);
     } finally {
@@ -79,11 +96,21 @@ export const ProductsView: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
+    const handleCurrencySynced = () => {
+      fetchProducts();
+    };
+    window.addEventListener('dm-currency-synced', handleCurrencySynced);
+    return () => {
+      window.removeEventListener('dm-currency-synced', handleCurrencySynced);
+    };
   }, []);
 
   const handleAdjustStock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stockProduct) return;
+    setModalError(null);
+
+    const signedDelta = adjustMode === 'subtract' ? -Math.abs(adjustQty) : Math.abs(adjustQty);
 
     try {
       setIsAdjusting(true);
@@ -91,14 +118,14 @@ export const ProductsView: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           productId: stockProduct.id,
-          quantityDelta: adjustQty,
+          quantityDelta: signedDelta,
           note: adjustNote,
         }),
       });
       setStockProduct(null);
       await fetchProducts();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al reponer stock');
+      setModalError(err instanceof Error ? err.message : 'Error al ajustar stock');
     } finally {
       setIsAdjusting(false);
     }
@@ -108,9 +135,10 @@ export const ProductsView: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert('La imagen seleccionada es mayor a 2MB. Por favor elija un archivo más liviano.');
+        setModalError('La imagen seleccionada es mayor a 2MB. Por favor elija un archivo más liviano.');
         return;
       }
+      setModalError(null);
       const reader = new FileReader();
       reader.onload = () => {
         setFormData((prev) => ({ ...prev, imageUrl: reader.result as string }));
@@ -120,6 +148,7 @@ export const ProductsView: React.FC = () => {
   };
 
   const openCreateModal = () => {
+    setModalError(null);
     setFormData({
       code: '',
       name: '',
@@ -129,6 +158,7 @@ export const ProductsView: React.FC = () => {
       price: 15000,
       initialStock: 100,
       onSale: false,
+      subCategoryId: subCategories[0]?.id || '',
       imageUrl: '',
     });
     setImageUploadMode('url');
@@ -137,6 +167,7 @@ export const ProductsView: React.FC = () => {
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModalError(null);
     setSubmitting(true);
     try {
       await apiRequest('/products', {
@@ -150,19 +181,21 @@ export const ProductsView: React.FC = () => {
           price: Number(formData.price),
           initialStock: Number(formData.initialStock),
           onSale: formData.onSale,
+          subCategoryId: formData.subCategoryId || null,
           imageUrl: formData.imageUrl.trim() || null,
         }),
       });
       setShowAddModal(false);
       await fetchProducts();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al crear producto');
+      setModalError(err instanceof Error ? err.message : 'Error al crear producto');
     } finally {
       setSubmitting(false);
     }
   };
 
   const openEditModal = (p: ProductItem) => {
+    setModalError(null);
     setEditProduct(p);
     setFormData({
       code: p.code,
@@ -173,6 +206,7 @@ export const ProductsView: React.FC = () => {
       price: p.currentPrice,
       initialStock: p.currentStock,
       onSale: p.onSale,
+      subCategoryId: p.subCategoryId || '',
       imageUrl: p.imageUrl || p.imageBase64 || '',
     });
     setImageUploadMode(p.imageUrl?.startsWith('data:') ? 'file' : 'url');
@@ -181,6 +215,7 @@ export const ProductsView: React.FC = () => {
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editProduct) return;
+    setModalError(null);
     setSubmitting(true);
     try {
       await apiRequest(`/products/${editProduct.id}`, {
@@ -193,13 +228,14 @@ export const ProductsView: React.FC = () => {
           unitsPerPack: Number(formData.unitsPerPack),
           price: Number(formData.price),
           onSale: formData.onSale,
+          subCategoryId: formData.subCategoryId || null,
           imageUrl: formData.imageUrl.trim() || null,
         }),
       });
       setEditProduct(null);
       await fetchProducts();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al actualizar producto');
+      setModalError(err instanceof Error ? err.message : 'Error al actualizar producto');
     } finally {
       setSubmitting(false);
     }
@@ -207,6 +243,7 @@ export const ProductsView: React.FC = () => {
 
   const handleDeleteProduct = async () => {
     if (!deleteProduct) return;
+    setModalError(null);
     setSubmitting(true);
     try {
       await apiRequest(`/products/${deleteProduct.id}`, {
@@ -215,7 +252,7 @@ export const ProductsView: React.FC = () => {
       setDeleteProduct(null);
       await fetchProducts();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al eliminar producto');
+      setModalError(err instanceof Error ? err.message : 'Error al eliminar producto');
     } finally {
       setSubmitting(false);
     }
@@ -269,7 +306,7 @@ export const ProductsView: React.FC = () => {
         </div>
       ) : (
         <div className="panel">
-          <div className="panel-body no-padding">
+          <div className="panel-body no-padding table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
@@ -329,7 +366,12 @@ export const ProductsView: React.FC = () => {
                         {p.packaging} ({p.unitsPerPack} u.)
                       </td>
                       <td className="font-semibold text-primary">
-                        ${p.currentPrice.toLocaleString('es-AR')}
+                        <div>${p.currentPrice.toLocaleString('es-AR')}</div>
+                        {p.basePriceUsd != null && (
+                          <div className="text-xs text-muted font-mono">
+                            USD ${Number(p.basePriceUsd).toFixed(2)}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span className={`badge ${isLow ? 'badge-danger' : 'badge-success'}`}>
@@ -367,17 +409,23 @@ export const ProductsView: React.FC = () => {
                           </button>
                           <button
                             onClick={() => {
+                              setModalError(null);
                               setStockProduct(p);
+                              setAdjustMode('add');
                               setAdjustQty(50);
+                              setAdjustNote('Ingreso de mercadería desde proveedor');
                             }}
                             className="action-icon-btn"
-                            title="Reponer stock"
+                            title="Ajustar o reponer stock"
                           >
                             <Package size={14} />
                             <span>Stock</span>
                           </button>
                           <button
-                            onClick={() => setDeleteProduct(p)}
+                            onClick={() => {
+                              setModalError(null);
+                              setDeleteProduct(p);
+                            }}
                             className="action-icon-btn delete"
                             title="Eliminar producto"
                           >
@@ -452,7 +500,7 @@ export const ProductsView: React.FC = () => {
               </div>
               <div className="detail-item">
                 <span className="detail-label">Subcategoría</span>
-                <span className="detail-value">{viewProduct.subCategoryName || 'Unassigned'}</span>
+                <span className="detail-value">{viewProduct.subCategoryName === 'Unassigned' ? 'Sin subcategoría' : (viewProduct.subCategoryName || 'Sin subcategoría')}</span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">Presentación de Venta</span>
@@ -508,6 +556,13 @@ export const ProductsView: React.FC = () => {
               </button>
             </div>
 
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleCreateProduct} className="modal-form">
               <div className="grid-cols-2 gap-4">
                 <label>
@@ -532,6 +587,21 @@ export const ProductsView: React.FC = () => {
                   />
                 </label>
               </div>
+
+              <label>
+                Subcategoría / Rubro de Catálogo
+                <select
+                  value={formData.subCategoryId}
+                  onChange={(e) => setFormData({ ...formData, subCategoryId: e.target.value })}
+                >
+                  <option value="">-- Sin subcategoría específica (General) --</option>
+                  {subCategories.map((sc) => (
+                    <option key={sc.id} value={sc.id}>
+                      {sc.categoryName ? `${sc.categoryName} › ${sc.name}` : sc.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
               <label>
                 Descripción del Producto
@@ -573,8 +643,8 @@ export const ProductsView: React.FC = () => {
                   Precio Mayorista (ARS) *
                   <input
                     type="number"
-                    min="0"
-                    step="100"
+                    min="1"
+                    step="any"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
                     required
@@ -697,6 +767,13 @@ export const ProductsView: React.FC = () => {
               </button>
             </div>
 
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleUpdateProduct} className="modal-form">
               <div className="grid-cols-2 gap-4">
                 <label>
@@ -714,6 +791,21 @@ export const ProductsView: React.FC = () => {
                   />
                 </label>
               </div>
+
+              <label>
+                Subcategoría / Rubro de Catálogo
+                <select
+                  value={formData.subCategoryId}
+                  onChange={(e) => setFormData({ ...formData, subCategoryId: e.target.value })}
+                >
+                  <option value="">-- Sin subcategoría específica (General) --</option>
+                  {subCategories.map((sc) => (
+                    <option key={sc.id} value={sc.id}>
+                      {sc.categoryName ? `${sc.categoryName} › ${sc.name}` : sc.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
               <label>
                 Descripción del Producto
@@ -753,8 +845,8 @@ export const ProductsView: React.FC = () => {
                   Precio Mayorista Vigente (ARS) *
                   <input
                     type="number"
-                    min="0"
-                    step="100"
+                    min="1"
+                    step="any"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
                     required
@@ -863,6 +955,14 @@ export const ProductsView: React.FC = () => {
               <AlertTriangle size={28} />
               <h3 style={{ margin: 0, color: 'var(--text-main)' }}>¿Eliminar Producto?</h3>
             </div>
+
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
               Estás a punto de dar de baja <strong>{deleteProduct.name}</strong> ({deleteProduct.code}). Esta acción lo removerá del catálogo y de la preventa móvil.
             </p>
@@ -888,16 +988,24 @@ export const ProductsView: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: REPONER STOCK */}
+      {/* Modal: AJUSTAR / REPONER STOCK */}
       {stockProduct && (
         <div className="modal-backdrop" onClick={() => setStockProduct(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-row">
-              <h3>Reponer Stock en Depósito</h3>
+              <h3>Ajuste de Stock en Depósito</h3>
               <button onClick={() => setStockProduct(null)} className="modal-close-btn">
                 <X size={20} />
               </button>
             </div>
+
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <p className="modal-subtitle">
               Producto: <strong>{stockProduct.name}</strong> ({stockProduct.code})
             </p>
@@ -907,10 +1015,30 @@ export const ProductsView: React.FC = () => {
 
             <form onSubmit={handleAdjustStock} className="modal-form">
               <label>
-                Cantidad de Unidades a Ingresar:
+                Tipo de Movimiento:
+                <select
+                  value={adjustMode}
+                  onChange={(e) => {
+                    const nextMode = e.target.value as 'add' | 'subtract';
+                    setAdjustMode(nextMode);
+                    setAdjustNote(
+                      nextMode === 'add'
+                        ? 'Ingreso de mercadería desde proveedor'
+                        : 'Ajuste por merma / control de inventario'
+                    );
+                  }}
+                >
+                  <option value="add">Ingreso / Reposición (+)</option>
+                  <option value="subtract">Merma / Descuento de Inventario (-)</option>
+                </select>
+              </label>
+
+              <label>
+                Cantidad de Unidades ({adjustMode === 'add' ? 'a sumar' : 'a descontar'}):
                 <input
                   type="number"
                   min="1"
+                  max={adjustMode === 'subtract' ? Math.max(1, stockProduct.currentStock) : 100000}
                   value={adjustQty}
                   onChange={(e) => setAdjustQty(Number(e.target.value))}
                   required
@@ -918,7 +1046,7 @@ export const ProductsView: React.FC = () => {
               </label>
 
               <label>
-                Motivo / Remito de Fábrica:
+                Motivo / Remito de Respaldo *:
                 <input
                   type="text"
                   value={adjustNote}
@@ -930,7 +1058,7 @@ export const ProductsView: React.FC = () => {
 
               <div className="modal-actions">
                 <button type="submit" disabled={isAdjusting} className="btn btn-primary">
-                  {isAdjusting ? 'Actualizando...' : 'Confirmar Ingreso'}
+                  {isAdjusting ? 'Actualizando...' : 'Confirmar Ajuste'}
                 </button>
                 <button
                   type="button"

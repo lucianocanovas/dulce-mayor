@@ -29,6 +29,7 @@ import ing.software.dulcemayor.repository.order.PointOfSaleRepository;
 import ing.software.dulcemayor.service.billing.PaymentAccreditationService;
 import ing.software.dulcemayor.service.billing.strategy.PaymentInitiationResult;
 import ing.software.dulcemayor.service.billing.strategy.PaymentStrategyFactory;
+import ing.software.dulcemayor.util.InputValidator;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -273,8 +274,10 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDTO updateOrderStatus(String id, UpdateOrderStatusDTO request) {
+        InputValidator.validateOrderStatusUpdate(request);
+
         Order order = orderRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró el pedido con ID: " + id));
 
         OrderStatus oldStatus = order.getStatus();
         OrderStatus newStatus = request.getNewStatus();
@@ -283,10 +286,18 @@ public class OrderService {
             return toResponseDto(order);
         }
 
+        if (oldStatus == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("No se puede modificar el estado de un pedido que ya fue anulado/cancelado.");
+        }
+
+        String cleanNote = (request.getNote() != null && !request.getNote().trim().isEmpty())
+                ? request.getNote().trim()
+                : null;
+
         if (newStatus == OrderStatus.PAID) {
             paymentAccreditationService.confirmManualPayment(id, ManualPaymentConfirmDTO.builder()
                     .paymentType(order.getPaymentType() != null ? order.getPaymentType().name() : PaymentType.CASH.name())
-                    .note(request.getNote() != null ? request.getNote() : "Pago confirmado desde panel central")
+                    .note(cleanNote != null ? cleanNote : "Pago confirmado desde panel central")
                     .build());
             return getOrderById(id);
         }
@@ -297,18 +308,20 @@ public class OrderService {
             if (order.getDispatchEnabledAt() == null) {
                 order.setDispatchEnabledAt(LocalDateTime.now());
             }
+        } else if (newStatus == OrderStatus.CANCELLED) {
+            order.setReadyForDispatch(false);
         }
         Order savedOrder = orderRepository.save(order);
 
         OrderStatusHistory history = OrderStatusHistory.builder()
                 .status(newStatus)
                 .dateTime(LocalDateTime.now())
-                .note(request.getNote() != null ? request.getNote() : "Status updated to " + newStatus)
+                .note(cleanNote != null ? cleanNote : "Estado actualizado a " + newStatus)
                 .order(savedOrder)
                 .build();
         orderStatusHistoryRepository.save(history);
 
-        if (newStatus == OrderStatus.INVOICED) {
+        if (newStatus == OrderStatus.INVOICED || newStatus == OrderStatus.IN_DELIVERY || newStatus == OrderStatus.DELIVERED) {
             paymentAccreditationService.deductStockAndInvoiceOnOrderInvoiced(savedOrder, history);
         }
 

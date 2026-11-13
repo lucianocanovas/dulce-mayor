@@ -54,4 +54,7 @@ public class Product extends BaseEntity {
     @jakarta.persistence.Lob
     @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(name = "base_price_usd")
+    private Double basePriceUsd;
 }

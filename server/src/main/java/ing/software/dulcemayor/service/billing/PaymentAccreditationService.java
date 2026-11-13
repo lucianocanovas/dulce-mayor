@@ -28,7 +28,9 @@ import ing.software.dulcemayor.repository.catalog.StockRepository;
 import ing.software.dulcemayor.repository.logistics.DeliveryRouteRepository;
 import ing.software.dulcemayor.repository.order.OrderRepository;
 import ing.software.dulcemayor.repository.order.OrderStatusHistoryRepository;
+import ing.software.dulcemayor.service.billing.factory.InvoiceFactoryProvider;
 import ing.software.dulcemayor.service.order.OrderDtoMapper;
+import ing.software.dulcemayor.util.InputValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,6 +68,7 @@ public class PaymentAccreditationService {
     private final MercadoPagoService mercadoPagoService;
     private final QrCodeService qrCodeService;
     private final OrderDtoMapper orderDtoMapper;
+    private final InvoiceFactoryProvider invoiceFactoryProvider;
     private final ApplicationEventPublisher eventPublisher;
     private final PlatformTransactionManager transactionManager;
 
@@ -272,15 +275,20 @@ public class PaymentAccreditationService {
     }
 
     public OrderPaymentStatusDTO confirmManualPayment(String orderId, ManualPaymentConfirmDTO request) {
+        InputValidator.validateManualPaymentConfirm(request);
         Order order = orderRepository.findByIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found with id: " + orderId));
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró el pedido con ID: " + orderId));
         if (order.getStatus() == OrderStatus.CANCELLED) {
             throw new IllegalStateException("No se puede acreditar un pedido cancelado.");
         }
 
         PaymentType paymentType = order.getPaymentType() != null ? order.getPaymentType() : PaymentType.BANK_TRANSFER;
         if (request != null && request.getPaymentType() != null && !request.getPaymentType().isBlank()) {
-            paymentType = PaymentType.valueOf(request.getPaymentType().trim().toUpperCase());
+            try {
+                paymentType = PaymentType.valueOf(request.getPaymentType().trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("El medio de pago indicado no es válido.");
+            }
         }
 
         String reference = (request != null && request.getReference() != null && !request.getReference().isBlank())
@@ -334,11 +342,35 @@ public class PaymentAccreditationService {
         orderRepository.save(order);
     }
 
-    @Transactional(readOnly = true)
-    public InvoiceResponseDTO getInvoiceForOrder(String orderId) {
+    public record OrderInvoiceBundle(Order order, Invoice invoice) {}
+
+    @Transactional
+    public OrderInvoiceBundle resolveOrEnsureInvoiceBundle(String orderId) {
         Order order = loadOrderWithDetails(orderId);
-        Invoice invoice = invoiceRepository.findByOrderIdAndIsDeletedFalse(order.getId())
-                .orElseThrow(() -> new IllegalStateException("El pedido todavía no posee factura emitida."));
+        Optional<Invoice> existingOpt = invoiceRepository.findByOrderIdAndIsDeletedFalse(order.getId());
+        Invoice invoice;
+        if (existingOpt.isPresent()) {
+            invoice = existingOpt.get();
+        } else if (isAlreadyAccreditedStatus(order.getStatus())) {
+            invoice = createInvoiceIfMissing(order);
+        } else {
+            throw new IllegalStateException("El pedido #" + order.getOrderNumber() + " todavía no posee factura emitida.");
+        }
+        if (invoice.getInvoiceDetails() != null) {
+            invoice.getInvoiceDetails().forEach(d -> {
+                if (d.getProduct() != null) {
+                    d.getProduct().getPackaging();
+                }
+            });
+        }
+        return new OrderInvoiceBundle(order, invoice);
+    }
+
+    @Transactional
+    public InvoiceResponseDTO getInvoiceForOrder(String orderId) {
+        OrderInvoiceBundle bundle = resolveOrEnsureInvoiceBundle(orderId);
+        Order order = bundle.order();
+        Invoice invoice = bundle.invoice();
         List<Payment> payments = paymentRepository.findByInvoiceIdAndIsDeletedFalse(invoice.getId());
         Payment primaryPayment = payments.isEmpty() ? null : payments.get(0);
 
@@ -357,8 +389,15 @@ public class PaymentAccreditationService {
         return InvoiceResponseDTO.builder()
                 .invoiceId(invoice.getId())
                 .invoiceNumber(invoice.getInvoiceNumber())
+                .invoiceType(invoice.getInvoiceType())
+                .afipCode(invoice.getAfipCode())
+                .taxConditionReceiver(invoice.getTaxConditionReceiver())
                 .invoiceDate(invoice.getInvoiceDate())
+                .netAmount(invoice.getNetAmount())
+                .vatAmount(invoice.getVatAmount())
                 .total(invoice.getTotal())
+                .caeNumber(invoice.getCaeNumber())
+                .caeExpirationDate(invoice.getCaeExpirationDate())
                 .status(invoice.getStatus())
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
@@ -480,26 +519,7 @@ public class PaymentAccreditationService {
                 .orElseGet(() -> {
                     Long maxNumber = invoiceRepository.findMaxInvoiceNumber();
                     long nextNumber = (maxNumber != null ? maxNumber : 10000L) + 1L;
-                    Invoice invoice = Invoice.builder()
-                            .invoiceNumber(nextNumber)
-                            .invoiceDate(LocalDateTime.now())
-                            .total(order.getTotal())
-                            .status(InvoiceStatus.PAID)
-                            .order(order)
-                            .build();
-
-                    for (OrderDetail orderDetail : order.getOrderDetails()) {
-                        InvoiceDetail detail = InvoiceDetail.builder()
-                                .quantity(orderDetail.getQuantity())
-                                .unitPrice(orderDetail.getUnitPrice())
-                                .subtotal(orderDetail.getSubtotal())
-                                .product(orderDetail.getProduct())
-                                .productCode(orderDetail.getProduct().getCode())
-                                .productName(orderDetail.getProduct().getName())
-                                .invoice(invoice)
-                                .build();
-                        invoice.getInvoiceDetails().add(detail);
-                    }
+                    Invoice invoice = invoiceFactoryProvider.createInvoiceForOrder(order, nextNumber);
                     return invoiceRepository.save(invoice);
                 });
     }

@@ -25,17 +25,18 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardStatsDTO getDashboardStats() {
-        long totalProducts = productRepository.count();
-        long lowStockCount = stockRepository.findLowStock(LOW_STOCK_THRESHOLD).size();
-        long pendingOrdersCount = orderRepository.countByStatusAndIsDeletedFalse(OrderStatus.LOADED);
+        var lowStockProducts = productService.getLowStockProducts(LOW_STOCK_THRESHOLD);
+        long totalProducts = productRepository.findByIsDeletedFalse().size();
+        long lowStockCount = lowStockProducts.size();
+        long pendingOrdersCount = orderRepository.countByStatusAndIsDeletedFalse(OrderStatus.PENDING_PAYMENT)
+                + orderRepository.countByStatusAndIsDeletedFalse(OrderStatus.PAID)
+                + orderRepository.countByStatusAndIsDeletedFalse(OrderStatus.LOADED);
         double totalSales = orderRepository.sumTotalSales();
 
         var recentOrders = orderService.getAllOrders().stream()
                 .sorted((a, b) -> b.getOrderDateTime().compareTo(a.getOrderDateTime()))
                 .limit(5)
                 .toList();
-
-        var lowStockProducts = productService.getLowStockProducts(LOW_STOCK_THRESHOLD);
 
         return DashboardStatsDTO.builder()
                 .totalProducts(totalProducts)

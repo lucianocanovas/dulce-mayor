@@ -16,11 +16,14 @@ import ing.software.dulcemayor.entity.location.City;
 import ing.software.dulcemayor.entity.location.Country;
 import ing.software.dulcemayor.entity.location.Department;
 import ing.software.dulcemayor.entity.location.State;
+import ing.software.dulcemayor.entity.billing.Invoice;
+import ing.software.dulcemayor.entity.billing.InvoiceDetail;
 import ing.software.dulcemayor.entity.order.Order;
 import ing.software.dulcemayor.entity.order.OrderDetail;
 import ing.software.dulcemayor.entity.order.PointOfSale;
 import ing.software.dulcemayor.enums.AuthProvider;
 import ing.software.dulcemayor.enums.DocumentType;
+import ing.software.dulcemayor.enums.InvoiceStatus;
 import ing.software.dulcemayor.enums.OrderStatus;
 import ing.software.dulcemayor.enums.UserRole;
 import ing.software.dulcemayor.repository.actor.DeliveryAgentRepository;
@@ -28,6 +31,7 @@ import ing.software.dulcemayor.repository.actor.EmployeeRepository;
 import ing.software.dulcemayor.repository.actor.RetailerRepository;
 import ing.software.dulcemayor.repository.actor.SalesRepresentativeRepository;
 import ing.software.dulcemayor.repository.actor.UserRepository;
+import ing.software.dulcemayor.repository.billing.InvoiceRepository;
 import ing.software.dulcemayor.repository.catalog.CategoryRepository;
 import ing.software.dulcemayor.repository.catalog.PriceValidityRepository;
 import ing.software.dulcemayor.repository.catalog.ProductRepository;
@@ -77,8 +81,11 @@ public class DataInitializer implements CommandLineRunner {
         private final PointOfSaleRepository pointOfSaleRepository;
         private final OrderRepository orderRepository;
         private final OrderDetailRepository orderDetailRepository;
+        private final InvoiceRepository invoiceRepository;
         private final PromotionRepository promotionRepository;
         private final PasswordEncoder passwordEncoder;
+        private final ing.software.dulcemayor.service.catalog.ExchangeRateService exchangeRateService;
+        private final ing.software.dulcemayor.service.billing.factory.InvoiceFactoryProvider invoiceFactoryProvider;
 
         @Override
         @Transactional
@@ -335,10 +342,16 @@ public class DataInitializer implements CommandLineRunner {
                                 .salesRep(rep)
                                 .orderDetails(new ArrayList<>())
                                 .build());
-                orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(14200.0).subtotal(28400.0)
+                OrderDetail od1a = orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(14200.0).subtotal(28400.0)
                                 .product(p1).order(o1).build());
-                orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(19800.0).subtotal(19800.0)
+                OrderDetail od1b = orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(19800.0).subtotal(19800.0)
                                 .product(p6).order(o1).build());
+                o1.getOrderDetails().add(od1a);
+                o1.getOrderDetails().add(od1b);
+
+                Invoice inv1 = invoiceFactoryProvider.createInvoiceForOrder(o1, 10001L);
+                inv1.setInvoiceDate(o1.getOrderDateTime().plusMinutes(10));
+                invoiceRepository.save(inv1);
 
                 Order o2 = orderRepository.save(Order.builder()
                                 .orderNumber(1002L)
@@ -368,15 +381,20 @@ public class DataInitializer implements CommandLineRunner {
                                 .couponCode("BIENVENIDA")
                                 .orderDetails(new ArrayList<>())
                                 .build());
-                orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(15000.0).subtotal(30000.0)
+                OrderDetail od3 = orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(15000.0).subtotal(30000.0)
                                 .product(p1).order(o3).build());
+                o3.getOrderDetails().add(od3);
+
+                Invoice inv3 = invoiceFactoryProvider.createInvoiceForOrder(o3, 10002L);
+                inv3.setInvoiceDate(o3.getOrderDateTime().plusMinutes(25));
+                invoiceRepository.save(inv3);
 
                 Order o4 = orderRepository.save(Order.builder()
                                 .orderNumber(1004L)
                                 .orderDateTime(LocalDateTime.now().minusHours(1))
-                                .subtotal(71000.0)
+                                .subtotal(81000.0)
                                 .discount(0.0)
-                                .total(71000.0)
+                                .total(81000.0)
                                 .status(OrderStatus.LOADED)
                                 .paymentType(ing.software.dulcemayor.enums.PaymentType.CASH)
                                 .pointOfSale(pos4)
@@ -387,6 +405,51 @@ public class DataInitializer implements CommandLineRunner {
                                 .product(p10).order(o4).build());
                 orderDetailRepository.save(OrderDetail.builder().quantity(1).unitPrice(11000.0).subtotal(11000.0)
                                 .product(p7).order(o4).build());
+
+                Order o5 = orderRepository.save(Order.builder()
+                                .orderNumber(998L)
+                                .orderDateTime(LocalDateTime.now().minusDays(4).minusHours(3))
+                                .subtotal(67500.0)
+                                .discount(0.0)
+                                .total(67500.0)
+                                .status(OrderStatus.DELIVERED)
+                                .paymentType(ing.software.dulcemayor.enums.PaymentType.MERCADO_PAGO)
+                                .pointOfSale(pos2)
+                                .salesRep(rep)
+                                .orderDetails(new ArrayList<>())
+                                .build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(3).unitPrice(22500.0).subtotal(67500.0)
+                                .product(p2).order(o5).build());
+
+                Order o6 = orderRepository.save(Order.builder()
+                                .orderNumber(999L)
+                                .orderDateTime(LocalDateTime.now().minusDays(3).minusHours(2))
+                                .subtotal(57600.0)
+                                .discount(0.0)
+                                .total(57600.0)
+                                .status(OrderStatus.DELIVERED)
+                                .paymentType(ing.software.dulcemayor.enums.PaymentType.BANK_TRANSFER)
+                                .pointOfSale(pos5)
+                                .salesRep(rep)
+                                .orderDetails(new ArrayList<>())
+                                .build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(28800.0).subtotal(57600.0)
+                                .product(p5).order(o6).build());
+
+                Order o7 = orderRepository.save(Order.builder()
+                                .orderNumber(1000L)
+                                .orderDateTime(LocalDateTime.now().minusDays(2).minusHours(5))
+                                .subtotal(64800.0)
+                                .discount(0.0)
+                                .total(64800.0)
+                                .status(OrderStatus.IN_DELIVERY)
+                                .paymentType(ing.software.dulcemayor.enums.PaymentType.DIGITAL_WALLET)
+                                .pointOfSale(pos1)
+                                .salesRep(rep)
+                                .orderDetails(new ArrayList<>())
+                                .build());
+                orderDetailRepository.save(OrderDetail.builder().quantity(3).unitPrice(21600.0).subtotal(64800.0)
+                                .product(p12).order(o7).build());
 
                 // 7. Promotions
                 promotionRepository.save(Promotion.builder()
@@ -426,11 +489,20 @@ public class DataInitializer implements CommandLineRunner {
                                 .endDate(LocalDate.now().plusMonths(3))
                                 .build());
 
-                log.info("Database successfully seeded with 15 products, 5 Mendoza POS, 4 sample orders, 3 promotions, and users (admin, preventor, repartidor)!");
+                // 8. Synchronize initial catalog prices with live DolarApi / DolarHoy exchange rate
+                try {
+                        exchangeRateService.getCurrentQuoteAndEnsureSync(true);
+                } catch (Exception e) {
+                        log.warn("Could not synchronize live dollar rate during startup seed: {}", e.getMessage());
+                }
+
+                log.info("Database successfully seeded with 15 products, historical price validities, 5 Mendoza POS, 7 sample orders, and promotions!");
         }
 
         private Product createProduct(String code, String name, String desc, String pack, int units, boolean onSale,
                         SubCategory subCat, double price, int stock, String imageUrl) {
+                double baseUsd = Math.round((price / 1080.0) * 100.0) / 100.0;
+
                 Product product = productRepository.save(Product.builder()
                                 .code(code)
                                 .name(name)
@@ -440,12 +512,41 @@ public class DataInitializer implements CommandLineRunner {
                                 .isOnSale(onSale)
                                 .subCategory(subCat)
                                 .imageUrl(imageUrl)
+                                .basePriceUsd(baseUsd)
                                 .build());
 
+                // Historical price validity 1: 60 to 30 days ago (USD @ $960)
+                double price60d = Math.round((baseUsd * 960.0) / 10.0) * 10.0;
                 priceValidityRepository.save(PriceValidity.builder()
-                                .startDate(LocalDate.now().minusMonths(1))
+                                .startDate(LocalDate.now().minusDays(60))
+                                .endDate(LocalDate.now().minusDays(30))
+                                .price(price60d)
+                                .usdPrice(baseUsd)
+                                .exchangeRate(960.0)
+                                .reason("Lista Mayorista Bimestral (Dólar Oficial $960)")
+                                .product(product)
+                                .build());
+
+                // Historical price validity 2: 30 to 5 days ago (USD @ $1.020)
+                double price30d = Math.round((baseUsd * 1020.0) / 10.0) * 10.0;
+                priceValidityRepository.save(PriceValidity.builder()
+                                .startDate(LocalDate.now().minusDays(30))
+                                .endDate(LocalDate.now().minusDays(5))
+                                .price(price30d)
+                                .usdPrice(baseUsd)
+                                .exchangeRate(1020.0)
+                                .reason("Ajuste Cambiario Mensual (Dólar Oficial $1.020)")
+                                .product(product)
+                                .build());
+
+                // Active price validity before live API sync (5 days ago -> present, USD @ $1.080)
+                priceValidityRepository.save(PriceValidity.builder()
+                                .startDate(LocalDate.now().minusDays(5))
                                 .endDate(null)
                                 .price(price)
+                                .usdPrice(baseUsd)
+                                .exchangeRate(1080.0)
+                                .reason("Actualización Lista Mayorista (Dólar Oficial $1.080)")
                                 .product(product)
                                 .build());
 

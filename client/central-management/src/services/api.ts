@@ -41,3 +41,60 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
   return json.data;
 }
+
+export async function downloadOrderInvoicePdf(
+  orderId: string,
+  orderNumber: number,
+  invoiceNumber?: number
+): Promise<void> {
+  const token = localStorage.getItem('dulcemayor_token');
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/payments/orders/${encodeURIComponent(orderId)}/invoice/pdf`, {
+      method: 'GET',
+      headers,
+    });
+  } catch {
+    throw new Error('No se pudo conectar con el servidor backend para descargar la factura.');
+  }
+
+  if (!response.ok) {
+    let errorMsg = `No se pudo descargar la factura (Status ${response.status})`;
+    try {
+      const errJson = await response.json();
+      if (errJson && errJson.message) {
+        errorMsg = errJson.message;
+      }
+    } catch {
+      // Ignore JSON parse error
+    }
+    throw new Error(errorMsg);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition');
+  let filename = invoiceNumber
+    ? `Factura-00004-${String(invoiceNumber).padStart(8, '0')}.pdf`
+    : `Factura-Pedido-${orderNumber}.pdf`;
+
+  if (disposition) {
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    if (match && match[1]) {
+      filename = match[1];
+    }
+  }
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}

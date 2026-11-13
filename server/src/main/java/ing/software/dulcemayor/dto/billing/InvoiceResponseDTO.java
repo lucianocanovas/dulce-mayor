@@ -16,8 +16,15 @@ import java.util.List;
 public class InvoiceResponseDTO {
     private String invoiceId;
     private Long invoiceNumber;
+    private String invoiceType;
+    private String afipCode;
+    private String taxConditionReceiver;
     private LocalDateTime invoiceDate;
+    private Double netAmount;
+    private Double vatAmount;
     private double total;
+    private String caeNumber;
+    private java.time.LocalDate caeExpirationDate;
     private InvoiceStatus status;
     private String orderId;
     private Long orderNumber;

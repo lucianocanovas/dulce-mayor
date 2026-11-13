@@ -21,11 +21,23 @@ interface SimpleProduct {
   code: string;
 }
 
+const formatLocalDate = (daysOffset = 0): string => {
+  const date = new Date();
+  if (daysOffset !== 0) {
+    date.setDate(date.getDate() + daysOffset);
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const PromotionsView: React.FC = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [products, setProducts] = useState<SimpleProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,15 +51,14 @@ export const PromotionsView: React.FC = () => {
   const [description, setDescription] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState<number>(10);
   const [minimumQuantity, setMinimumQuantity] = useState<number>(1);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  );
+  const [startDate, setStartDate] = useState(() => formatLocalDate(0));
+  const [endDate, setEndDate] = useState(() => formatLocalDate(30));
   const [productId, setProductId] = useState<string>('');
 
   const fetchPromotions = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await apiRequest<Promotion[]>('/promotions');
       setPromotions(data);
     } catch (err: unknown) {
@@ -77,24 +88,26 @@ export const PromotionsView: React.FC = () => {
 
   const openCreateModal = () => {
     resetForm();
+    setModalError(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (p: Promotion) => {
+    setModalError(null);
     setEditPromo(p);
     setCode(p.code);
     setDescription(p.description || '');
     setDiscountPercentage(p.discountPercentage);
     setMinimumQuantity(p.minimumQuantity || 1);
-    setStartDate(p.startDate || new Date().toISOString().split('T')[0]);
-    setEndDate(p.endDate || new Date().toISOString().split('T')[0]);
+    setStartDate(p.startDate || formatLocalDate());
+    setEndDate(p.endDate || formatLocalDate());
     setProductId(p.productId || '');
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
+    setModalError(null);
 
     try {
       await apiRequest<Promotion>('/promotions', {
@@ -115,9 +128,9 @@ export const PromotionsView: React.FC = () => {
       fetchPromotions();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setModalError(err.message);
       } else {
-        setError('Error al crear la promoción');
+        setModalError('Error al crear la promoción');
       }
     } finally {
       setSubmitting(false);
@@ -128,7 +141,7 @@ export const PromotionsView: React.FC = () => {
     e.preventDefault();
     if (!editPromo) return;
     setSubmitting(true);
-    setError(null);
+    setModalError(null);
 
     try {
       await apiRequest<Promotion>(`/promotions/${editPromo.id}`, {
@@ -149,9 +162,9 @@ export const PromotionsView: React.FC = () => {
       fetchPromotions();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setModalError(err.message);
       } else {
-        setError('Error al actualizar la promoción');
+        setModalError('Error al actualizar la promoción');
       }
     } finally {
       setSubmitting(false);
@@ -161,6 +174,7 @@ export const PromotionsView: React.FC = () => {
   const handleDelete = async () => {
     if (!deletePromo) return;
     setSubmitting(true);
+    setModalError(null);
     try {
       await apiRequest<void>(`/promotions/${deletePromo.id}`, {
         method: 'DELETE',
@@ -168,7 +182,7 @@ export const PromotionsView: React.FC = () => {
       setDeletePromo(null);
       fetchPromotions();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al eliminar promoción');
+      setModalError(err instanceof Error ? err.message : 'Error al eliminar promoción');
     } finally {
       setSubmitting(false);
     }
@@ -179,10 +193,12 @@ export const PromotionsView: React.FC = () => {
     setDescription('');
     setDiscountPercentage(10);
     setMinimumQuantity(1);
-    setStartDate(new Date().toISOString().split('T')[0]);
-    setEndDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    setStartDate(formatLocalDate(0));
+    setEndDate(formatLocalDate(30));
     setProductId('');
   };
+
+  const todayLocalStr = formatLocalDate(0);
 
   return (
     <div className="promotions-view">
@@ -218,7 +234,7 @@ export const PromotionsView: React.FC = () => {
         </div>
       ) : (
         <div className="panel">
-          <div className="panel-body no-padding">
+          <div className="panel-body no-padding table-responsive">
             {promotions.length === 0 ? (
               <p className="text-muted text-center py-8">
                 No hay promociones registradas en este momento.
@@ -239,7 +255,8 @@ export const PromotionsView: React.FC = () => {
                 </thead>
                 <tbody>
                   {promotions.map((p) => {
-                    const isExpired = new Date(p.endDate) < new Date();
+                    const isExpired = p.endDate < todayLocalStr;
+                    const isScheduled = p.startDate > todayLocalStr;
                     return (
                       <tr key={p.id}>
                         <td>
@@ -269,6 +286,10 @@ export const PromotionsView: React.FC = () => {
                             <span className="status-indicator warning">
                               <XCircle size={14} /> Vencida
                             </span>
+                          ) : isScheduled ? (
+                            <span className="badge badge-primary">
+                              Programada
+                            </span>
                           ) : (
                             <span className="status-indicator good">
                               <CheckCircle2 size={14} /> Activa
@@ -294,7 +315,10 @@ export const PromotionsView: React.FC = () => {
                               <span>Editar</span>
                             </button>
                             <button
-                              onClick={() => setDeletePromo(p)}
+                              onClick={() => {
+                                setModalError(null);
+                                setDeletePromo(p);
+                              }}
                               className="action-icon-btn delete"
                               title="Eliminar promoción"
                             >
@@ -381,6 +405,13 @@ export const PromotionsView: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
+
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleCreate} className="modal-form">
               <label>
@@ -492,6 +523,13 @@ export const PromotionsView: React.FC = () => {
               </button>
             </div>
 
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleUpdate} className="modal-form">
               <label>
                 Código del Cupón *
@@ -597,6 +635,14 @@ export const PromotionsView: React.FC = () => {
               <AlertTriangle size={28} />
               <h3 style={{ margin: 0, color: 'var(--text-main)' }}>¿Eliminar Promoción?</h3>
             </div>
+
+            {modalError && (
+              <div className="modal-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
               ¿Estás seguro de que deseas eliminar el cupón <strong>{deletePromo.code}</strong> ({deletePromo.discountPercentage}% OFF)? Los clientes y preventistas ya no podrán aplicarlo.
             </p>

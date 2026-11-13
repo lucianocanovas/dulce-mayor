@@ -1,8 +1,11 @@
 package ing.software.dulcemayor.landing.controller;
 
+import ing.software.dulcemayor.landing.client.BackendApiClient;
 import ing.software.dulcemayor.landing.dto.AuthResponseDTO;
 import ing.software.dulcemayor.landing.dto.CustomerProfileDTO;
+import ing.software.dulcemayor.landing.dto.DollarQuoteDTO;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -11,10 +14,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @ControllerAdvice
+@RequiredArgsConstructor
 public class GlobalModelAttributes {
 
     public static final String SESSION_CUSTOMER_KEY = "DULCE_MAYOR_CUSTOMER";
     public static final String SESSION_AUTH_KEY = "DULCE_MAYOR_AUTH";
+
+    private final BackendApiClient backendApiClient;
+
+    @ModelAttribute("dollarQuote")
+    public DollarQuoteDTO dollarQuote() {
+        return backendApiClient.getDollarQuote(false);
+    }
 
     @Value("${portal.central.url:http://localhost:5173}")
     private String centralPortalUrl;

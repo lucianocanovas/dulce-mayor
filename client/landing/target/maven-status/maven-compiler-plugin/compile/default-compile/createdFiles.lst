@@ -7,11 +7,13 @@ ing\software\dulcemayor\landing\dto\CheckoutRequestDTO$CartItemDTO$CartItemDTOBu
 ing\software\dulcemayor\landing\dto\CheckoutRequestDTO$CartItemDTO.class
 ing\software\dulcemayor\landing\client\BackendApiClient$3.class
 ing\software\dulcemayor\landing\controller\HomeController.class
+ing\software\dulcemayor\landing\dto\DollarQuoteDTO.class
 ing\software\dulcemayor\landing\client\BackendApiClient$20.class
 ing\software\dulcemayor\landing\dto\OrderPaymentStatusDTO.class
 ing\software\dulcemayor\landing\client\BackendApiClient$10.class
 ing\software\dulcemayor\landing\dto\ProductDTO$ProductDTOBuilder.class
 ing\software\dulcemayor\landing\util\LandingInputValidator.class
+ing\software\dulcemayor\landing\client\BackendApiClient$22.class
 ing\software\dulcemayor\landing\client\BackendApiClient$17.class
 ing\software\dulcemayor\landing\client\BackendApiClient$7.class
 ing\software\dulcemayor\landing\controller\AccountController.class
@@ -30,6 +32,7 @@ ing\software\dulcemayor\landing\LandingApplication.class
 ing\software\dulcemayor\landing\dto\AiChatRequestDTO.class
 ing\software\dulcemayor\landing\dto\CustomerRegisterRequestDTO$CustomerRegisterRequestDTOBuilder.class
 ing\software\dulcemayor\landing\dto\CustomerRegisterRequestDTO.class
+ing\software\dulcemayor\landing\dto\DollarQuoteDTO$DollarQuoteDTOBuilder.class
 ing\software\dulcemayor\landing\client\BackendApiClient$8.class
 ing\software\dulcemayor\landing\dto\ApiResponse$ApiResponseBuilder.class
 ing\software\dulcemayor\landing\dto\CustomerProfileDTO.class

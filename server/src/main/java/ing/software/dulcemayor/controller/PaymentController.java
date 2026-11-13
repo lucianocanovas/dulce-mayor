@@ -6,8 +6,12 @@ import ing.software.dulcemayor.dto.billing.MercadoPagoQrResponseDTO;
 import ing.software.dulcemayor.dto.billing.OrderPaymentStatusDTO;
 import ing.software.dulcemayor.dto.billing.PaymentConfigDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
+import ing.software.dulcemayor.service.billing.InvoicePdfService;
 import ing.software.dulcemayor.service.billing.PaymentAccreditationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +33,7 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentAccreditationService paymentAccreditationService;
+    private final InvoicePdfService invoicePdfService;
 
     @GetMapping("/config")
     public ResponseEntity<ApiResponse<PaymentConfigDTO>> getPaymentConfig() {
@@ -96,6 +101,18 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<InvoiceResponseDTO>> getInvoiceForOrder(@PathVariable String orderId) {
         InvoiceResponseDTO invoice = paymentAccreditationService.getInvoiceForOrder(orderId);
         return ResponseEntity.ok(ApiResponse.ok(invoice));
+    }
+
+    @GetMapping(value = "/orders/{orderId}/invoice/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadInvoicePdf(@PathVariable String orderId) {
+        InvoicePdfService.GeneratedInvoicePdf pdf = invoicePdfService.generateInvoicePdfForOrder(orderId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.attachment().filename(pdf.filename()).build());
+        headers.add("Access-Control-Expose-Headers", "Content-Disposition");
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdf.pdfBytes());
     }
 }
 

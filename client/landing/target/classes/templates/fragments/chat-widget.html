@@ -13,6 +13,19 @@
         <a th:href="@{/catalog}" class="dm-nav-link">Catálogo</a>
         <a th:href="@{/contact}" class="dm-nav-link">Contacto</a>
 
+        <!-- Dollar Exchange Rate Pill -->
+        <div class="dm-dollar-pill" id="dm-dollar-pill"
+             th:title="${dollarQuote != null ? ('Fuente: ' + dollarQuote.source + ' • Compra: $' + #numbers.formatDecimal(dollarQuote.buyRate, 0, 'POINT', 0, 'COMMA') + ' / Venta: $' + #numbers.formatDecimal(dollarQuote.sellRate, 0, 'POINT', 0, 'COMMA') + ' • Dólar Blue: $' + #numbers.formatDecimal(dollarQuote.blueSellRate, 0, 'POINT', 0, 'COMMA')) : 'Cotización Dólar en vivo (DolarApi / DolarHoy)'}">
+            <span class="dm-dollar-dot"></span>
+            <span class="dm-dollar-label">USD Oficial:</span>
+            <strong class="dm-dollar-value" id="dm-dollar-oficial-val"
+                    th:text="${dollarQuote != null ? ('$' + #numbers.formatDecimal(dollarQuote.appliedRate, 0, 'POINT', 0, 'COMMA')) : '$1.115'}">$1.115</strong>
+            <span class="dm-dollar-divider">|</span>
+            <span class="dm-dollar-blue-label">Blue:</span>
+            <strong class="dm-dollar-blue-val" id="dm-dollar-blue-val"
+                    th:text="${dollarQuote != null ? ('$' + #numbers.formatDecimal(dollarQuote.blueSellRate, 0, 'POINT', 0, 'COMMA')) : '$1.235'}">$1.235</strong>
+        </div>
+
         <th:block th:if="${currentCustomer != null}">
             <a th:if="${portalUrl != null}"
                th:href="${portalUrl}"
@@ -49,6 +62,51 @@
     </nav>
     <script>
         (function () {
+            // Live Dollar Quote updater (Backend sync + DolarApi fallback)
+            async function refreshLandingDollarPill() {
+                const oficialEl = document.getElementById('dm-dollar-oficial-val');
+                const blueEl = document.getElementById('dm-dollar-blue-val');
+                const pillEl = document.getElementById('dm-dollar-pill');
+                if (!oficialEl || !pillEl) return;
+
+                try {
+                    const res = await fetch('/api/landing/currency/dollar');
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json && json.data && json.data.appliedRate) {
+                            const d = json.data;
+                            const applied = Math.round(Number(d.appliedRate)).toLocaleString('es-AR');
+                            const blue = Math.round(Number(d.blueSellRate || d.sellRate)).toLocaleString('es-AR');
+                            oficialEl.textContent = '$' + applied;
+                            if (blueEl) blueEl.textContent = '$' + blue;
+                            pillEl.title = `Fuente: ${d.source || 'DolarApi / DolarHoy'} • Oficial Compra: $${Math.round(Number(d.buyRate || 0)).toLocaleString('es-AR')} / Venta: $${Math.round(Number(d.sellRate || 0)).toLocaleString('es-AR')} • Blue: $${blue}`;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // Fallback to direct DolarApi.com fetch in browser
+                }
+
+                try {
+                    const extRes = await fetch('https://dolarapi.com/v1/dolares');
+                    if (extRes.ok) {
+                        const list = await extRes.json();
+                        if (Array.isArray(list)) {
+                            const ofi = list.find(x => x.casa === 'oficial');
+                            const blu = list.find(x => x.casa === 'blue');
+                            if (ofi && ofi.venta) {
+                                oficialEl.textContent = '$' + Math.round(Number(ofi.venta)).toLocaleString('es-AR');
+                            }
+                            if (blu && blu.venta && blueEl) {
+                                blueEl.textContent = '$' + Math.round(Number(blu.venta)).toLocaleString('es-AR');
+                            }
+                        }
+                    }
+                } catch (ignored) {}
+            }
+
+            refreshLandingDollarPill();
+
             const menu = document.getElementById('dm-user-menu');
             const btn = document.getElementById('dm-user-menu-btn');
             const dropdown = document.getElementById('dm-user-dropdown');

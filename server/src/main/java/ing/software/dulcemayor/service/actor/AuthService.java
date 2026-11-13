@@ -47,11 +47,16 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponseDTO login(LoginRequestDTO request) {
-        User user = userRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Correo electrónico o contraseña incorrectos"));
+        if (request == null || request.getUsername() == null || request.getUsername().isBlank()
+                || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Debe ingresar su usuario y contraseña.");
+        }
+
+        User user = userRepository.findByUsernameAndIsDeletedFalse(request.getUsername().trim())
+                .orElseThrow(() -> new IllegalArgumentException("Usuario o contraseña incorrectos"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Correo electrónico o contraseña incorrectos");
+            throw new IllegalArgumentException("Usuario o contraseña incorrectos");
         }
 
         String fullName = (user.getPerson() != null)
@@ -135,18 +140,19 @@ public class AuthService {
 
     @Transactional
     public void changePassword(String userId, ChangePasswordRequestDTO request) {
-        User user = userRepository.findByIdAndIsDeletedFalse(userId)
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("Identificador de usuario obligatorio");
+        }
+        InputValidator.validateChangePassword(request);
+
+        User user = userRepository.findByIdAndIsDeletedFalse(userId.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new IllegalArgumentException("La contraseña actual no coincide");
         }
 
-        if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
-            throw new IllegalArgumentException("La nueva contraseña debe tener al menos 6 caracteres");
-        }
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
         user.setTemporaryPassword(false);
         userRepository.save(user);
     }

@@ -17,6 +17,10 @@ public class UserResponseDTO {
     private String id;
     private String username;
     private String fullName;
+    private String firstName;
+    private String lastName;
+    private String documentNumber;
+    private String employeeIdNumber;
     private String email;
     private UserRole role;
     private AuthProvider authProvider;
