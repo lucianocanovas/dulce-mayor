@@ -33,6 +33,7 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'map' | 'pending' | 'delivered'>(initialSubTab);
   const [selectedStopId, setSelectedStopId] = useState<string>('');
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
+  const [deliveringStopIds, setDeliveringStopIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setActiveSubTab(initialSubTab);
@@ -146,41 +147,51 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
   // Mark a stop as delivered
   const handleMarkDelivered = async (stopId: string) => {
     const stopToDeliver = stops.find((s) => s.id === stopId);
-    if (!stopToDeliver) return;
+    if (!stopToDeliver || deliveringStopIds.has(stopId)) return;
 
     if (stopToDeliver.orderId) {
       markDeliveryOnBackend(stopToDeliver.orderId);
     }
 
-    const updated = stops.map((s) => {
-      if (s.id === stopId) {
-        return {
-          ...s,
-          status: 'DELIVERED' as const,
-          deliveredAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-      }
-      return s;
-    });
+    setDeliveringStopIds((current) => new Set(current).add(stopId));
+    setNotificationMsg(`✓ Entrega en "${stopToDeliver.pointOfSale.name}" registrada. Se retirará del mapa en 5 segundos.`);
 
-    setStops(updated);
-    saveStoredStops(updated);
+    window.setTimeout(() => {
+      setDeliveringStopIds((current) => {
+        const next = new Set(current);
+        next.delete(stopId);
+        return next;
+      });
 
-    // Find next pending stop
-    const remainingPending = updated.filter((s) => s.status !== 'DELIVERED');
-    if (remainingPending.length > 0) {
-      setSelectedStopId(remainingPending[0].id);
-      setNotificationMsg(
-        `✓ Entrega en "${stopToDeliver.pointOfSale.name}" completada. Próximo destino: "${remainingPending[0].pointOfSale.name}".`
-      );
-    } else {
-      setNotificationMsg('🎉 ¡Excelente trabajo! Todas las entregas del día fueron completadas.');
-    }
+      setStops((current) => {
+        const updated = current.map((stop) => (
+          stop.id === stopId
+            ? {
+                ...stop,
+                status: 'DELIVERED' as const,
+                deliveredAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }
+            : stop
+        ));
+        saveStoredStops(updated);
+
+        const remainingPending = updated.filter((stop) => stop.status !== 'DELIVERED');
+        if (remainingPending.length > 0) {
+          setSelectedStopId(remainingPending[0].id);
+          setNotificationMsg(
+            `✓ Entrega en "${stopToDeliver.pointOfSale.name}" completada. Próximo destino: "${remainingPending[0].pointOfSale.name}".`
+          );
+        } else {
+          setNotificationMsg('🎉 ¡Excelente trabajo! Todas las entregas del día fueron completadas.');
+        }
+        return updated;
+      });
+    }, 5000);
 
     setTimeout(() => setNotificationMsg(null), 4500);
   };
 
-  const selectedStop = stops.find((s) => s.id === selectedStopId) || pendingStops[0] || stops[0];
+  const selectedStop = pendingStops.find((s) => s.id === selectedStopId) || pendingStops[0];
 
   return (
     <div className="view-container">
@@ -382,7 +393,7 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
       {activeSubTab === 'map' && (
         <div className="route-map-section">
           <LeafletRouteMap
-            stops={stops}
+            stops={pendingStops}
             driverLocation={driverLocation}
             selectedStopId={selectedStopId}
             onSelectStop={(stop) => setSelectedStopId(stop.id)}
@@ -446,12 +457,12 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleMarkDelivered(selectedStop.id)}
-                  disabled={selectedStop.status === 'DELIVERED'}
+                  disabled={selectedStop.status === 'DELIVERED' || deliveringStopIds.has(selectedStop.id)}
                   className="btn btn-primary"
                   style={{
                     flex: '2 1 160px',
-                    backgroundColor: selectedStop.status === 'DELIVERED' ? '#94A3B8' : '#16A34A',
-                    borderColor: selectedStop.status === 'DELIVERED' ? '#94A3B8' : '#16A34A',
+                    backgroundColor: selectedStop.status === 'DELIVERED' || deliveringStopIds.has(selectedStop.id) ? '#94A3B8' : '#16A34A',
+                    borderColor: selectedStop.status === 'DELIVERED' || deliveringStopIds.has(selectedStop.id) ? '#94A3B8' : '#16A34A',
                     color: '#FFFFFF',
                     fontWeight: 800,
                     fontSize: '0.82rem',
@@ -463,7 +474,7 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
                   }}
                 >
                   <CheckCircle2 size={16} />
-                  <span>{selectedStop.status === 'DELIVERED' ? 'Entrega Confirmada' : 'Confirmar Entrega'}</span>
+                  <span>{selectedStop.status === 'DELIVERED' || deliveringStopIds.has(selectedStop.id) ? 'Entrega registrada' : 'Confirmar Entrega'}</span>
                 </button>
               </div>
             </div>
@@ -577,6 +588,7 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleMarkDelivered(stop.id)}
+                      disabled={deliveringStopIds.has(stop.id)}
                       style={{
                         flex: 2,
                         padding: '0.45rem',
@@ -594,7 +606,7 @@ export const DeliveryDashboardView: React.FC<DeliveryDashboardViewProps> = ({
                       }}
                     >
                       <CheckCircle2 size={14} />
-                      <span>Confirmar Entrega</span>
+                      <span>{deliveringStopIds.has(stop.id) ? 'Entrega registrada' : 'Confirmar Entrega'}</span>
                     </button>
                   </div>
                 </div>

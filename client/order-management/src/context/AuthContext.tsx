@@ -16,7 +16,6 @@ interface AuthContextType {
   login: (username: string, role?: UserRole) => void;
   loginSocial: (payload: SocialLoginPayload) => Promise<void>;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
 }
 
 const AUTH_STORAGE_KEY = 'dm_order_management_user';
@@ -67,12 +66,13 @@ export const AuthProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ c
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
       if (!stored) return null;
       const parsed = JSON.parse(stored) as User;
-      if ((parsed.role as string) === 'RETAILER') {
+      if ((parsed.role as string) === 'RETAILER' || parsed.provider !== AuthProvider.LOCAL) {
         localStorage.removeItem(AUTH_STORAGE_KEY);
         return null;
       }
       return parsed;
     } catch {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
       return null;
     }
   });
@@ -87,7 +87,7 @@ export const AuthProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ c
 
   const login = (username: string, role: UserRole = UserRole.PRESALE_AGENT) => {
     const isDelivery = role === UserRole.DELIVERY_AGENT;
-    const newUser: User = {
+    setUser({
       id: isDelivery ? 'usr-dist-01' : 'usr-prev-01',
       username,
       fullName: isDelivery ? 'Carlos Méndez (Repartidor)' : 'Juan Manuel Torres (Preventista)',
@@ -95,8 +95,7 @@ export const AuthProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ c
       email: `${username}@dulcemayor.com.ar`,
       provider: AuthProvider.LOCAL,
       token: 'jwt-demo-token-order-management',
-    };
-    setUser(newUser);
+    });
   };
 
   const loginSocial = async (payload: SocialLoginPayload) => {
@@ -113,52 +112,37 @@ export const AuthProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ c
         }),
       });
 
-      if (res.ok) {
-        const json = await res.json();
-        const data = json.data;
-        if ((data.role as string) === 'RETAILER') {
-          throw new Error('Las cuentas de cliente no tienen acceso al portal de operaciones.');
-        }
-        const assignedRole = data.role || payload.role || UserRole.PRESALE_AGENT;
-        const loggedUser: User = {
-          id: data.userId || `usr-${Date.now()}`,
-          username: data.username || payload.email.split('@')[0],
-          fullName: data.fullName || payload.name || 'Operador Social',
-          role: assignedRole,
-          email: payload.email,
-          provider: payload.provider,
-          token: data.token || 'jwt-auth0-session',
-        };
-        setUser(loggedUser);
-        return;
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.message || 'No se pudo validar la cuenta en el servidor.');
       }
+
+      const data = json.data;
+      if ((data.role as string) === 'RETAILER') {
+        throw new Error('Las cuentas de cliente no tienen acceso al portal de operaciones.');
+      }
+      if (!ORDER_PORTAL_ROLES.includes(data.role as UserRole)) {
+        throw new Error('La cuenta no tiene un rol habilitado para este portal.');
+      }
+      if (payload.role && data.role !== payload.role) {
+        const roleName = data.role === UserRole.DELIVERY_AGENT ? 'Distribuidor' : 'Preventista';
+        throw new Error(`Esta cuenta está registrada como ${roleName}. Selecciona ese perfil para ingresar.`);
+      }
+
+      const loggedUser: User = {
+        id: data.userId || `usr-${Date.now()}`,
+        username: data.username || payload.email.split('@')[0],
+        fullName: data.fullName || payload.name || 'Operador Social',
+        role: data.role as UserRole,
+        email: payload.email,
+        provider: payload.provider,
+        token: data.token || 'jwt-auth0-session',
+      };
+      setUser(loggedUser);
     } catch (e) {
-      console.warn('Backend /auth/social not available, using offline Auth0 fallback session', e);
+      console.warn('No se pudo completar el login social', e);
+      throw e instanceof Error ? e : new Error('No se pudo completar el login social.');
     }
-
-    // Local / Offline fallback session
-    const assignedRole = payload.role || UserRole.PRESALE_AGENT;
-    const isDelivery = assignedRole === UserRole.DELIVERY_AGENT;
-    const fallbackUser: User = {
-      id: `usr-${payload.provider.toLowerCase()}-${Date.now()}`,
-      username: payload.email.split('@')[0],
-      fullName: payload.name || (isDelivery ? 'Carlos Méndez (Reparto)' : 'Juan Manuel Torres (Preventa)'),
-      role: assignedRole,
-      email: payload.email,
-      provider: payload.provider,
-      token: `oauth2-token-${payload.provider.toLowerCase()}`,
-    };
-    setUser(fallbackUser);
-  };
-
-  const switchRole = (newRole: UserRole) => {
-    if (!user) return;
-    const isDelivery = newRole === UserRole.DELIVERY_AGENT;
-    setUser({
-      ...user,
-      role: newRole,
-      fullName: isDelivery ? 'Carlos Méndez (Repartidor)' : 'Juan Manuel Torres (Preventista)',
-    });
   };
 
   const logout = () => {
@@ -166,7 +150,7 @@ export const AuthProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginSocial, logout, switchRole }}>
+    <AuthContext.Provider value={{ user, login, loginSocial, logout }}>
       {children}
     </AuthContext.Provider>
   );

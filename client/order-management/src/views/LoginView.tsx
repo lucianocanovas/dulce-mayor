@@ -10,10 +10,9 @@ export const LoginView: React.FC = () => {
   const [password, setPassword] = useState('dulcemayor');
   const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.PRESALE_AGENT);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim()) return;
-    login(username.trim(), selectedRole);
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (username.trim() && password) login(username.trim(), selectedRole);
   };
 
   return (
@@ -52,14 +51,13 @@ export const LoginView: React.FC = () => {
           </button>
         </div>
 
-        {/* Standard Form */}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label className="form-label">Usuario o Correo</label>
             <input
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(event) => setUsername(event.target.value)}
               className="form-input"
               placeholder="ej: preventa_mza"
               required
@@ -71,7 +69,7 @@ export const LoginView: React.FC = () => {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               className="form-input"
               placeholder="••••••••"
               required
@@ -84,9 +82,8 @@ export const LoginView: React.FC = () => {
           </button>
         </form>
 
-        {/* Auth0 Social Login Section */}
         <div className="login-divider">
-          <span>o ingresar con Auth0</span>
+          <span>o ingresar con Google</span>
         </div>
 
         <Auth0SocialButtons selectedRole={selectedRole} />

@@ -160,6 +160,9 @@ export interface BackendOrderSummary {
   sourceChannel?: string;
   mpPreferenceId?: string;
   mpInitPoint?: string;
+  mpPaymentId?: string;
+  mpPaymentStatus?: string;
+  paidAt?: string;
   invoiceNumber?: number;
   readyForDispatch?: boolean;
 }

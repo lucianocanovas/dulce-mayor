@@ -4,7 +4,7 @@ import { UserRole } from '../types/enums';
 import { User, Truck, ClipboardList, LogOut } from 'lucide-react';
 
 export const ProfileView: React.FC = () => {
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout } = useAuth();
 
   if (!user) return null;
 
@@ -41,35 +41,6 @@ export const ProfileView: React.FC = () => {
       </div>
 
       <div className="settings-section-card">
-        <h3 className="section-title-sm">Modo de Operación</h3>
-        <p className="section-desc-sm">
-          Puedes alternar entre los perfiles de campo para verificar los flujos de Preventa o de Reparto:
-        </p>
-
-        <div className="role-switch-buttons">
-          <button
-            onClick={() => switchRole(UserRole.PRESALE_AGENT)}
-            className={`btn-role-opt ${!isDelivery ? 'active' : ''}`}
-          >
-            <ClipboardList size={18} />
-            <div>
-              <strong>Preventista</strong>
-              <small>Toma de pedidos y alta de comercios</small>
-            </div>
-          </button>
-
-          <button
-            onClick={() => switchRole(UserRole.DELIVERY_AGENT)}
-            className={`btn-role-opt ${isDelivery ? 'active' : ''}`}
-          >
-            <Truck size={18} />
-            <div>
-              <strong>Distribuidor</strong>
-              <small>Hoja de ruta y confirmación de entregas</small>
-            </div>
-          </button>
-        </div>
-
         <button onClick={logout} className="btn-logout-full">
           <LogOut size={16} />
           <span>Cerrar Sesión Activa</span>
