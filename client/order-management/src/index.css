@@ -799,6 +799,24 @@ body {
   gap: 0.5rem;
 }
 
+.order-back-button {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dm-border);
+  border-radius: var(--dm-radius-sm);
+  background: var(--dm-bg-canvas);
+  color: var(--dm-text-primary);
+  cursor: pointer;
+}
+
+.order-back-button:hover {
+  background: var(--dm-bg-surface-alt);
+}
+
 .target-label {
   display: flex;
   align-items: center;

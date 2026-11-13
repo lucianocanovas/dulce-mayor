@@ -29,6 +29,13 @@ export const PresaleOrdersView: React.FC = () => {
     qrImageBase64?: string;
   } | null>(null);
 
+  const isOrderPaid = (order: BackendOrderSummary) => (
+    order.status === OrderStatus.PAID ||
+    order.status === OrderStatus.INVOICED ||
+    order.mpPaymentStatus?.toLowerCase().startsWith('approved') ||
+    Boolean(order.paidAt)
+  );
+
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
@@ -84,7 +91,7 @@ export const PresaleOrdersView: React.FC = () => {
   };
 
   const filteredOrders = orders.filter((o) => {
-    const isPaid = o.status === OrderStatus.PAID || o.status === OrderStatus.INVOICED;
+    const isPaid = isOrderPaid(o);
     if (filter === 'PENDING' && isPaid) return false;
     if (filter === 'PAID' && !isPaid) return false;
 
@@ -99,7 +106,7 @@ export const PresaleOrdersView: React.FC = () => {
 
   const totalSales = orders.reduce((acc, o) => acc + (o.total || 0), 0);
   const paidSales = orders
-    .filter((o) => o.status === OrderStatus.PAID || o.status === OrderStatus.INVOICED)
+    .filter(isOrderPaid)
     .reduce((acc, o) => acc + (o.total || 0), 0);
 
   return (
@@ -237,7 +244,7 @@ export const PresaleOrdersView: React.FC = () => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
           {filteredOrders.map((ord) => {
-            const isPaid = ord.status === OrderStatus.PAID || ord.status === OrderStatus.INVOICED;
+            const isPaid = isOrderPaid(ord);
             const isMp = ord.paymentType === PaymentType.MERCADO_PAGO || ord.paymentType === PaymentType.DIGITAL_WALLET;
 
             return (

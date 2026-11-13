@@ -685,37 +685,16 @@ export async function confirmManualPayment(
   reference?: string,
   note?: string
 ): Promise<OrderPaymentStatus> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/payments/orders/${encodeURIComponent(orderId)}/confirm-manual`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentType, reference: reference || 'POS-IN-SITU', note: note || 'Acreditación confirmada por Preventista' }),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (res.ok && json.success && json.data) {
-      return json.data as OrderPaymentStatus;
-    }
-  } catch (err) {
-    console.warn('Backend confirm-manual call failed, applying local accreditation fallback:', err);
+  const res = await fetch(`${API_BASE_URL}/payments/orders/${encodeURIComponent(orderId)}/confirm-manual`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentType, reference: reference || 'POS-IN-SITU', note: note || 'Acreditación confirmada por Preventista' }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json?.message || 'No se pudo confirmar el cobro en el servidor.');
   }
-
-  // Fallback return for offline or demo mode
-  return {
-    orderId,
-    orderNumber: 1000 + Math.floor(Math.random() * 9000),
-    orderStatus: OrderStatus.PAID,
-    paid: true,
-    readyForDispatch: true,
-    subtotal: 0,
-    discount: 0,
-    paymentType: paymentType as PaymentType,
-    total: 0,
-    mpPaymentId: reference || 'MP-MANUAL-' + Date.now(),
-    mpPaymentStatus: 'approved',
-    invoiceNumber: Math.floor(100000 + Math.random() * 900000),
-    stockDeducted: true,
-    message: 'Pago confirmado y acreditado manualmente por el preventista in situ.',
-  };
+  return json.data as OrderPaymentStatus;
 }
 
 export async function fetchOrdersFromBackend(): Promise<BackendOrderSummary[]> {

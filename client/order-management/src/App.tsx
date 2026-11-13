@@ -18,7 +18,7 @@ const MainApp: React.FC = () => {
   const isDelivery = user?.role === UserRole.DELIVERY_AGENT;
 
   const [activeTab, setActiveTab] = useState<ActiveTab>(
-    isDelivery ? 'delivery-route' : 'order'
+    isDelivery ? 'delivery-route' : 'retailers'
   );
   const [targetPOS, setTargetPOS] = useState<PointOfSale | null>(null);
 
@@ -27,7 +27,7 @@ const MainApp: React.FC = () => {
     if (user?.role === UserRole.DELIVERY_AGENT) {
       setActiveTab('delivery-route');
     } else if (user) {
-      setActiveTab('order');
+      setActiveTab('retailers');
     }
   }, [user?.role]);
 
@@ -46,6 +46,7 @@ const MainApp: React.FC = () => {
             {activeTab === 'order' && (
               <CatalogOrderView
                 initialPOS={targetPOS}
+                onBackToRetailers={() => setActiveTab('retailers')}
                 onOrderSuccess={() => setActiveTab('history')}
               />
             )}
@@ -80,12 +81,14 @@ const MainApp: React.FC = () => {
         {activeTab === 'profile' && <ProfileView />}
       </main>
 
-      <BottomNavigation
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        role={user.role}
-        cartCount={0}
-      />
+      {activeTab !== 'retailers' && (
+        <BottomNavigation
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          role={user.role}
+          cartCount={0}
+        />
+      )}
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ShoppingBag,
-  Store,
   ClipboardList,
   UserCheck,
   Navigation,
@@ -84,14 +83,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
           {cartCount > 0 && <span className="tab-cart-badge">{cartCount}</span>}
         </div>
         <span>Pedido</span>
-      </button>
-
-      <button
-        onClick={() => onTabChange('retailers')}
-        className={`nav-tab-btn ${activeTab === 'retailers' ? 'active' : ''}`}
-      >
-        <Store size={20} />
-        <span>Comercios</span>
       </button>
 
       <button

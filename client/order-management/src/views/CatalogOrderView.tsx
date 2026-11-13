@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   fetchProducts,
-  fetchPointsOfSale,
   submitOrderToBackend,
   fetchPaymentConfig,
 } from '../services/api';
@@ -16,6 +15,7 @@ import {
   Minus,
   Check,
   ArrowRight,
+  ArrowLeft,
   Store,
   X,
   Loader2,
@@ -25,16 +25,17 @@ import {
 
 interface CatalogOrderViewProps {
   initialPOS?: PointOfSale | null;
+  onBackToRetailers?: () => void;
   onOrderSuccess?: () => void;
 }
 
 export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   initialPOS,
+  onBackToRetailers,
   onOrderSuccess,
 }) => {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
-  const [allPOS, setAllPOS] = useState<PointOfSale[]>([]);
   const [selectedPOS, setSelectedPOS] = useState<PointOfSale | null>(initialPOS || null);
   const [showNewPosModal, setShowNewPosModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -64,17 +65,12 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
     async function loadData() {
       setLoading(true);
       try {
-        const [loadedProds, loadedPos, loadedPayConfig] = await Promise.all([
+        const [loadedProds, loadedPayConfig] = await Promise.all([
           fetchProducts(),
-          fetchPointsOfSale(),
           fetchPaymentConfig(),
         ]);
         setProducts(loadedProds);
-        setAllPOS(loadedPos);
         setPaymentConfig(loadedPayConfig);
-        if (!selectedPOS && loadedPos.length > 0) {
-          setSelectedPOS(loadedPos[0]);
-        }
       } finally {
         setLoading(false);
       }
@@ -220,54 +216,46 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   return (
     <div className="view-container">
       {/* Customer Header Selector & Quick Register */}
-      <div className="order-target-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
-          <div className="target-label">
-            <Store size={15} />
-            <span>Comercio:</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowNewPosModal(true)}
-            style={{
-              background: '#FAF5E9',
-              border: '1.5px solid #C88D33',
-              color: '#0F1D38',
-              borderRadius: '6px',
-              padding: '0.3rem 0.55rem',
-              fontSize: '0.74rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <PlusCircle size={14} style={{ color: '#C88D33' }} />
-            <span>+ Nuevo Local</span>
-          </button>
-        </div>
-
-        <select
-          value={selectedPOS?.id || ''}
-          onChange={(e) => {
-            const found = allPOS.find((p) => p.id === e.target.value);
-            if (found) setSelectedPOS(found);
-          }}
-          className="pos-dropdown"
-          style={{ width: '100%', padding: '0.5rem', fontWeight: 600, color: '#0F1D38' }}
+      <div className="order-target-card" style={{ alignItems: 'center', gap: '0.65rem' }}>
+        <button
+          type="button"
+          onClick={onBackToRetailers}
+          className="order-back-button"
+          aria-label="Volver a Comercios"
+          title="Volver a Comercios"
         >
-          {allPOS.length === 0 ? (
-            <option value="">No hay comercios registrados aún</option>
-          ) : (
-            allPOS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} — {p.address} ({p.neighborhood || p.city})
-              </option>
-            ))
-          )}
-        </select>
+          <ArrowLeft size={19} />
+        </button>
+        <div className="target-label" style={{ flex: 1, minWidth: 0 }}>
+          <Store size={16} />
+          <div style={{ minWidth: 0 }}>
+            <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7 }}>Pedido para</span>
+            <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {selectedPOS?.name || 'Comercio no seleccionado'}
+            </strong>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowNewPosModal(true)}
+          style={{
+            background: '#FAF5E9',
+            border: '1.5px solid #C88D33',
+            color: '#0F1D38',
+            borderRadius: '6px',
+            padding: '0.3rem 0.55rem',
+            fontSize: '0.74rem',
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <PlusCircle size={14} style={{ color: '#C88D33' }} />
+          <span>+ Nuevo Local</span>
+        </button>
       </div>
 
       {/* Success Banner */}
@@ -577,7 +565,6 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
         isOpen={showNewPosModal}
         onClose={() => setShowNewPosModal(false)}
         onSuccess={(newPos) => {
-          setAllPOS((prev) => [newPos, ...prev]);
           setSelectedPOS(newPos);
           setOrderPlacedMsg(`✓ Comercio "${newPos.name}" registrado con éxito y seleccionado.`);
           setTimeout(() => setOrderPlacedMsg(null), 3500);
