@@ -19,7 +19,10 @@ export const Auth0ProviderWrapper: React.FC<{ children: React.ReactNode }> = ({ 
   const domain = (import.meta.env.VITE_AUTH0_DOMAIN as string) || '';
   const clientId = (import.meta.env.VITE_AUTH0_CLIENT_ID as string) || '';
 
+  const isSecureOrigin = typeof window !== 'undefined' && window.isSecureContext;
+
   const isConfigured = Boolean(
+    isSecureOrigin &&
     domain &&
     clientId &&
     !domain.includes('your_') &&
