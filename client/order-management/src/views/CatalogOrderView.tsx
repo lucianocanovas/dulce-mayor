@@ -3,6 +3,7 @@ import {
   fetchProducts,
   submitOrderToBackend,
   fetchPaymentConfig,
+  validatePromotionCode,
 } from '../services/api';
 import type { PointOfSale, OrderItem, Product, PaymentConfig } from '../types/models';
 import { PaymentType } from '../types/enums';
@@ -124,19 +125,27 @@ export const CatalogOrderView: React.FC<CatalogOrderViewProps> = ({
   const discountAmount = (rawSubtotal * discountPercent) / 100;
   const finalTotal = rawSubtotal - discountAmount;
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     const code = couponCode.trim().toUpperCase();
-    if (code === 'BIENVENIDA' || code === 'DULCE10' || code === 'MAYORISTA10') {
-      setDiscountPercent(10);
-      setCouponMsg({ text: 'Cupón del 10% aplicado con éxito', ok: true });
-    } else if (code === 'ALFAJORFEST') {
-      setDiscountPercent(15);
-      setCouponMsg({ text: 'Cupón especial 15% aplicado', ok: true });
-    } else if (code === 'MAYORISTA2026' || code === 'PROMO20') {
-      setDiscountPercent(20);
-      setCouponMsg({ text: 'Cupón especial 20% aplicado', ok: true });
-    } else {
-      setCouponMsg({ text: 'Cupón inválido o sin vigencia', ok: false });
+    if (!code) {
+      setDiscountPercent(0);
+      setCouponMsg(null);
+      return;
+    }
+    try {
+      const promo = await validatePromotionCode(code);
+      const pct = Number(promo.discountPercentage || 0);
+      setDiscountPercent(pct);
+      setCouponMsg({
+        text: `Cupón ${promo.code} (${pct}% OFF) aplicado con éxito`,
+        ok: true,
+      });
+    } catch (err: unknown) {
+      setDiscountPercent(0);
+      setCouponMsg({
+        text: err instanceof Error ? err.message : 'Cupón inválido o sin vigencia',
+        ok: false,
+      });
     }
   };
 

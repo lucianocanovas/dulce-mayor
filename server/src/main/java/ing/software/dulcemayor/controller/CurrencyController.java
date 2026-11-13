@@ -33,26 +33,7 @@ public class CurrencyController {
     @PostMapping("/sync")
     public ResponseEntity<ApiResponse<DollarQuoteDTO>> syncDollarQuote(
             @RequestBody(required = false) Map<String, Object> body) {
-        String mode = "OFICIAL";
-        Double customRate = null;
-        if (body != null) {
-            if (body.get("mode") != null) {
-                mode = String.valueOf(body.get("mode")).trim().toUpperCase();
-            }
-            if (body.get("customRate") != null) {
-                try {
-                    double parsed = Double.parseDouble(String.valueOf(body.get("customRate")));
-                    if (parsed >= 100 && parsed <= 50000) {
-                        customRate = parsed;
-                    } else {
-                        throw new IllegalArgumentException("La cotización de referencia debe estar entre $100 y $50.000 ARS/USD.");
-                    }
-                } catch (NumberFormatException ex) {
-                    throw new IllegalArgumentException("La cotización ingresada no tiene un formato numérico válido.");
-                }
-            }
-        }
-        DollarQuoteDTO synced = exchangeRateService.syncWithRateMode(mode, customRate);
+        DollarQuoteDTO synced = exchangeRateService.syncFromRawPayload(body);
         return ResponseEntity.ok(ApiResponse.ok("Precios sincronizados exitosamente con la cotización del dólar.", synced));
     }
 

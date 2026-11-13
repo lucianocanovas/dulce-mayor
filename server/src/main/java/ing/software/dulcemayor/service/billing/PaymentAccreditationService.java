@@ -29,6 +29,7 @@ import ing.software.dulcemayor.repository.logistics.DeliveryRouteRepository;
 import ing.software.dulcemayor.repository.order.OrderRepository;
 import ing.software.dulcemayor.repository.order.OrderStatusHistoryRepository;
 import ing.software.dulcemayor.service.billing.factory.InvoiceFactoryProvider;
+import ing.software.dulcemayor.service.billing.strategy.PaymentStrategyFactory;
 import ing.software.dulcemayor.service.order.OrderDtoMapper;
 import ing.software.dulcemayor.util.InputValidator;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +70,7 @@ public class PaymentAccreditationService {
     private final QrCodeService qrCodeService;
     private final OrderDtoMapper orderDtoMapper;
     private final InvoiceFactoryProvider invoiceFactoryProvider;
+    private final PaymentStrategyFactory paymentStrategyFactory;
     private final ApplicationEventPublisher eventPublisher;
     private final PlatformTransactionManager transactionManager;
 
@@ -132,6 +134,21 @@ public class PaymentAccreditationService {
                 .qrPayload(order.getMpInitPoint())
                 .qrImageBase64(qrBase64)
                 .build();
+    }
+
+    public OrderPaymentStatusDTO verifyMercadoPagoReturn(String orderId, String paymentId, String collectionId) {
+        String effectivePaymentId = (paymentId != null && !paymentId.isBlank()) ? paymentId : collectionId;
+        return verifyOrPollOrderStatus(orderId, effectivePaymentId);
+    }
+
+    public void handleMercadoPagoWebhookRequest(
+            String topic,
+            String type,
+            String idParam,
+            String dataIdParam,
+            Map<String, Object> body) {
+        String effectiveTopic = (type != null && !type.isBlank()) ? type : topic;
+        handleMercadoPagoWebhook(effectiveTopic, idParam, dataIdParam, body);
     }
 
     public OrderPaymentStatusDTO verifyOrPollOrderStatus(String orderId, String paymentIdParam) {
@@ -326,6 +343,7 @@ public class PaymentAccreditationService {
 
     @Transactional
     public void deductStockAndInvoiceOnOrderInvoiced(Order order, OrderStatusHistory historyNoteSource) {
+        boolean hadInvoiceBefore = invoiceRepository.findByOrderIdAndIsDeletedFalse(order.getId()).isPresent();
         deductStockIdempotently(order);
         PaymentType type = order.getPaymentType() != null ? order.getPaymentType() : PaymentType.CASH;
         Invoice invoice = createInvoiceIfMissing(order);
@@ -339,7 +357,26 @@ public class PaymentAccreditationService {
         if (order.getDispatchEnabledAt() == null) {
             order.setDispatchEnabledAt(LocalDateTime.now());
         }
-        orderRepository.save(order);
+        if (order.getPaidAt() == null) {
+            order.setPaidAt(LocalDateTime.now());
+        }
+        Order savedOrder = orderRepository.save(order);
+
+        if (!hadInvoiceBefore) {
+            eventPublisher.publishEvent(OrderPaidEvent.builder()
+                    .orderId(savedOrder.getId())
+                    .orderNumber(savedOrder.getOrderNumber())
+                    .invoiceNumber(invoice.getInvoiceNumber())
+                    .paymentType(type)
+                    .total(savedOrder.getTotal())
+                    .customerName(orderDtoMapper.resolveRetailerName(savedOrder))
+                    .customerEmail(resolveOrderEmail(savedOrder))
+                    .storeName(savedOrder.getPointOfSale() != null ? savedOrder.getPointOfSale().getStoreName() : null)
+                    .deliveryAddress(orderDtoMapper.resolveDeliveryAddress(savedOrder))
+                    .paymentReference("INV-" + invoice.getInvoiceNumber())
+                    .paidAt(savedOrder.getPaidAt())
+                    .build());
+        }
     }
 
     public record OrderInvoiceBundle(Order order, Invoice invoice) {}
@@ -479,7 +516,7 @@ public class PaymentAccreditationService {
                 .paymentType(effectivePaymentType)
                 .total(savedOrder.getTotal())
                 .customerName(orderDtoMapper.resolveRetailerName(savedOrder))
-                .customerEmail(savedOrder.getCustomerEmail())
+                .customerEmail(resolveOrderEmail(savedOrder))
                 .storeName(savedOrder.getPointOfSale() != null ? savedOrder.getPointOfSale().getStoreName() : null)
                 .deliveryAddress(orderDtoMapper.resolveDeliveryAddress(savedOrder))
                 .paymentReference(effectiveReference)
@@ -592,9 +629,21 @@ public class PaymentAccreditationService {
         return order;
     }
 
+    private String resolveOrderEmail(Order order) {
+        if (order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()) {
+            return order.getCustomerEmail().trim();
+        }
+        if (order.getPointOfSale() != null
+                && order.getPointOfSale().getContactEmail() != null
+                && !order.getPointOfSale().getContactEmail().isBlank()) {
+            return order.getPointOfSale().getContactEmail().trim();
+        }
+        return null;
+    }
+
     private OrderPaymentStatusDTO buildStatusDto(Order order, Invoice invoice, String message) {
         boolean paid = isAlreadyAccreditedStatus(order.getStatus()) && invoice != null;
-        return OrderPaymentStatusDTO.builder()
+        OrderPaymentStatusDTO.OrderPaymentStatusDTOBuilder builder = OrderPaymentStatusDTO.builder()
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .orderStatus(order.getStatus())
@@ -614,16 +663,17 @@ public class PaymentAccreditationService {
                 .invoiceNumber(invoice != null ? invoice.getInvoiceNumber() : null)
                 .storeName(order.getPointOfSale() != null ? order.getPointOfSale().getStoreName() : null)
                 .customerName(orderDtoMapper.resolveRetailerName(order))
-                .customerEmail(order.getCustomerEmail())
+                .customerEmail(resolveOrderEmail(order))
                 .deliveryAddress(orderDtoMapper.resolveDeliveryAddress(order))
                 .deliveryCity(order.getDeliveryCity())
-                .bankAlias(order.getPaymentType() == PaymentType.BANK_TRANSFER ? bankAlias : null)
-                .bankCbu(order.getPaymentType() == PaymentType.BANK_TRANSFER ? bankCbu : null)
-                .bankHolder(order.getPaymentType() == PaymentType.BANK_TRANSFER ? bankHolder : null)
-                .bankName(order.getPaymentType() == PaymentType.BANK_TRANSFER ? bankName : null)
                 .items(orderDtoMapper.toDetailDtos(order.getOrderDetails()))
-                .message(message)
-                .build();
+                .message(message);
+
+        paymentStrategyFactory.enrichPaymentStatus(order, builder);
+        if (order.getPaymentType() == PaymentType.BANK_TRANSFER) {
+            builder.bankName(bankName);
+        }
+        return builder.build();
     }
 
     private boolean isAlreadyAccreditedStatus(OrderStatus status) {

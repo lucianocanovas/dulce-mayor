@@ -1,51 +1,32 @@
 package ing.software.dulcemayor.controller;
 
+import ing.software.dulcemayor.controller.base.BaseController;
 import ing.software.dulcemayor.dto.order.CreatePointOfSaleRequestDTO;
 import ing.software.dulcemayor.dto.order.PointOfSaleResponseDTO;
-import ing.software.dulcemayor.dto.response.ApiResponse;
 import ing.software.dulcemayor.service.order.PointOfSaleService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/points-of-sale")
-@RequiredArgsConstructor
-public class PointOfSaleController {
+public class PointOfSaleController extends BaseController<CreatePointOfSaleRequestDTO, PointOfSaleResponseDTO> {
 
-    private final PointOfSaleService pointOfSaleService;
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<PointOfSaleResponseDTO>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.ok(pointOfSaleService.getAllPointsOfSale()));
+    public PointOfSaleController(PointOfSaleService pointOfSaleService) {
+        super(pointOfSaleService);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PointOfSaleResponseDTO>> getById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.ok(pointOfSaleService.getById(id)));
+    @Override
+    protected String getCreatedMessage() {
+        return "Punto de venta registrado con éxito";
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<PointOfSaleResponseDTO>> create(@RequestBody CreatePointOfSaleRequestDTO request) {
-        PointOfSaleResponseDTO created = pointOfSaleService.createPointOfSale(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Punto de venta registrado con éxito", created));
+    @Override
+    protected String getUpdatedMessage() {
+        return "Punto de venta actualizado correctamente";
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<PointOfSaleResponseDTO>> update(
-            @PathVariable String id,
-            @RequestBody CreatePointOfSaleRequestDTO request) {
-        PointOfSaleResponseDTO updated = pointOfSaleService.updatePointOfSale(id, request);
-        return ResponseEntity.ok(ApiResponse.ok("Punto de venta actualizado correctamente", updated));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
-        pointOfSaleService.deletePointOfSale(id);
-        return ResponseEntity.ok(ApiResponse.ok("Punto de venta eliminado correctamente", null));
+    @Override
+    protected String getDeletedMessage() {
+        return "Punto de venta eliminado correctamente";
     }
 }

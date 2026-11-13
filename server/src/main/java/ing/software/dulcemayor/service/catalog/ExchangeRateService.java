@@ -74,6 +74,30 @@ public class ExchangeRateService {
     }
 
     @Transactional
+    public DollarQuoteDTO syncFromRawPayload(java.util.Map<String, Object> body) {
+        String mode = "OFICIAL";
+        Double customRate = null;
+        if (body != null) {
+            if (body.get("mode") != null) {
+                mode = String.valueOf(body.get("mode")).trim().toUpperCase();
+            }
+            if (body.get("customRate") != null) {
+                try {
+                    double parsed = Double.parseDouble(String.valueOf(body.get("customRate")));
+                    if (parsed >= 100 && parsed <= 50000) {
+                        customRate = parsed;
+                    } else {
+                        throw new IllegalArgumentException("La cotización de referencia debe estar entre $100 y $50.000 ARS/USD.");
+                    }
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException("La cotización ingresada no tiene un formato numérico válido.");
+                }
+            }
+        }
+        return syncWithRateMode(mode, customRate);
+    }
+
+    @Transactional
     public DollarQuoteDTO syncWithRateMode(String mode, Double customRate) {
         DollarQuoteDTO baseQuote = fetchLiveDollarQuote();
         double targetRate;

@@ -1,16 +1,23 @@
 package ing.software.dulcemayor.service.billing.strategy;
 
+import ing.software.dulcemayor.dto.billing.OrderPaymentStatusDTO;
+import ing.software.dulcemayor.dto.order.OrderResponseDTO;
 import ing.software.dulcemayor.entity.order.Order;
 import ing.software.dulcemayor.enums.OrderStatus;
 import ing.software.dulcemayor.enums.PaymentType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 /**
- * Initiates Bank Transfer orders awaiting administrative confirmation of transfer receipt.
+ * Initiates Bank Transfer orders awaiting administrative confirmation of transfer receipt
+ * and encapsulates bank account metadata for DTO enrichment.
  */
 @Component
 public class BankTransferPaymentStrategy implements PaymentStrategy {
+
+    private static final Set<String> ALIASES = Set.of("TRANSFER", "TRANSFERENCIA", "BANK_TRANSFER");
 
     @Value("${payment.bank.alias:DULCE.MAYOR.MZA}")
     private String bankAlias;
@@ -30,6 +37,26 @@ public class BankTransferPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
+    public boolean matchesAlias(String normalizedAlias) {
+        return normalizedAlias != null && ALIASES.contains(normalizedAlias);
+    }
+
+    @Override
+    public PaymentType resolveAliasType(String normalizedAlias) {
+        return PaymentType.BANK_TRANSFER;
+    }
+
+    @Override
+    public OrderStatus getInitialOrderStatus() {
+        return OrderStatus.PENDING_PAYMENT;
+    }
+
+    @Override
+    public String getDisplayNameEs(PaymentType specificType) {
+        return "Transferencia Bancaria";
+    }
+
+    @Override
     public PaymentInitiationResult initiate(Order order, String returnBaseUrl) {
         return PaymentInitiationResult.builder()
                 .initialOrderStatus(OrderStatus.PENDING_PAYMENT)
@@ -42,5 +69,18 @@ public class BankTransferPaymentStrategy implements PaymentStrategy {
                         + " y aguardá confirmación administrativa.")
                 .build();
     }
-}
 
+    @Override
+    public void enrichOrderResponse(Order order, OrderResponseDTO.OrderResponseDTOBuilder builder) {
+        builder.bankAlias(bankAlias)
+                .bankCbu(bankCbu)
+                .bankHolder(bankHolder);
+    }
+
+    @Override
+    public void enrichPaymentStatus(Order order, OrderPaymentStatusDTO.OrderPaymentStatusDTOBuilder builder) {
+        builder.bankAlias(bankAlias)
+                .bankCbu(bankCbu)
+                .bankHolder(bankHolder);
+    }
+}

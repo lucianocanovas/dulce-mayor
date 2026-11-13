@@ -58,21 +58,32 @@ public class AiQuoteService {
     @Value("${gemini.model:gemini-3.5-flash-lite}")
     private String geminiModel;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    public AiQuoteService(
+            ProductService productService,
+            PromotionRepository promotionRepository,
+            AuthService authService,
+            CheckoutService checkoutService,
+            UsdExchangeRateService usdExchangeRateService,
+            ObjectMapper objectMapper) {
+        this.productService = productService;
+        this.promotionRepository = promotionRepository;
+        this.authService = authService;
+        this.checkoutService = checkoutService;
+        this.usdExchangeRateService = usdExchangeRateService;
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+        this.geminiRestClient = RestClient.builder()
+                .baseUrl("https://generativelanguage.googleapis.com")
+                .build();
+    }
+
     public AiQuoteService(
             ProductService productService,
             PromotionRepository promotionRepository,
             AuthService authService,
             CheckoutService checkoutService,
             UsdExchangeRateService usdExchangeRateService) {
-        this.productService = productService;
-        this.promotionRepository = promotionRepository;
-        this.authService = authService;
-        this.checkoutService = checkoutService;
-        this.usdExchangeRateService = usdExchangeRateService;
-        this.objectMapper = new ObjectMapper();
-        this.geminiRestClient = RestClient.builder()
-                .baseUrl("https://generativelanguage.googleapis.com")
-                .build();
+        this(productService, promotionRepository, authService, checkoutService, usdExchangeRateService, new ObjectMapper());
     }
 
     @Transactional(readOnly = true)

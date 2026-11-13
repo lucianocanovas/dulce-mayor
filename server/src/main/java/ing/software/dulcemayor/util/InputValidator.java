@@ -53,6 +53,7 @@ public final class InputValidator {
     );
 
     private static final Set<String> ALLOWED_CITIES = Set.of(
+            "capital",
             "mendoza capital",
             "godoy cruz",
             "guaymallén",

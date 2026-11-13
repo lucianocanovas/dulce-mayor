@@ -1,27 +1,27 @@
 package ing.software.dulcemayor.controller;
 
+import ing.software.dulcemayor.controller.base.BaseController;
 import ing.software.dulcemayor.dto.actor.ClientSummaryDTO;
 import ing.software.dulcemayor.dto.actor.CreateUserRequestDTO;
 import ing.software.dulcemayor.dto.actor.UserResponseDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
 import ing.software.dulcemayor.service.actor.UserService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@RequiredArgsConstructor
-public class UserController {
+public class UserController extends BaseController<CreateUserRequestDTO, UserResponseDTO> {
 
     private final UserService userService;
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<UserResponseDTO>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.ok(userService.findAll()));
+    public UserController(UserService userService) {
+        super(userService);
+        this.userService = userService;
     }
 
     @GetMapping("/clients")
@@ -29,22 +29,18 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.ok(userService.findAllClients()));
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<UserResponseDTO>> create(@RequestBody CreateUserRequestDTO request) {
-        UserResponseDTO created = userService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Personal registrado con clave provisoria 'dulcemayor'", created));
+    @Override
+    protected String getCreatedMessage() {
+        return "Personal registrado con clave provisoria 'dulcemayor'";
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserResponseDTO>> update(@PathVariable String id, @RequestBody CreateUserRequestDTO request) {
-        UserResponseDTO updated = userService.update(id, request);
-        return ResponseEntity.ok(ApiResponse.ok("Datos del usuario actualizados correctamente", updated));
+    @Override
+    protected String getUpdatedMessage() {
+        return "Datos del usuario actualizados correctamente";
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
-        userService.delete(id);
-        return ResponseEntity.ok(ApiResponse.ok("Usuario dado de baja", null));
+    @Override
+    protected String getDeletedMessage() {
+        return "Usuario dado de baja";
     }
 }

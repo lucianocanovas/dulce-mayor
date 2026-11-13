@@ -522,10 +522,19 @@ public class AuthService {
     }
 
     private Retailer resolveRetailer(User user) {
-        if (user == null || user.getPerson() == null || user.getPerson().getId() == null) {
+        if (user == null || user.getPerson() == null) {
             return null;
         }
-        return retailerRepository.findByIdAndIsDeletedFalse(user.getPerson().getId()).orElse(null);
+        if (user.getPerson().getId() != null) {
+            Retailer persisted = retailerRepository.findByIdAndIsDeletedFalse(user.getPerson().getId()).orElse(null);
+            if (persisted != null) {
+                return persisted;
+            }
+        }
+        if (user.getPerson() instanceof Retailer retailer && !retailer.isDeleted()) {
+            return retailer;
+        }
+        return null;
     }
 
     private City resolveCity(String targetCityName) {

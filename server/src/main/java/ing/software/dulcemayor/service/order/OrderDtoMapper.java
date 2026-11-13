@@ -5,26 +5,21 @@ import ing.software.dulcemayor.dto.order.OrderResponseDTO;
 import ing.software.dulcemayor.entity.billing.Invoice;
 import ing.software.dulcemayor.entity.order.Order;
 import ing.software.dulcemayor.entity.order.OrderDetail;
-import ing.software.dulcemayor.enums.PaymentType;
-import org.springframework.beans.factory.annotation.Value;
+import ing.software.dulcemayor.service.billing.strategy.PaymentStrategyFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
  * Shared DTO mapper for Order entities and OrderDetails across order, billing, and route services.
+ * Delegates payment-specific DTO enrichment to PaymentStrategyFactory.
  */
 @Component
+@RequiredArgsConstructor
 public class OrderDtoMapper {
 
-    @Value("${payment.bank.alias:DULCE.MAYOR.MZA}")
-    private String bankAlias;
-
-    @Value("${payment.bank.cbu:0000003100084920193842}")
-    private String bankCbu;
-
-    @Value("${payment.bank.holder:Dulce Mayor S.A.}")
-    private String bankHolder;
+    private final PaymentStrategyFactory paymentStrategyFactory;
 
     public List<OrderDetailResponseDTO> toDetailDtos(List<OrderDetail> details) {
         if (details == null) {
@@ -88,11 +83,7 @@ public class OrderDtoMapper {
                     .invoiceNumber(invoice.getInvoiceNumber());
         }
 
-        if (order.getPaymentType() == PaymentType.BANK_TRANSFER) {
-            builder.bankAlias(bankAlias)
-                    .bankCbu(bankCbu)
-                    .bankHolder(bankHolder);
-        }
+        paymentStrategyFactory.enrichOrderResponse(order, builder);
 
         return builder.build();
     }

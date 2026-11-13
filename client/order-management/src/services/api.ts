@@ -721,3 +721,24 @@ export async function markDeliveryOnBackend(orderId: string): Promise<void> {
     console.warn('Backend mark deliver failed:', err);
   }
 }
+
+export interface ValidatedPromotion {
+  id?: string;
+  code: string;
+  description: string;
+  discountPercentage: number;
+  minimumQuantity?: number;
+  productId?: string | null;
+  productName?: string | null;
+  active?: boolean;
+}
+
+export async function validatePromotionCode(code: string): Promise<ValidatedPromotion> {
+  const cleanCode = code.trim().toUpperCase();
+  const res = await fetch(`${API_BASE_URL}/promotions/validate?code=${encodeURIComponent(cleanCode)}`);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json?.message || `El cupón '${cleanCode}' no es válido o expiró.`);
+  }
+  return json.data as ValidatedPromotion;
+}

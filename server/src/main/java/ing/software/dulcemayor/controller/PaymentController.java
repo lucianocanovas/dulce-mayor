@@ -61,8 +61,7 @@ public class PaymentController {
             @RequestParam String orderId,
             @RequestParam(name = "payment_id", required = false) String paymentId,
             @RequestParam(name = "collection_id", required = false) String collectionId) {
-        String effectivePaymentId = (paymentId != null && !paymentId.isBlank()) ? paymentId : collectionId;
-        OrderPaymentStatusDTO status = paymentAccreditationService.verifyOrPollOrderStatus(orderId, effectivePaymentId);
+        OrderPaymentStatusDTO status = paymentAccreditationService.verifyMercadoPagoReturn(orderId, paymentId, collectionId);
         return ResponseEntity.ok(ApiResponse.ok(status.getMessage(), status));
     }
 
@@ -72,8 +71,7 @@ public class PaymentController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String id,
             @RequestParam(name = "data.id", required = false) String dataId) {
-        String effectiveTopic = (type != null && !type.isBlank()) ? type : topic;
-        paymentAccreditationService.handleMercadoPagoWebhook(effectiveTopic, id, dataId, null);
+        paymentAccreditationService.handleMercadoPagoWebhookRequest(topic, type, id, dataId, null);
         return ResponseEntity.ok(Map.of("received", true));
     }
 
@@ -84,8 +82,7 @@ public class PaymentController {
             @RequestParam(required = false) String id,
             @RequestParam(name = "data.id", required = false) String dataId,
             @RequestBody(required = false) Map<String, Object> body) {
-        String effectiveTopic = (type != null && !type.isBlank()) ? type : topic;
-        paymentAccreditationService.handleMercadoPagoWebhook(effectiveTopic, id, dataId, body);
+        paymentAccreditationService.handleMercadoPagoWebhookRequest(topic, type, id, dataId, body);
         return ResponseEntity.ok(Map.of("received", true));
     }
 

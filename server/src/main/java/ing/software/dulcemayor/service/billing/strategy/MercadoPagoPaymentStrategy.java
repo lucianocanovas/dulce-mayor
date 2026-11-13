@@ -8,6 +8,8 @@ import ing.software.dulcemayor.service.billing.QrCodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 /**
  * Initiates Mercado Pago Checkout Pro / QR payment flows via the direct REST API.
  */
@@ -15,12 +17,40 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MercadoPagoPaymentStrategy implements PaymentStrategy {
 
+    private static final Set<String> MP_ALIASES = Set.of("MP", "MERCADOPAGO", "MERCADO_PAGO");
+    private static final Set<String> WALLET_ALIASES = Set.of("QR", "BILLETERA_VIRTUAL", "DIGITAL_WALLET");
+
     private final MercadoPagoService mercadoPagoService;
     private final QrCodeService qrCodeService;
 
     @Override
     public boolean supports(PaymentType paymentType) {
         return paymentType == PaymentType.MERCADO_PAGO || paymentType == PaymentType.DIGITAL_WALLET;
+    }
+
+    @Override
+    public boolean matchesAlias(String normalizedAlias) {
+        return normalizedAlias != null && (MP_ALIASES.contains(normalizedAlias) || WALLET_ALIASES.contains(normalizedAlias));
+    }
+
+    @Override
+    public PaymentType resolveAliasType(String normalizedAlias) {
+        if (normalizedAlias != null && WALLET_ALIASES.contains(normalizedAlias)) {
+            return PaymentType.DIGITAL_WALLET;
+        }
+        return PaymentType.MERCADO_PAGO;
+    }
+
+    @Override
+    public OrderStatus getInitialOrderStatus() {
+        return OrderStatus.PENDING_PAYMENT;
+    }
+
+    @Override
+    public String getDisplayNameEs(PaymentType specificType) {
+        return specificType == PaymentType.DIGITAL_WALLET
+                ? "Billetera Virtual / QR"
+                : "Mercado Pago";
     }
 
     @Override
@@ -40,4 +70,3 @@ public class MercadoPagoPaymentStrategy implements PaymentStrategy {
                 .build();
     }
 }
-

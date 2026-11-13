@@ -4,7 +4,6 @@ import ing.software.dulcemayor.controller.base.BaseController;
 import ing.software.dulcemayor.dto.catalog.ProductRequestDTO;
 import ing.software.dulcemayor.dto.catalog.ProductResponseDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
-import ing.software.dulcemayor.entity.catalog.Product;
 import ing.software.dulcemayor.service.catalog.ProductService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
-public class ProductController extends BaseController<Product, ProductRequestDTO, ProductResponseDTO> {
+public class ProductController extends BaseController<ProductRequestDTO, ProductResponseDTO> {
 
     private final ProductService productService;
 

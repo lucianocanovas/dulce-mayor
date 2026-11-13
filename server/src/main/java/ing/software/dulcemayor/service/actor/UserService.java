@@ -6,19 +6,17 @@ import ing.software.dulcemayor.dto.actor.UserResponseDTO;
 import ing.software.dulcemayor.entity.actor.Employee;
 import ing.software.dulcemayor.entity.actor.Person;
 import ing.software.dulcemayor.entity.actor.Retailer;
-import ing.software.dulcemayor.entity.actor.SalesRepresentative;
 import ing.software.dulcemayor.entity.actor.User;
 import ing.software.dulcemayor.entity.order.PointOfSale;
 import ing.software.dulcemayor.enums.AuthProvider;
-import ing.software.dulcemayor.enums.DocumentType;
 import ing.software.dulcemayor.enums.UserRole;
 import ing.software.dulcemayor.repository.actor.EmployeeRepository;
 import ing.software.dulcemayor.repository.actor.RetailerRepository;
-import ing.software.dulcemayor.repository.actor.SalesRepresentativeRepository;
 import ing.software.dulcemayor.repository.actor.UserRepository;
 import ing.software.dulcemayor.repository.order.PointOfSaleRepository;
+import ing.software.dulcemayor.service.actor.factory.PersonFactory;
+import ing.software.dulcemayor.service.base.BaseService;
 import ing.software.dulcemayor.util.InputValidator;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,24 +25,35 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class UserService {
+public class UserService extends BaseService<User, CreateUserRequestDTO, UserResponseDTO> {
 
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
-    private final SalesRepresentativeRepository salesRepRepository;
     private final RetailerRepository retailerRepository;
     private final PointOfSaleRepository pointOfSaleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PersonFactory personFactory;
+
+    public UserService(UserRepository userRepository,
+                       EmployeeRepository employeeRepository,
+                       RetailerRepository retailerRepository,
+                       PointOfSaleRepository pointOfSaleRepository,
+                       PasswordEncoder passwordEncoder,
+                       PersonFactory personFactory) {
+        super(userRepository);
+        this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
+        this.retailerRepository = retailerRepository;
+        this.pointOfSaleRepository = pointOfSaleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.personFactory = personFactory;
+    }
 
     @Transactional(readOnly = true)
     public List<UserResponseDTO> findAll() {
-        return userRepository.findByIsDeletedFalse().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        return getAll();
     }
 
     @Transactional(readOnly = true)
@@ -119,13 +128,16 @@ public class UserService {
         return result;
     }
 
-    @Transactional
-    public UserResponseDTO create(CreateUserRequestDTO request) {
-        InputValidator.validateStaffUserRequest(request, true);
-        String normalizedUsername = request.getUsername().trim().toLowerCase();
+    @Override
+    protected void validate(CreateUserRequestDTO request, String id) {
+        boolean isCreate = (id == null);
+        InputValidator.validateStaffUserRequest(request, isCreate);
 
-        if (userRepository.existsByUsernameAndIsDeletedFalse(normalizedUsername)) {
-            throw new IllegalArgumentException("El nombre de usuario '" + normalizedUsername + "' ya se encuentra registrado.");
+        if (isCreate) {
+            String normalizedUsername = request.getUsername().trim().toLowerCase();
+            if (userRepository.existsByUsernameAndIsDeletedFalse(normalizedUsername)) {
+                throw new IllegalArgumentException("El nombre de usuario '" + normalizedUsername + "' ya se encuentra registrado.");
+            }
         }
 
         String empNumber = (request.getEmployeeIdNumber() != null && !request.getEmployeeIdNumber().isBlank())
@@ -134,49 +146,50 @@ public class UserService {
         if (empNumber != null) {
             employeeRepository.findByEmployeeIdNumberAndIsDeletedFalse(empNumber)
                     .ifPresent(existing -> {
-                        throw new IllegalArgumentException("El legajo '" + empNumber + "' ya está asignado a otro empleado.");
+                        if (isCreate) {
+                            throw new IllegalArgumentException("El legajo '" + empNumber + "' ya está asignado a otro empleado.");
+                        }
+                        User targetUser = userRepository.findByIdAndIsDeletedFalse(id).orElse(null);
+                        if (targetUser == null || targetUser.getPerson() == null || !existing.getId().equals(targetUser.getPerson().getId())) {
+                            throw new IllegalArgumentException("El legajo '" + empNumber + "' ya está asignado a otro empleado.");
+                        }
                     });
         }
+    }
 
-        String cleanDni = request.getDocumentNumber().trim();
+    @Override
+    protected User toEntity(CreateUserRequestDTO request) {
+        String normalizedUsername = request.getUsername().trim().toLowerCase();
+        String empNumber = (request.getEmployeeIdNumber() != null && !request.getEmployeeIdNumber().isBlank())
+                ? request.getEmployeeIdNumber().trim().toUpperCase()
+                : null;
 
-        Person person;
-        if (request.getRole() == UserRole.PRESALE_AGENT) {
-            person = salesRepRepository.save(SalesRepresentative.builder()
-                    .firstName(request.getFirstName().trim())
-                    .lastName(request.getLastName().trim())
-                    .documentType(DocumentType.DNI)
-                    .documentNumber(cleanDni)
-                    .employeeIdNumber(empNumber)
-                    .build());
-        } else {
-            person = employeeRepository.save(Employee.builder()
-                    .firstName(request.getFirstName().trim())
-                    .lastName(request.getLastName().trim())
-                    .documentType(DocumentType.DNI)
-                    .documentNumber(cleanDni)
-                    .employeeIdNumber(empNumber)
-                    .build());
-        }
+        Person person = personFactory.createAndSaveStaffByRole(
+                request.getRole(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getDocumentNumber(),
+                empNumber
+        );
 
-        User user = User.builder()
+        String rawPassword = (request.getPassword() != null && !request.getPassword().isBlank())
+                ? request.getPassword().trim()
+                : "dulcemayor";
+        boolean isTemp = (request.getPassword() == null || request.getPassword().isBlank())
+                || "dulcemayor".equalsIgnoreCase(rawPassword);
+
+        return User.builder()
                 .username(normalizedUsername)
-                .password(passwordEncoder.encode("dulcemayor"))
+                .password(passwordEncoder.encode(rawPassword))
                 .role(request.getRole())
-                .isTemporaryPassword(true)
+                .isTemporaryPassword(isTemp)
                 .authProvider(AuthProvider.LOCAL)
                 .person(person)
                 .build();
-
-        return mapToDTO(userRepository.save(user));
     }
 
-    @Transactional
-    public UserResponseDTO update(String id, CreateUserRequestDTO request) {
-        InputValidator.validateStaffUserRequest(request, false);
-        User user = userRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
-
+    @Override
+    protected void updateEntityFromDto(User user, CreateUserRequestDTO request) {
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
@@ -197,22 +210,24 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
             user.setTemporaryPassword(false);
         }
-
-        return mapToDTO(userRepository.save(user));
     }
 
-    @Transactional
-    public void delete(String id) {
-        User user = userRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+    @Override
+    protected void validateDelete(User user) {
         if ("admin".equalsIgnoreCase(user.getUsername())) {
             throw new IllegalArgumentException("La cuenta principal de administración (@admin) está protegida y no puede darse de baja.");
         }
-        user.setDeleted(true);
-        userRepository.save(user);
     }
 
-    private UserResponseDTO mapToDTO(User user) {
+    @Override
+    protected void beforeDelete(User user) {
+        if (user.getPerson() != null) {
+            user.getPerson().setDeleted(true);
+        }
+    }
+
+    @Override
+    protected UserResponseDTO toResponseDto(User user) {
         Person person = user.getPerson();
         String firstName = person != null ? person.getFirstName() : null;
         String lastName = person != null ? person.getLastName() : null;

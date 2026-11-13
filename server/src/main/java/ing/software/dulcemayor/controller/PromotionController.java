@@ -1,38 +1,24 @@
 package ing.software.dulcemayor.controller;
 
+import ing.software.dulcemayor.controller.base.BaseController;
 import ing.software.dulcemayor.dto.catalog.PromotionDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
 import ing.software.dulcemayor.service.catalog.PromotionService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/promotions")
-@RequiredArgsConstructor
-public class PromotionController {
+public class PromotionController extends BaseController<PromotionDTO, PromotionDTO> {
 
     private final PromotionService promotionService;
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<PromotionDTO>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.ok(promotionService.findAll()));
-    }
-
-    @PostMapping
-    public ResponseEntity<ApiResponse<PromotionDTO>> create(@RequestBody PromotionDTO request) {
-        PromotionDTO created = promotionService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Promoción creada correctamente", created));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<PromotionDTO>> update(@PathVariable String id, @RequestBody PromotionDTO request) {
-        PromotionDTO updated = promotionService.update(id, request);
-        return ResponseEntity.ok(ApiResponse.ok("Promoción actualizada correctamente", updated));
+    public PromotionController(PromotionService promotionService) {
+        super(promotionService);
+        this.promotionService = promotionService;
     }
 
     @GetMapping("/validate")
@@ -41,9 +27,18 @@ public class PromotionController {
         return ResponseEntity.ok(ApiResponse.ok("Cupón válido", validPromo));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
-        promotionService.delete(id);
-        return ResponseEntity.ok(ApiResponse.ok("Promoción eliminada", null));
+    @Override
+    protected String getCreatedMessage() {
+        return "Promoción creada correctamente";
+    }
+
+    @Override
+    protected String getUpdatedMessage() {
+        return "Promoción actualizada correctamente";
+    }
+
+    @Override
+    protected String getDeletedMessage() {
+        return "Promoción eliminada";
     }
 }

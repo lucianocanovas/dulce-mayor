@@ -416,10 +416,16 @@ public class DataInitializer implements CommandLineRunner {
                                 .paymentType(ing.software.dulcemayor.enums.PaymentType.MERCADO_PAGO)
                                 .pointOfSale(pos2)
                                 .salesRep(rep)
+                                .stockDeducted(true)
+                                .readyForDispatch(true)
                                 .orderDetails(new ArrayList<>())
                                 .build());
-                orderDetailRepository.save(OrderDetail.builder().quantity(3).unitPrice(22500.0).subtotal(67500.0)
+                OrderDetail od5 = orderDetailRepository.save(OrderDetail.builder().quantity(3).unitPrice(22500.0).subtotal(67500.0)
                                 .product(p2).order(o5).build());
+                o5.getOrderDetails().add(od5);
+                Invoice inv5 = invoiceFactoryProvider.createInvoiceForOrder(o5, 10003L);
+                inv5.setInvoiceDate(o5.getOrderDateTime().plusMinutes(15));
+                invoiceRepository.save(inv5);
 
                 Order o6 = orderRepository.save(Order.builder()
                                 .orderNumber(999L)
@@ -431,10 +437,16 @@ public class DataInitializer implements CommandLineRunner {
                                 .paymentType(ing.software.dulcemayor.enums.PaymentType.BANK_TRANSFER)
                                 .pointOfSale(pos5)
                                 .salesRep(rep)
+                                .stockDeducted(true)
+                                .readyForDispatch(true)
                                 .orderDetails(new ArrayList<>())
                                 .build());
-                orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(28800.0).subtotal(57600.0)
+                OrderDetail od6 = orderDetailRepository.save(OrderDetail.builder().quantity(2).unitPrice(28800.0).subtotal(57600.0)
                                 .product(p5).order(o6).build());
+                o6.getOrderDetails().add(od6);
+                Invoice inv6 = invoiceFactoryProvider.createInvoiceForOrder(o6, 10004L);
+                inv6.setInvoiceDate(o6.getOrderDateTime().plusMinutes(20));
+                invoiceRepository.save(inv6);
 
                 Order o7 = orderRepository.save(Order.builder()
                                 .orderNumber(1000L)
@@ -446,10 +458,16 @@ public class DataInitializer implements CommandLineRunner {
                                 .paymentType(ing.software.dulcemayor.enums.PaymentType.DIGITAL_WALLET)
                                 .pointOfSale(pos1)
                                 .salesRep(rep)
+                                .stockDeducted(true)
+                                .readyForDispatch(true)
                                 .orderDetails(new ArrayList<>())
                                 .build());
-                orderDetailRepository.save(OrderDetail.builder().quantity(3).unitPrice(21600.0).subtotal(64800.0)
+                OrderDetail od7 = orderDetailRepository.save(OrderDetail.builder().quantity(3).unitPrice(21600.0).subtotal(64800.0)
                                 .product(p12).order(o7).build());
+                o7.getOrderDetails().add(od7);
+                Invoice inv7 = invoiceFactoryProvider.createInvoiceForOrder(o7, 10005L);
+                inv7.setInvoiceDate(o7.getOrderDateTime().plusMinutes(12));
+                invoiceRepository.save(inv7);
 
                 // 7. Promotions
                 promotionRepository.save(Promotion.builder()

@@ -9,16 +9,19 @@ import ing.software.dulcemayor.entity.order.Order;
 import ing.software.dulcemayor.enums.OrderStatus;
 import ing.software.dulcemayor.enums.RouteStatus;
 import ing.software.dulcemayor.enums.UserRole;
+import ing.software.dulcemayor.event.OrderDeliveredEvent;
 import ing.software.dulcemayor.repository.billing.InvoiceRepository;
 import ing.software.dulcemayor.repository.order.OrderRepository;
 import ing.software.dulcemayor.service.order.OrderDtoMapper;
 import ing.software.dulcemayor.service.order.OrderService;
 import ing.software.dulcemayor.service.order.PointOfSaleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -34,6 +37,7 @@ public class RouteService {
     private final InvoiceRepository invoiceRepository;
     private final OrderService orderService;
     private final OrderDtoMapper orderDtoMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public DailyRouteDTO getDailyRoute(String roleStr) {
@@ -243,6 +247,36 @@ public class RouteService {
                     .newStatus(OrderStatus.DELIVERED)
                     .note("Entrega confirmada en punto de venta por repartidor móvil")
                     .build());
+
+            orderRepository.findByIdAndIsDeletedFalse(orderId).ifPresent(deliveredOrder -> {
+                Order nextPending = orderRepository.findByIsDeletedFalseOrderByOrderDateTimeDesc().stream()
+                        .filter(o -> !o.getId().equals(orderId)
+                                && isOrderVisibleForDelivery(o)
+                                && o.getStatus() != OrderStatus.DELIVERED)
+                        .findFirst()
+                        .orElse(null);
+
+                String nextStoreName = nextPending != null && nextPending.getPointOfSale() != null
+                        ? nextPending.getPointOfSale().getStoreName()
+                        : null;
+                String nextStoreEmail = nextPending != null
+                        ? (nextPending.getCustomerEmail() != null
+                                ? nextPending.getCustomerEmail()
+                                : (nextPending.getPointOfSale() != null ? nextPending.getPointOfSale().getContactEmail() : null))
+                        : null;
+
+                eventPublisher.publishEvent(OrderDeliveredEvent.builder()
+                        .orderId(deliveredOrder.getId())
+                        .orderNumber(deliveredOrder.getOrderNumber())
+                        .storeName(deliveredOrder.getPointOfSale() != null ? deliveredOrder.getPointOfSale().getStoreName() : null)
+                        .customerName(orderDtoMapper.resolveRetailerName(deliveredOrder))
+                        .customerEmail(deliveredOrder.getCustomerEmail())
+                        .deliveryAddress(orderDtoMapper.resolveDeliveryAddress(deliveredOrder))
+                        .nextStopStoreName(nextStoreName)
+                        .nextStopContactEmail(nextStoreEmail)
+                        .deliveredAt(LocalDateTime.now())
+                        .build());
+            });
         }
     }
 }

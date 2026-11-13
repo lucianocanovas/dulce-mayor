@@ -26,6 +26,9 @@ import ing.software.dulcemayor.entity.order.OrderDetail;
 import ing.software.dulcemayor.entity.order.PointOfSale;
 import ing.software.dulcemayor.enums.PaymentType;
 import ing.software.dulcemayor.repository.billing.PaymentRepository;
+import ing.software.dulcemayor.service.billing.factory.InvoiceCreator;
+import ing.software.dulcemayor.service.billing.factory.InvoiceFactoryProvider;
+import ing.software.dulcemayor.service.billing.strategy.PaymentStrategyFactory;
 import ing.software.dulcemayor.service.order.OrderDtoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,6 +81,8 @@ public class InvoicePdfService {
     private final PaymentAccreditationService paymentAccreditationService;
     private final PaymentRepository paymentRepository;
     private final OrderDtoMapper orderDtoMapper;
+    private final InvoiceFactoryProvider invoiceFactoryProvider;
+    private final PaymentStrategyFactory paymentStrategyFactory;
 
     public record GeneratedInvoicePdf(byte[] pdfBytes, String filename, Long invoiceNumber, Long orderNumber) {}
 
@@ -91,15 +96,17 @@ public class InvoicePdfService {
         Payment primaryPayment = payments.isEmpty() ? null : payments.get(0);
 
         String customerTaxId = resolveCustomerDocument(order);
-        boolean isFacturaA = invoice.getInvoiceType() != null
-                ? "A".equalsIgnoreCase(invoice.getInvoiceType())
-                : isCuitResponsibility(customerTaxId);
+        Invoice fallbackInvoice = invoiceFactoryProvider.createInvoiceForOrder(
+                order,
+                invoice.getInvoiceNumber() != null ? invoice.getInvoiceNumber() : 10001L
+        );
         String invoiceLetter = invoice.getInvoiceType() != null && !invoice.getInvoiceType().isBlank()
                 ? invoice.getInvoiceType().toUpperCase()
-                : (isFacturaA ? "A" : "B");
+                : fallbackInvoice.getInvoiceType();
+        boolean isFacturaA = "A".equalsIgnoreCase(invoiceLetter);
         String invoiceTypeCode = invoice.getAfipCode() != null && !invoice.getAfipCode().isBlank()
                 ? invoice.getAfipCode()
-                : (isFacturaA ? "001" : "006");
+                : fallbackInvoice.getAfipCode();
         int afipTipoCmp = isFacturaA ? 1 : 6;
 
         String ptoVtaFormatted = String.format("%05d", PUNTO_DE_VENTA);
@@ -114,7 +121,7 @@ public class InvoicePdfService {
                 : emissionDate.plusDays(10);
         String caeNumber = invoice.getCaeNumber() != null && !invoice.getCaeNumber().isBlank()
                 ? invoice.getCaeNumber()
-                : generateDeterministicCae(invoice.getInvoiceNumber(), emissionDate);
+                : fallbackInvoice.getCaeNumber();
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             Document doc = new Document(PageSize.A4, 24f, 24f, 22f, 22f);
@@ -359,8 +366,8 @@ public class InvoicePdfService {
             double finalTotal = invoice.getTotal() > 0 ? invoice.getTotal() : order.getTotal();
             double grossSubtotal = order.getSubtotal() > 0 ? order.getSubtotal() : finalTotal;
             double discountAmount = Math.max(0.0, order.getDiscount());
-            double netTaxable = finalTotal / 1.21;
-            double iva21 = finalTotal - netTaxable;
+            double netTaxable = invoice.getNetAmount() > 0 ? invoice.getNetAmount() : (finalTotal / 1.21);
+            double iva21 = invoice.getVatAmount() > 0 ? invoice.getVatAmount() : (finalTotal - netTaxable);
 
             PdfPTable summaryOuter = new PdfPTable(new float[]{55f, 45f});
             summaryOuter.setWidthPercentage(100);
@@ -557,12 +564,6 @@ public class InvoicePdfService {
         return "20-34567890-1";
     }
 
-    private boolean isCuitResponsibility(String rawDoc) {
-        if (rawDoc == null) return false;
-        String digits = rawDoc.replaceAll("\\D", "");
-        return digits.length() == 11 && (digits.startsWith("30") || digits.startsWith("33") || digits.startsWith("20") || digits.startsWith("27"));
-    }
-
     private String formatTaxIdOrDni(String rawDoc) {
         if (rawDoc == null || rawDoc.isBlank()) {
             return "20-34567890-1";
@@ -601,20 +602,7 @@ public class InvoicePdfService {
     }
 
     private String formatPaymentTypeSpanish(PaymentType type) {
-        if (type == null) return "Contado / Efectivo";
-        return switch (type) {
-            case MERCADO_PAGO -> "Mercado Pago (Acreditación Instantánea)";
-            case DIGITAL_WALLET -> "Billetera Virtual QR (Mercado Pago)";
-            case BANK_TRANSFER -> "Transferencia Bancaria CBU/Alias";
-            case CASH -> "Efectivo Contra Entrega";
-        };
-    }
-
-    private String generateDeterministicCae(Long invoiceNumber, LocalDate emissionDate) {
-        long inv = invoiceNumber != null ? invoiceNumber : 10001L;
-        long seed = (emissionDate.getYear() * 10000L + emissionDate.getMonthValue() * 100L + emissionDate.getDayOfMonth()) * 100000L + (inv % 100000L);
-        String raw = "76" + String.format("%012d", Math.abs(seed) % 1_000_000_000_000L);
-        return raw.length() > 14 ? raw.substring(0, 14) : raw;
+        return paymentStrategyFactory.formatDisplayNameEs(type);
     }
 
     private byte[] buildAfipQrPngBytes(

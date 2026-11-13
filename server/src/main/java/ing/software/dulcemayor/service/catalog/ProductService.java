@@ -122,12 +122,21 @@ public class ProductService extends BaseService<Product, ProductRequestDTO, Prod
     }
 
     @Override
-    protected void afterSave(Product savedEntity, ProductRequestDTO dto) {
+    protected void beforeSave(Product entity, ProductRequestDTO dto) {
         if (dto.getPrice() > 0) {
             double currentRate = exchangeRateService.getActiveExchangeRate();
             double computedUsd = Math.round((dto.getPrice() / currentRate) * 100.0) / 100.0;
-            savedEntity.setBasePriceUsd(computedUsd);
-            productRepository.save(savedEntity);
+            entity.setBasePriceUsd(computedUsd);
+        }
+    }
+
+    @Override
+    protected void afterSave(Product savedEntity, ProductRequestDTO dto) {
+        if (dto.getPrice() > 0) {
+            double currentRate = exchangeRateService.getActiveExchangeRate();
+            double computedUsd = savedEntity.getBasePriceUsd() != null
+                    ? savedEntity.getBasePriceUsd()
+                    : Math.round((dto.getPrice() / currentRate) * 100.0) / 100.0;
 
             var activePriceOpt = priceValidityRepository.findActivePriceByProductId(savedEntity.getId());
             if (activePriceOpt.isPresent()) {

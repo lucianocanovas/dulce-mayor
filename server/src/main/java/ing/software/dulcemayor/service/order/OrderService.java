@@ -131,11 +131,8 @@ public class OrderService {
 
         long nextOrderNum = orderRepository.findMaxOrderNumber() + 1;
         PaymentType paymentType = spec.getPaymentType() != null ? spec.getPaymentType() : PaymentType.CASH;
-        OrderStatus tempStatus = (paymentType == PaymentType.MERCADO_PAGO
-                || paymentType == PaymentType.DIGITAL_WALLET
-                || paymentType == PaymentType.BANK_TRANSFER)
-                ? OrderStatus.PENDING_PAYMENT
-                : OrderStatus.LOADED;
+        var paymentStrategy = paymentStrategyFactory.resolve(paymentType);
+        OrderStatus tempStatus = paymentStrategy.getInitialOrderStatus();
 
         Order order = Order.builder()
                 .orderNumber(nextOrderNum)
@@ -191,9 +188,11 @@ public class OrderService {
                         + "'. Disponible: " + available + ", solicitado: " + itemReq.getQuantity());
             }
 
+            String resolvedProductName = product.getName();
             double unitPrice = priceValidityRepository.findActivePriceByProductId(product.getId())
                     .map(pv -> pv.getPrice())
-                    .orElse(10000.0);
+                    .orElseThrow(() -> new IllegalStateException(
+                            "El producto '" + resolvedProductName + "' no posee un precio vigente configurado."));
 
             double lineTotal = unitPrice * itemReq.getQuantity();
             subtotal += lineTotal;
@@ -339,17 +338,7 @@ public class OrderService {
     }
 
     public PaymentType resolvePaymentType(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return PaymentType.CASH;
-        }
-        String normalized = raw.trim().toUpperCase();
-        return switch (normalized) {
-            case "MP", "MERCADOPAGO", "MERCADO_PAGO" -> PaymentType.MERCADO_PAGO;
-            case "QR", "BILLETERA_VIRTUAL", "DIGITAL_WALLET" -> PaymentType.DIGITAL_WALLET;
-            case "TRANSFER", "TRANSFERENCIA", "BANK_TRANSFER" -> PaymentType.BANK_TRANSFER;
-            case "EFECTIVO", "CASH" -> PaymentType.CASH;
-            default -> PaymentType.valueOf(normalized);
-        };
+        return paymentStrategyFactory.resolvePaymentType(raw);
     }
 
     public OrderResponseDTO toResponseDto(Order order) {
