@@ -179,8 +179,14 @@ public class DataInitializer implements CommandLineRunner {
                                 .phone("+54 9 261 420-1122").build());
                 Address a1 = addressRepository
                                 .save(Address.builder().street("Av. San Martín 1420").neighborhood("Centro")
+                                                .reference("Horario de descarga: 08:30 a 13:30 hs")
                                                 .city(cityCapital).latitude(-32.8895).longitude(-68.8458).build());
                 PointOfSale pos1 = pointOfSaleRepository.save(PointOfSale.builder().storeName("Kiosco El Trébol")
+                                .contactName("Roberto Gómez")
+                                .contactPhone("+54 9 261 420-1122")
+                                .contactEmail("cliente@dulcemayor.com.ar")
+                                .taxIdOrDni("20-28491823-4")
+                                .deliveryNotes("Horario de descarga: 08:30 a 13:30 hs")
                                 .retailer(r1).address(a1).salesRep(rep).build());
 
                 userRepository.save(User.builder()
@@ -291,7 +297,7 @@ public class DataInitializer implements CommandLineRunner {
                 Product p11 = createProduct("MDZ-BEL-11", "Beldent Infinit Menta",
                                 "Chicles sin azúcar extra duración sabor menta fresca.", "Display x 18 paq.", 18, false,
                                 subChiclesSub, 16200.0, 190,
-                                "https://images.unsplash.com/photo-1621996346565-e3d5d6281699?w=400&auto=format&fit=crop&q=80");
+                                "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&auto=format&fit=crop&q=80");
                 Product p12 = createProduct("ARC-ROC-12", "Rocklets Chocolate Confitado",
                                 "Pastillas confitadas con centro de rico chocolate con leche.", "Display x 24 tubos",
                                 24, true, subBombones, 21600.0, 110,
@@ -318,6 +324,7 @@ public class DataInitializer implements CommandLineRunner {
                                 .discount(0.0)
                                 .total(47800.0)
                                 .status(OrderStatus.DELIVERED)
+                                .paymentType(ing.software.dulcemayor.enums.PaymentType.MERCADO_PAGO)
                                 .customerName("Roberto Gómez")
                                 .customerEmail("cliente@dulcemayor.com.ar")
                                 .customerPhone("+54 9 261 420-1122")
@@ -340,6 +347,7 @@ public class DataInitializer implements CommandLineRunner {
                                 .discount(0.0)
                                 .total(33600.0)
                                 .status(OrderStatus.LOADED)
+                                .paymentType(ing.software.dulcemayor.enums.PaymentType.CASH)
                                 .pointOfSale(pos2)
                                 .salesRep(rep)
                                 .orderDetails(new ArrayList<>())
@@ -354,6 +362,7 @@ public class DataInitializer implements CommandLineRunner {
                                 .discount(3000.0)
                                 .total(27000.0)
                                 .status(OrderStatus.INVOICED)
+                                .paymentType(ing.software.dulcemayor.enums.PaymentType.BANK_TRANSFER)
                                 .pointOfSale(pos3)
                                 .salesRep(rep)
                                 .couponCode("BIENVENIDA")
@@ -369,6 +378,7 @@ public class DataInitializer implements CommandLineRunner {
                                 .discount(0.0)
                                 .total(71000.0)
                                 .status(OrderStatus.LOADED)
+                                .paymentType(ing.software.dulcemayor.enums.PaymentType.CASH)
                                 .pointOfSale(pos4)
                                 .salesRep(rep)
                                 .orderDetails(new ArrayList<>())
@@ -381,6 +391,15 @@ public class DataInitializer implements CommandLineRunner {
                 // 7. Promotions
                 promotionRepository.save(Promotion.builder()
                                 .code("BIENVENIDA")
+                                .description("10% de descuento en la primera compra mayorista")
+                                .discountPercentage(10.0)
+                                .minimumQuantity(1)
+                                .startDate(LocalDate.now().minusDays(30))
+                                .endDate(LocalDate.now().plusMonths(6))
+                                .build());
+
+                promotionRepository.save(Promotion.builder()
+                                .code("BIENVENIDA10")
                                 .description("10% de descuento en la primera compra mayorista")
                                 .discountPercentage(10.0)
                                 .minimumQuantity(1)

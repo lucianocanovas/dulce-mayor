@@ -23,11 +23,13 @@ public class CatalogController {
         List<ProductDTO> products = backendApiClient.getCatalogProducts();
 
         if (search != null && !search.trim().isEmpty()) {
-            String term = search.toLowerCase();
+            String term = search.trim().toLowerCase();
             products = products.stream()
-                    .filter(p -> p.getName().toLowerCase().contains(term) ||
-                                 p.getCode().toLowerCase().contains(term) ||
-                                 p.getCategoryName().toLowerCase().contains(term))
+                    .filter(p -> (p.getName() != null && p.getName().toLowerCase().contains(term)) ||
+                                 (p.getCode() != null && p.getCode().toLowerCase().contains(term)) ||
+                                 (p.getCategoryName() != null && p.getCategoryName().toLowerCase().contains(term)) ||
+                                 (p.getSubCategoryName() != null && p.getSubCategoryName().toLowerCase().contains(term)) ||
+                                 (p.getDescription() != null && p.getDescription().toLowerCase().contains(term)))
                     .toList();
         }
 

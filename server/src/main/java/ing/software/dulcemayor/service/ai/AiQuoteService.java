@@ -272,10 +272,11 @@ public class AiQuoteService {
         sb.append("Si la consulta no requiere armar un presupuesto de productos (ej: saludo, estado de pedido, sucursales, tiempos de entrega, charla), devolvé \"items\": [].\n\n");
 
         sb.append("INFORMACIÓN INSTITUCIONAL, SUCURSALES Y LOGÍSTICA:\n");
-        sb.append("- Sede Central Mendoza (única sucursal): Av. San Martín 1500, Ciudad de Mendoza (CP 5500).\n");
+        sb.append("- Sede Central Mendoza: Av. San Martín 1500, Ciudad de Mendoza (Lunes a Viernes 08:00 a 18:00 hs | Sábados 08:30 a 12:30 hs).\n");
+        sb.append("- Sucursal Godoy Cruz (Centro de Distribución Sur): Carril Rodríguez Peña 2140, Godoy Cruz (Lunes a Viernes 07:30 a 16:30 hs).\n");
+        sb.append("- Depósito Guaymallén (Planta Logística Mayorista): Av. Acceso Este Km 1035, Guaymallén (Lunes a Sábados 07:00 a 15:00 hs).\n");
         sb.append("- Teléfono / WhatsApp comercial: +54 9 261 555-1234 | Correo: ventas@dulcemayor.com.ar.\n");
-        sb.append("- Horario de atención mayorista: Lunes a Viernes de 08:00 a 17:00 hs.\n");
-        sb.append("- Entregas y tiempos estimados: Cobertura en Gran Mendoza y alrededores. Demora estimada de 24 a 48 hs hábiles desde la confirmación del pedido (también disponible retiro en Sede Central).\n");
+        sb.append("- Entregas y tiempos estimados: Cobertura en Gran Mendoza y alrededores. Demora estimada de 24 a 48 hs hábiles desde la confirmación del pedido (también disponible retiro en sucursal).\n");
         sb.append("- Medios de pago: Mercado Pago, Transferencia Bancaria (Alias: DULCE.MAYOR.MZA) y Efectivo Contra Entrega.\n\n");
 
         sb.append("CATÁLOGO VIGENTE EN STOCK:\n");
@@ -490,10 +491,11 @@ public class AiQuoteService {
         if (norm.contains("sucursal") || norm.contains("donde quedan") || norm.contains("ubicacion")
                 || norm.contains("horario") || norm.contains("telefono") || norm.contains("contacto")) {
             return AiChatResponseDTO.builder()
-                    .reply("Nuestra **Sede Central Mendoza** está en **Av. San Martín 1500, Ciudad de Mendoza (CP 5500)**.\n"
-                            + "• **Horario mayorista:** Lunes a Viernes de 08:00 a 17:00 hs.\n"
-                            + "• **Teléfono:** +54 9 261 555-1234\n"
-                            + "• **Correo:** ventas@dulcemayor.com.ar")
+                    .reply("Contamos con **3 sedes en Mendoza**:\n"
+                            + "• **Sede Central Mendoza:** Av. San Martín 1500, Ciudad (Lun a Vie 08:00 a 18:00 hs | Sáb 08:30 a 12:30 hs)\n"
+                            + "• **Sucursal Godoy Cruz:** Carril Rodríguez Peña 2140 (Lun a Vie 07:30 a 16:30 hs)\n"
+                            + "• **Depósito Guaymallén:** Av. Acceso Este Km 1035 (Lun a Sáb 07:00 a 15:00 hs)\n"
+                            + "• **Teléfono:** +54 9 261 555-1234 | **Correo:** ventas@dulcemayor.com.ar")
                     .recommendedItems(List.of())
                     .estimatedTotal(0)
                     .usdRate(usdRate)

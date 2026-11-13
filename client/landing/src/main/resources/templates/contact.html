@@ -100,17 +100,14 @@
                     <span class="product-pack" th:text="${pos.city != null and !#strings.isEmpty(pos.city) ? pos.city : 'Mendoza'}">Mendoza</span>
                     <h3 class="product-title" th:text="${pos.storeName}">Comercio</h3>
                     <ul class="dm-branch-details" style="margin-top: 0.5rem;">
-                        <li th:if="${pos.address != null and !#strings.isEmpty(pos.address)}">
-                            <strong>Dirección:</strong> <span th:text="${pos.address}">Dirección</span>
-                        </li>
                         <li th:if="${pos.neighborhood != null and !#strings.isEmpty(pos.neighborhood)}">
                             <strong>Barrio / Zona:</strong> <span th:text="${pos.neighborhood}">Barrio</span>
                         </li>
-                        <li th:if="${pos.phone != null and !#strings.isEmpty(pos.phone)}">
-                            <strong>Teléfono:</strong> <span th:text="${pos.phone}">Teléfono</span>
+                        <li th:if="${pos.city != null and !#strings.isEmpty(pos.city)}">
+                            <strong>Departamento:</strong> <span th:text="${pos.city}">Mendoza Capital</span>
                         </li>
-                        <li th:if="${pos.ownerName != null and !#strings.isEmpty(pos.ownerName)}">
-                            <strong>Referente:</strong> <span th:text="${pos.ownerName}">Titular</span>
+                        <li>
+                            <strong>Estado:</strong> <span style="color: var(--success); font-weight: 700;">Comercio Mayorista Adherido</span>
                         </li>
                     </ul>
                 </article>
@@ -118,10 +115,7 @@
         </section>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — CUIT: 30-71234567-8</p>
-        <p>Mendoza, Argentina • ventas@dulcemayor.com.ar</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script th:src="@{/js/cart.js}"></script>
     <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>

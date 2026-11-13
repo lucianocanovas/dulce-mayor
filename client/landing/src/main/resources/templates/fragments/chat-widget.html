@@ -3,7 +3,8 @@
 <body>
 
 <!-- Reusable Header -->
-<header th:fragment="siteHeader" id="dm-site-header" th:attr="data-authenticated=${currentCustomer != null}">
+<header th:fragment="siteHeader" id="dm-site-header"
+        th:attr="data-authenticated=${currentCustomer != null},data-user-id=${currentCustomer != null ? currentCustomer.userId : 'guest'}">
     <a th:href="@{/}" class="logo">
         <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
     </a>
@@ -34,7 +35,7 @@
                     <a th:href="@{/profile}" class="dm-dropdown-item" role="menuitem">👤 Mi Perfil</a>
                     <a th:href="@{/my-orders}" class="dm-dropdown-item" role="menuitem">📦 Mis Pedidos</a>
                     <div class="dm-dropdown-divider"></div>
-                    <a th:href="@{/logout}" class="dm-dropdown-item dm-dropdown-danger" role="menuitem">🚪 Cerrar Sesión</a>
+                    <a th:href="@{/logout}" class="dm-dropdown-item dm-dropdown-danger dm-logout-link" role="menuitem">🚪 Cerrar Sesión</a>
                 </div>
             </div>
         </th:block>
@@ -75,7 +76,7 @@
 
 <!-- Reusable AI Chat Widget -->
 <div th:fragment="aiChatWidget" id="dm-ai-chat-root"
-     th:attr="data-authenticated=${currentCustomer != null},data-customer-name=${currentCustomer != null ? currentCustomer.fullName : ''}">
+     th:attr="data-authenticated=${currentCustomer != null},data-user-id=${currentCustomer != null ? currentCustomer.userId : 'guest'},data-customer-name=${currentCustomer != null ? currentCustomer.fullName : ''}">
     <button type="button" id="dm-chat-toggle" class="dm-chat-fab" aria-label="Abrir asistente virtual con IA">
         <span class="dm-chat-fab-icon">✨</span>
         <span class="dm-chat-fab-text">Asistente IA</span>
@@ -114,6 +115,13 @@
 
     <script th:src="@{/js/ai-chat.js}"></script>
 </div>
+
+<!-- Reusable Site Footer -->
+<footer th:fragment="siteFooter">
+    <p><strong>Dulce Mayor S.A.</strong> — CUIT: 30-71234567-8</p>
+    <p>Distribuidora Central: Av. San Martín 1500, Mendoza, Argentina • Tel: +54 9 261 555-1234</p>
+    <p style="margin-top: 0.5rem; font-size: 0.82rem; color: #94A3B8;">Portal de Clientes Mayoristas • Desde 1926</p>
+</footer>
 
 </body>
 </html>

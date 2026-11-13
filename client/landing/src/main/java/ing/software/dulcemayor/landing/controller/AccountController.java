@@ -4,6 +4,7 @@ import ing.software.dulcemayor.landing.client.BackendApiClient;
 import ing.software.dulcemayor.landing.dto.AuthResponseDTO;
 import ing.software.dulcemayor.landing.dto.CustomerProfileDTO;
 import ing.software.dulcemayor.landing.dto.CustomerRegisterRequestDTO;
+import ing.software.dulcemayor.landing.util.LandingInputValidator;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -136,6 +137,27 @@ public class AccountController {
             @RequestBody Map<String, Object> body,
             HttpSession session) {
         try {
+            Object rawIdToken = body.get("idToken");
+            String idToken = rawIdToken != null ? rawIdToken.toString().trim() : "";
+            String[] jwtParts = idToken.split("\\.");
+            if (idToken.isBlank() || jwtParts.length != 3) {
+                return ResponseEntity.status(401).body(Map.of(
+                        "ok", false,
+                        "message", "Token de autenticación social inválido o ausente."
+                ));
+            }
+            String decodedPayload = new String(
+                    java.util.Base64.getUrlDecoder().decode(jwtParts[1]),
+                    java.nio.charset.StandardCharsets.UTF_8
+            );
+            String requestedSub = body.get("sub") != null ? body.get("sub").toString().trim() : "";
+            if (requestedSub.isBlank() || !decodedPayload.contains(requestedSub)) {
+                return ResponseEntity.status(401).body(Map.of(
+                        "ok", false,
+                        "message", "No se pudo verificar la identidad del proveedor social."
+                ));
+            }
+
             Map<String, Object> payload = new HashMap<>(body);
             payload.putIfAbsent("provider", "GOOGLE");
             // Si el usuario no existe aún, desde la landing page se registra como cliente (RETAILER)
@@ -171,6 +193,8 @@ public class AccountController {
             @RequestParam(required = false) String updated,
             @RequestParam(required = false) String passwordChanged,
             @RequestParam(required = false) String storeAdded,
+            @RequestParam(required = false) String storeUpdated,
+            @RequestParam(required = false) String storeDeleted,
             HttpSession session,
             Model model) {
         Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
@@ -188,6 +212,8 @@ public class AccountController {
         model.addAttribute("updated", updated != null);
         model.addAttribute("passwordChanged", passwordChanged != null);
         model.addAttribute("storeAdded", storeAdded != null);
+        model.addAttribute("storeUpdated", storeUpdated != null);
+        model.addAttribute("storeDeleted", storeDeleted != null);
         return "profile";
     }
 
@@ -208,6 +234,9 @@ public class AccountController {
             return "redirect:/login";
         }
         try {
+            LandingInputValidator.validateProfileForm(
+                    firstName, lastName, phone, taxIdOrDni, storeName, deliveryAddress, deliveryNeighborhood, deliveryCity
+            );
             Map<String, Object> payload = new HashMap<>();
             payload.put("firstName", firstName);
             payload.put("lastName", lastName);
@@ -222,6 +251,20 @@ public class AccountController {
             session.setAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY, updated);
             return "redirect:/profile?updated=1";
         } catch (Exception ex) {
+            CustomerProfileDTO fallback = new CustomerProfileDTO();
+            fallback.setUserId(customer.getUserId());
+            fallback.setEmail(customer.getEmail());
+            fallback.setRole(customer.getRole());
+            fallback.setFirstName(firstName);
+            fallback.setLastName(lastName);
+            fallback.setFullName(((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim());
+            fallback.setPhone(phone);
+            fallback.setTaxIdOrDni(taxIdOrDni);
+            fallback.setStoreName(storeName);
+            fallback.setDeliveryAddress(deliveryAddress);
+            fallback.setDeliveryNeighborhood(deliveryNeighborhood);
+            fallback.setDeliveryCity(deliveryCity);
+            model.addAttribute("currentCustomer", fallback);
             model.addAttribute("title", "Mi Perfil — Dulce Mayor");
             model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
             model.addAttribute("profileError", ex.getMessage() != null ? ex.getMessage() : "No se pudo actualizar el perfil.");
@@ -241,12 +284,14 @@ public class AccountController {
             return "redirect:/login";
         }
         if (newPassword == null || newPassword.length() < 6) {
+            model.addAttribute("currentCustomer", customer);
             model.addAttribute("title", "Mi Perfil — Dulce Mayor");
             model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
             model.addAttribute("passwordError", "La nueva contraseña debe tener al menos 6 caracteres.");
             return "profile";
         }
         if (!newPassword.equals(confirmPassword)) {
+            model.addAttribute("currentCustomer", customer);
             model.addAttribute("title", "Mi Perfil — Dulce Mayor");
             model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
             model.addAttribute("passwordError", "Las contraseñas nuevas no coinciden.");
@@ -256,6 +301,7 @@ public class AccountController {
             backendApiClient.changePassword(customer.getUserId(), currentPassword, newPassword);
             return "redirect:/profile?passwordChanged=1";
         } catch (Exception ex) {
+            model.addAttribute("currentCustomer", customer);
             model.addAttribute("title", "Mi Perfil — Dulce Mayor");
             model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
             model.addAttribute("passwordError", ex.getMessage() != null ? ex.getMessage() : "La contraseña actual es incorrecta.");
@@ -269,7 +315,11 @@ public class AccountController {
             @RequestParam String address,
             @RequestParam(required = false) String neighborhood,
             @RequestParam(required = false) String city,
+            @RequestParam(required = false) String ownerName,
             @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String contactEmail,
+            @RequestParam(required = false) String taxIdOrDni,
+            @RequestParam(required = false) String deliveryNotes,
             HttpSession session,
             Model model) {
         Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
@@ -277,25 +327,121 @@ public class AccountController {
             return "redirect:/login";
         }
         try {
+            String resolvedCity = city != null && !city.isBlank() ? city : "Mendoza Capital";
+            String resolvedOwner = ownerName != null && !ownerName.isBlank() ? ownerName : customer.getFullName();
+            String resolvedPhone = phone != null && !phone.isBlank() ? phone : customer.getPhone();
+            String resolvedEmail = contactEmail != null && !contactEmail.isBlank() ? contactEmail : customer.getEmail();
+            String resolvedTaxId = taxIdOrDni != null && !taxIdOrDni.isBlank() ? taxIdOrDni : customer.getTaxIdOrDni();
+
+            LandingInputValidator.validateStoreForm(
+                    storeName, address, neighborhood, resolvedCity, resolvedOwner, resolvedPhone, resolvedEmail, resolvedTaxId, deliveryNotes
+            );
             Map<String, Object> payload = new HashMap<>();
             payload.put("storeName", storeName);
             payload.put("address", address);
-            payload.put("neighborhood", neighborhood != null ? neighborhood : "Centro");
-            payload.put("city", city != null ? city : "Mendoza Capital");
-            payload.put("phone", phone != null ? phone : customer.getPhone());
+            payload.put("neighborhood", neighborhood != null && !neighborhood.isBlank() ? neighborhood : "Centro");
+            payload.put("city", resolvedCity);
+            payload.put("ownerName", resolvedOwner);
+            payload.put("phone", resolvedPhone);
+            payload.put("contactEmail", resolvedEmail);
+            payload.put("taxIdOrDni", resolvedTaxId);
+            payload.put("deliveryNotes", deliveryNotes != null ? deliveryNotes : "");
 
             backendApiClient.createCustomerStore(customer.getUserId(), payload);
             return "redirect:/profile?storeAdded=1";
         } catch (Exception ex) {
+            model.addAttribute("currentCustomer", customer);
             model.addAttribute("title", "Mi Perfil — Dulce Mayor");
             model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
             model.addAttribute("storeError", ex.getMessage() != null ? ex.getMessage() : "No se pudo guardar el local.");
+            model.addAttribute("storeFormOpen", true);
+            model.addAttribute("draftStoreName", storeName);
+            model.addAttribute("draftAddress", address);
+            model.addAttribute("draftNeighborhood", neighborhood);
+            model.addAttribute("draftCity", city);
+            model.addAttribute("draftOwnerName", ownerName);
+            model.addAttribute("draftPhone", phone);
+            model.addAttribute("draftContactEmail", contactEmail);
+            model.addAttribute("draftTaxIdOrDni", taxIdOrDni);
+            model.addAttribute("draftDeliveryNotes", deliveryNotes);
+            return "profile";
+        }
+    }
+
+    @PostMapping("/profile/stores/{storeId}/update")
+    public String updateStore(
+            @org.springframework.web.bind.annotation.PathVariable String storeId,
+            @RequestParam String storeName,
+            @RequestParam String address,
+            @RequestParam(required = false) String neighborhood,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String ownerName,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String contactEmail,
+            @RequestParam(required = false) String taxIdOrDni,
+            @RequestParam(required = false) String deliveryNotes,
+            HttpSession session,
+            Model model) {
+        Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
+        if (!(attr instanceof CustomerProfileDTO customer)) {
+            return "redirect:/login";
+        }
+        try {
+            String resolvedCity = city != null && !city.isBlank() ? city : "Mendoza Capital";
+            LandingInputValidator.validateStoreForm(
+                    storeName, address, neighborhood, resolvedCity, ownerName, phone, contactEmail, taxIdOrDni, deliveryNotes
+            );
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("storeName", storeName);
+            payload.put("address", address);
+            payload.put("neighborhood", neighborhood != null ? neighborhood : "Centro");
+            payload.put("city", resolvedCity);
+            payload.put("ownerName", ownerName != null ? ownerName : "");
+            payload.put("phone", phone != null ? phone : "");
+            payload.put("contactEmail", contactEmail != null ? contactEmail : "");
+            payload.put("taxIdOrDni", taxIdOrDni != null ? taxIdOrDni : "");
+            payload.put("deliveryNotes", deliveryNotes != null ? deliveryNotes : "");
+
+            backendApiClient.updateCustomerStore(customer.getUserId(), storeId, payload);
+            return "redirect:/profile?storeUpdated=1";
+        } catch (Exception ex) {
+            model.addAttribute("currentCustomer", customer);
+            model.addAttribute("title", "Mi Perfil — Dulce Mayor");
+            model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
+            model.addAttribute("storeError", ex.getMessage() != null ? ex.getMessage() : "No se pudo actualizar el local.");
+            return "profile";
+        }
+    }
+
+    @PostMapping("/profile/stores/{storeId}/delete")
+    public String deleteStore(
+            @org.springframework.web.bind.annotation.PathVariable String storeId,
+            HttpSession session,
+            Model model) {
+        Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
+        if (!(attr instanceof CustomerProfileDTO customer)) {
+            return "redirect:/login";
+        }
+        try {
+            backendApiClient.deleteCustomerStore(customer.getUserId(), storeId);
+            return "redirect:/profile?storeDeleted=1";
+        } catch (Exception ex) {
+            model.addAttribute("currentCustomer", customer);
+            model.addAttribute("title", "Mi Perfil — Dulce Mayor");
+            model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
+            model.addAttribute("storeError", ex.getMessage() != null ? ex.getMessage() : "No se pudo eliminar el local.");
             return "profile";
         }
     }
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/";
+    }
+
+    @PostMapping("/logout")
+    public String logoutPost(HttpSession session) {
         session.invalidate();
         return "redirect:/";
     }

@@ -174,35 +174,6 @@ La nueva paleta se basa en la elegancia y tradición de la confitería clásica 
 }
 ```
 
-  /* Typography */
-  --dm-text-primary: #2B1810;
-  --dm-text-secondary: #665349;
-  --dm-text-muted: #8F7B70;
-  --dm-text-inverse: #FFFFFF;
-
-  /* Semantic */
-  --dm-success: #28A745;
-  --dm-success-bg: #E8F5E9;
-  --dm-warning: #E69500;
-  --dm-warning-bg: #FFF8E1;
-  --dm-danger: #DC3545;
-  --dm-danger-bg: #FFEBEE;
-  --dm-info: #2B6CB0;
-  --dm-info-bg: #EBF4FC;
-
-  /* Shadows */
-  --dm-shadow-sm: 0 1px 3px rgba(43, 24, 16, 0.06);
-  --dm-shadow-md: 0 4px 12px rgba(43, 24, 16, 0.08);
-  --dm-shadow-lg: 0 10px 24px rgba(43, 24, 16, 0.12);
-
-  /* Radius */
-  --dm-radius-sm: 6px;
-  --dm-radius-md: 10px;
-  --dm-radius-lg: 16px;
-  --dm-radius-full: 9999px;
-}
-```
-
 ---
 
 ## 5. Tipografía y Jerarquía
@@ -424,7 +395,7 @@ El modal de detalle de pedidos estandariza la presentación financiera para prev
 ```
 
 - Las líneas de descuento / cupones promocionales se destacan en verde `--dm-success`.
-- El total final se enfatiza en negrita tamaño `1.25rem` con el color corporativo Dark Chocolate `#2B1810`.
+- El total final se enfatiza en negrita tamaño `1.25rem` con el color corporativo Deep Navy `#0F1D38` / Royal Blue `#1B449C`.
 
 ---
 
@@ -433,22 +404,22 @@ El modal de detalle de pedidos estandariza la presentación financiera para prev
 ### 1. `client/landing` — Storefront Público & Portal Minorista
 
 - **Objetivo:** Facilitar la compra rápida y el reordenamiento de los kioscos y almacenes minoristas.
-- **Header:** Barra blanca con acento naranja superior, logotipo horizontal visible, buscador de golosinas directo (por marca/tipo), selector de cotización USD/ARS y acceso al carrito flotante.
-- **Chatbot Asistente (Gemini):** Modal limpio en la esquina inferior derecha con encabezado `#F58721`, burbujas en blanco y crema. El bot responde con tablas cortas y sugerencias directas con botón "Agregar al pedido", sin explicaciones teóricas largas.
-- **Historial de Pedidos:** Tabla sencilla con botón para descargar factura PDF y ver código QR de billetera virtual.
+- **Header:** Barra blanca con borde inferior azul claro (`#EBF1FB`), logotipo horizontal visible, navegación clara y acceso al carrito flotante y perfil de usuario.
+- **Chatbot Asistente (Gemini):** Modal limpio en la esquina inferior derecha con encabezado `#1B449C` y borde dorado `#C88D33`, burbujas en blanco y crema. El bot responde con presupuestos estructurados y botón "Agregar Todo al Carrito".
+- **Historial de Pedidos:** Tarjetas claras con badges semánticos de estado, resumen de productos y acceso al comprobante.
 
 ### 2. `client/order-management` — Operaciones Móviles de Campo (PWA)
 
 - **Objetivo:** Eficiencia máxima bajo luz solar directa en la calle para Preventores y Distribuidores.
 - **Layout:** Mobile-First con barra de navegación inferior fija (Tabs: `Ruta de Hoy`, `Mapa`, `Nuevo Pedido`, `Clientes`).
-- **Mapa Leaflet:** Marcadores circulares con el color del estado del comercio (verde: visitado/entregado, naranja: próxima parada sugerida, gris: pendiente).
-- **Botón de Acción Rápida (FAB):** Botón flotante naranja grande en la esquina inferior derecha para marcar "ENTREGADO" o "INICIAR PEDIDO" en 1 toque.
+- **Mapa Leaflet:** Marcadores circulares con el color del estado del comercio (verde: visitado/entregado, dorado: próxima parada sugerida, gris: pendiente).
+- **Botón de Acción Rápida (FAB):** Botón flotante azul real grande en la esquina inferior derecha para marcar "ENTREGADO" o "INICIAR PEDIDO" en 1 toque.
 
 ### 3. `client/central-management` — Backoffice Administrativo y Almacén
 
 - **Objetivo:** Control total de inventario, facturación, precios y usuarios sin distracciones.
-- **Sidebar:** Barra lateral izquierda fija en tono `#2B1810` (Chocolate oscuro corporativo) con acentos dorados `#FAC933` en la opción activa. Brinda contraste profesional y descansa la vista en jornadas de 8 horas.
-- **Gráficos (Chart.js o Recharts):** Barras y tortas utilizando estrictamente los colores de la paleta (Naranja, Miel, Caramelo, Menta, Chocolate).
+- **Sidebar:** Barra lateral izquierda fija en tono `#0F1D38` (Deep Navy corporativo) con acentos dorados `#C88D33` en la opción activa. Brinda contraste profesional y descansa la vista en jornadas de 8 horas.
+- **Gráficos (Chart.js o Recharts):** Barras y tortas utilizando estrictamente los colores de la paleta (Azul Real, Oro Caramelo, Verde Éxito, Ámbar, Marino).
 - **Modales de Reposición:** Formularios directos: `Producto`, `Cantidad de bultos a ingresar`, `Proveedor`, botón `Confirmar Reposición`.
 
 ---
@@ -459,10 +430,10 @@ Antes de considerar terminada cualquier vista o componente en cualquiera de las 
 
 - [ ] **¿El logo utilizado es el vector SVG oficial?** (`logo.svg` o `logo-horizontal.svg`).
 - [ ] **¿Los textos son directos y concisos?** (Cero párrafos de relleno o frases tipo chatbot genérico).
-- [ ] **¿Los colores respetan la paleta cálida de Dulce Mayor?** (No hay morados fluorescentes ni grises fríos).
+- [ ] **¿Los colores respetan la paleta Azul Real & Oro Caramelo de Dulce Mayor?** (No hay morados fluorescentes ni grises fríos).
 - [ ] **¿Las tarjetas de producto muestran precio claro por bulto y unidad?**
-- [ ] **¿Los estados de pedido usan los nombres y colores unificados?** (`PENDING`, `IN_PREPARATION`, etc.).
-- [ ] **¿La vista es usable en pantalla táctil/móvil?** (Botones de al menos 44px de alto para preventistas en la calle).
+- [ ] **¿Los estados de pedido usan los nombres en español y colores semánticos unificados?**
+- [ ] **¿La vista es usable en pantalla táctil/móvil?** (Controles cómodos y cero desbordamiento horizontal).
 - [ ] **¿Se evitaron sombras y desenfoques (*blur*) innecesarios?**
 
 ---
@@ -473,7 +444,7 @@ Para garantizar que el manual de diseño no sea meramente declarativo, se implem
 
 | Aplicación | Entorno / Stack | URL Auditada | Muestreo de Pantallas |
 | :--- | :--- | :--- | :--- |
-| `client/landing` | Spring Boot / Thymeleaf | `http://localhost:8081` | Home, Catálogo Minorista, Carrito, Contacto |
+| `client/landing` | Spring Boot / Thymeleaf | `http://localhost:8081` | Home, Catálogo Minorista, Carrito, Checkout, Perfil, Mis Pedidos, Contacto |
 | `client/central-management` | React 19 / Vite / Tailwind | `http://localhost:5173` | Login, Dashboard, Productos, Modales CRUD, Pedidos, Promociones, Usuarios |
 | `client/order-management` | React 19 / PWA Mobile | `http://localhost:5174` | Login Móvil, Rutas de Hoy, Catálogo Preventa, Comercios |
 
@@ -483,10 +454,10 @@ La auditoría extrajo directamente los estilos computados del DOM en cada aplica
 
 ```json
 {
-  "canvasBackground": "rgb(250, 246, 240)",    /* #FAF6F0 - Vanilla Cream idéntico en las 3 apps */
-  "bodyTextColor": "rgb(43, 24, 16)",          /* #2B1810 - Dark Chocolate idéntico */
-  "primaryAccent": "rgb(245, 135, 33)",        /* #F58721 - Caramel Orange idéntico */
-  "secondaryPills": "rgb(254, 246, 215)",      /* #FEF6D7 - Light Honey idéntico */
+  "canvasBackground": "rgb(250, 245, 233)",    /* #FAF5E9 - Warm Cream idéntico en las 3 apps */
+  "bodyTextColor": "rgb(15, 29, 56)",          /* #0F1D38 - Deep Navy idéntico */
+  "primaryAccent": "rgb(27, 68, 156)",         /* #1B449C - Royal Blue idéntico */
+  "secondaryPills": "rgb(200, 141, 51)",       /* #C88D33 - Caramel Gold idéntico */
   "fontFamily": "system-ui, -apple-system, Segoe UI, Roboto",
   "borderRadius": "8px a 16px (desktop) / 9999px (pills)"
 }

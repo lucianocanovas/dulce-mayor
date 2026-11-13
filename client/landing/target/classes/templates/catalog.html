@@ -26,16 +26,29 @@
         <div class="grid" th:unless="${#lists.isEmpty(products)}">
             <div th:each="prod : ${products}" class="product-card">
                 <span th:if="${prod.onSale}" class="badge-sale">OFERTA</span>
-                <div th:if="${prod.imageUrl}" style="width: 100%; height: 150px; overflow: hidden; border-radius: 8px; margin-bottom: 0.75rem; background: #fdfaf7;">
-                    <img th:src="${prod.imageUrl}" th:alt="${prod.name}" style="width: 100%; height: 100%; object-fit: cover;" />
+                <div class="dm-card-media">
+                    <img th:if="${prod.imageUrl != null and !#strings.isEmpty(prod.imageUrl)}"
+                         th:src="${prod.imageUrl}" th:alt="${prod.name}"
+                         onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+                    <div class="dm-card-media-placeholder"
+                         th:style="${prod.imageUrl != null and !#strings.isEmpty(prod.imageUrl)} ? 'display:none;' : 'display:flex;'">
+                        🍬
+                    </div>
                 </div>
                 <span class="product-code" th:text="${prod.code}">COD</span>
                 <h3 class="product-title" th:text="${prod.name}">Nombre</h3>
                 <p class="product-desc" th:text="${prod.description}">Descripción...</p>
-                <div class="product-pack" th:text="${prod.packaging} + ' (' + ${prod.unitsPerPack} + (${prod.unitsPerPack == 1} ? ' unidad/pack)' : ' unidades/pack)')">Pack</div>
+                <div class="product-pack" th:text="${prod.packaging}">Pack</div>
                 <div class="product-price" th:text="'$' + ${#numbers.formatDecimal(prod.currentPrice, 0, 'POINT', 0, 'COMMA')}">$0</div>
+                <div class="product-unit-price" th:if="${prod.unitsPerPack > 1}"
+                     th:text="'$' + ${#numbers.formatDecimal(prod.currentPrice / prod.unitsPerPack, 1, 'POINT', 2, 'COMMA')} + ' c/u (' + ${prod.unitsPerPack} + ' u./bulto)'">
+                    $0 c/u
+                </div>
                 <div style="margin-top: 0.75rem;">
-                    <span class="stock-pill" th:text="${prod.currentStock} + (${prod.currentStock == 1} ? ' unidad disponible' : ' unidades disponibles')">En Stock</span>
+                    <span th:class="${prod.currentStock <= 20} ? 'stock-pill stock-pill--warning' : 'stock-pill'"
+                          th:text="${prod.currentStock <= 20}
+                            ? ('¡Últimos ' + ${prod.currentStock} + (${prod.currentStock == 1} ? ' bulto!' : ' bultos!'))
+                            : (${prod.currentStock} + (${prod.currentStock == 1} ? ' bulto disponible' : ' bultos disponibles'))">En Stock</span>
                 </div>
                 <div class="dm-card-actions" th:if="${currentCustomer != null}">
                     <input type="number" class="dm-card-qty-input" value="1" min="1" th:max="${prod.currentStock}" />
@@ -51,10 +64,7 @@
         </div>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
-        <p>Mendoza, Argentina</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script th:src="@{/js/cart.js}"></script>
     <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>

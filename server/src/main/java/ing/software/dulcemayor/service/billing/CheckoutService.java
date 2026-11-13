@@ -19,6 +19,7 @@ import ing.software.dulcemayor.repository.order.OrderRepository;
 import ing.software.dulcemayor.repository.order.PointOfSaleRepository;
 import ing.software.dulcemayor.service.billing.strategy.PaymentInitiationResult;
 import ing.software.dulcemayor.service.order.OrderService;
+import ing.software.dulcemayor.util.InputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,14 +48,20 @@ public class CheckoutService {
         if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
             throw new IllegalArgumentException("El carrito de compras no puede estar vacío.");
         }
-        if (request.getCustomerName() == null || request.getCustomerName().isBlank()) {
-            throw new IllegalArgumentException("El nombre y apellido del comprador es obligatorio.");
-        }
-        if (request.getDeliveryAddress() == null || request.getDeliveryAddress().isBlank()) {
-            throw new IllegalArgumentException("La dirección de entrega es obligatoria.");
+
+        PointOfSale selectedPos = resolveSelectedPointOfSale(request);
+        if (selectedPos != null) {
+            hydrateRequestFromPointOfSale(request, selectedPos);
         }
 
-        PointOfSale pos = createOrResolveWebPointOfSale(request);
+        if (request.getDeliveryCity() == null || request.getDeliveryCity().isBlank()) {
+            request.setDeliveryCity("Mendoza Capital");
+        }
+
+        InputValidator.validateCheckoutRequest(request);
+
+        PointOfSale pos = (selectedPos != null) ? selectedPos : createOrResolveWebPointOfSale(request);
+
         PaymentType paymentType = orderService.resolvePaymentType(request.getPaymentType());
 
         OrderService.OrderCreationOutcome outcome = orderService.buildAndInitiateOrder(
@@ -109,17 +116,12 @@ public class CheckoutService {
 
     @Transactional(readOnly = true)
     public List<OrderResponseDTO> findCustomerOrders(String email, Long orderNumber, String userId) {
-        if (orderNumber != null) {
-            return orderRepository.findByOrderNumberAndIsDeletedFalse(orderNumber)
-                    .map(orderService::toResponseDto)
-                    .map(List::of)
-                    .orElse(List.of());
-        }
         if (userId != null && !userId.isBlank()) {
             User user = userRepository.findByIdAndIsDeletedFalse(userId).orElse(null);
             if (user != null) {
                 Map<String, Order> merged = new LinkedHashMap<>();
-                if (user.getPerson() instanceof Retailer retailer) {
+                Retailer retailer = resolveRetailer(user);
+                if (retailer != null) {
                     orderRepository.findByPointOfSaleRetailerIdAndIsDeletedFalseOrderByOrderDateTimeDesc(retailer.getId())
                             .forEach(o -> merged.put(o.getId(), o));
                 }
@@ -127,11 +129,24 @@ public class CheckoutService {
                     orderRepository.findByCustomerEmailIgnoreCaseAndIsDeletedFalseOrderByOrderDateTimeDesc(user.getUsername())
                             .forEach(o -> merged.putIfAbsent(o.getId(), o));
                 }
+                if (orderNumber != null) {
+                    return merged.values().stream()
+                            .filter(o -> orderNumber.equals(o.getOrderNumber()))
+                            .sorted((a, b) -> b.getOrderDateTime().compareTo(a.getOrderDateTime()))
+                            .map(orderService::toResponseDto)
+                            .toList();
+                }
                 return merged.values().stream()
                         .sorted((a, b) -> b.getOrderDateTime().compareTo(a.getOrderDateTime()))
                         .map(orderService::toResponseDto)
                         .toList();
             }
+        }
+        if (orderNumber != null) {
+            return orderRepository.findByOrderNumberAndIsDeletedFalse(orderNumber)
+                    .map(orderService::toResponseDto)
+                    .map(List::of)
+                    .orElse(List.of());
         }
         if (email != null && !email.isBlank()) {
             return orderRepository.findByCustomerEmailIgnoreCaseAndIsDeletedFalseOrderByOrderDateTimeDesc(email.trim())
@@ -142,13 +157,29 @@ public class CheckoutService {
         return List.of();
     }
 
+    private PointOfSale resolveSelectedPointOfSale(CheckoutRequestDTO request) {
+        if (request == null || request.getPointOfSaleId() == null || request.getPointOfSaleId().isBlank()) {
+            return null;
+        }
+        Retailer existingRetailer = null;
+        if (request.getUserId() != null && !request.getUserId().isBlank()) {
+            User user = userRepository.findByIdAndIsDeletedFalse(request.getUserId()).orElse(null);
+            existingRetailer = resolveRetailer(user);
+        }
+        PointOfSale selected = pointOfSaleRepository.findByIdAndIsDeletedFalse(request.getPointOfSaleId().trim())
+                .orElse(null);
+        if (selected != null && (existingRetailer == null
+                || (selected.getRetailer() != null && selected.getRetailer().getId().equals(existingRetailer.getId())))) {
+            return selected;
+        }
+        return null;
+    }
+
     private PointOfSale createOrResolveWebPointOfSale(CheckoutRequestDTO request) {
         Retailer existingRetailer = null;
         if (request.getUserId() != null && !request.getUserId().isBlank()) {
             User user = userRepository.findByIdAndIsDeletedFalse(request.getUserId()).orElse(null);
-            if (user != null && user.getPerson() instanceof Retailer retailer) {
-                existingRetailer = retailer;
-            }
+            existingRetailer = resolveRetailer(user);
         }
 
         if (request.getPointOfSaleId() != null && !request.getPointOfSaleId().isBlank()) {
@@ -157,6 +188,17 @@ public class CheckoutService {
             if (selected != null && (existingRetailer == null
                     || (selected.getRetailer() != null && selected.getRetailer().getId().equals(existingRetailer.getId())))) {
                 return selected;
+            }
+        }
+
+        if (existingRetailer != null) {
+            List<PointOfSale> existingPosList = pointOfSaleRepository.findByRetailerIdAndIsDeletedFalse(existingRetailer.getId());
+            String reqAddress = request.getDeliveryAddress() != null ? request.getDeliveryAddress().trim() : "";
+            for (PointOfSale pos : existingPosList) {
+                if (pos.getAddress() != null && pos.getAddress().getStreet() != null
+                        && pos.getAddress().getStreet().equalsIgnoreCase(reqAddress)) {
+                    return pos;
+                }
             }
         }
 
@@ -199,9 +241,75 @@ public class CheckoutService {
 
         return pointOfSaleRepository.save(PointOfSale.builder()
                 .storeName(storeLabel)
+                .contactName(fullName)
+                .contactPhone(request.getCustomerPhone() != null ? request.getCustomerPhone().trim() : retailer.getPhone())
+                .contactEmail(request.getCustomerEmail() != null ? request.getCustomerEmail().trim() : null)
+                .taxIdOrDni(doc)
+                .deliveryNotes(request.getNotes() != null ? request.getNotes().trim() : null)
                 .retailer(retailer)
                 .address(address)
                 .build());
+    }
+
+    private void hydrateRequestFromPointOfSale(CheckoutRequestDTO request, PointOfSale pos) {
+        if (pos == null) return;
+        Retailer r = pos.getRetailer();
+        Address a = pos.getAddress();
+
+        if (request.getStoreName() == null || request.getStoreName().isBlank()) {
+            request.setStoreName(pos.getStoreName());
+        }
+        if (request.getCustomerName() == null || request.getCustomerName().isBlank()) {
+            if (pos.getContactName() != null && !pos.getContactName().isBlank()) {
+                request.setCustomerName(pos.getContactName());
+            } else if (r != null) {
+                request.setCustomerName((r.getFirstName() + " " + r.getLastName()).trim());
+            }
+        }
+        if (request.getCustomerPhone() == null || request.getCustomerPhone().isBlank()) {
+            if (pos.getContactPhone() != null && !pos.getContactPhone().isBlank()) {
+                request.setCustomerPhone(pos.getContactPhone());
+            } else if (r != null && r.getPhone() != null) {
+                request.setCustomerPhone(r.getPhone());
+            }
+        }
+        if (request.getCustomerEmail() == null || request.getCustomerEmail().isBlank()) {
+            if (pos.getContactEmail() != null && !pos.getContactEmail().isBlank()) {
+                request.setCustomerEmail(pos.getContactEmail());
+            }
+        }
+        if (request.getTaxIdOrDni() == null || request.getTaxIdOrDni().isBlank()) {
+            if (pos.getTaxIdOrDni() != null && !pos.getTaxIdOrDni().isBlank()) {
+                request.setTaxIdOrDni(pos.getTaxIdOrDni());
+            } else if (r != null && r.getDocumentNumber() != null) {
+                request.setTaxIdOrDni(r.getDocumentNumber());
+            }
+        }
+        if (a != null) {
+            if (request.getDeliveryAddress() == null || request.getDeliveryAddress().isBlank()) {
+                request.setDeliveryAddress(a.getStreet());
+            }
+            if (request.getDeliveryNeighborhood() == null || request.getDeliveryNeighborhood().isBlank()) {
+                request.setDeliveryNeighborhood(a.getNeighborhood());
+            }
+            if ((request.getDeliveryCity() == null || request.getDeliveryCity().isBlank()) && a.getCity() != null) {
+                request.setDeliveryCity(a.getCity().getName());
+            }
+        }
+        if (request.getNotes() == null || request.getNotes().isBlank()) {
+            if (pos.getDeliveryNotes() != null && !pos.getDeliveryNotes().isBlank()) {
+                request.setNotes(pos.getDeliveryNotes());
+            } else if (a != null && a.getReference() != null && !a.getReference().isBlank()) {
+                request.setNotes(a.getReference());
+            }
+        }
+    }
+
+    private Retailer resolveRetailer(User user) {
+        if (user == null || user.getPerson() == null || user.getPerson().getId() == null) {
+            return null;
+        }
+        return retailerRepository.findByIdAndIsDeletedFalse(user.getPerson().getId()).orElse(null);
     }
 }
 

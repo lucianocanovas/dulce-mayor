@@ -57,8 +57,10 @@
                     <span class="badge-sale" th:text="${prod.onSale} ? 'OFERTA DESTACADA' : 'DESTACADO'">DESTACADO</span>
                     <div class="dm-card-media">
                         <img th:if="${prod.imageUrl != null and !#strings.isEmpty(prod.imageUrl)}"
-                             th:src="${prod.imageUrl}" th:alt="${prod.name}" />
-                        <div th:if="${prod.imageUrl == null or #strings.isEmpty(prod.imageUrl)}" class="dm-card-media-placeholder">
+                             th:src="${prod.imageUrl}" th:alt="${prod.name}"
+                             onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+                        <div class="dm-card-media-placeholder"
+                             th:style="${prod.imageUrl != null and !#strings.isEmpty(prod.imageUrl)} ? 'display:none;' : 'display:flex;'">
                             🍬
                         </div>
                     </div>
@@ -67,8 +69,15 @@
                     <p class="product-desc" th:text="${prod.description}">Descripción del producto...</p>
                     <div class="product-pack" th:text="${prod.packaging}">Pack x 12 u.</div>
                     <div class="product-price" th:text="'$' + ${#numbers.formatDecimal(prod.currentPrice, 0, 'POINT', 0, 'COMMA')}">$0</div>
+                    <div class="product-unit-price" th:if="${prod.unitsPerPack > 1}"
+                         th:text="'$' + ${#numbers.formatDecimal(prod.currentPrice / prod.unitsPerPack, 1, 'POINT', 2, 'COMMA')} + ' c/u (' + ${prod.unitsPerPack} + ' u./bulto)'">
+                        $0 c/u
+                    </div>
                     <div style="margin-top: 0.75rem;">
-                        <span class="stock-pill" th:text="${prod.currentStock} + (${prod.currentStock == 1} ? ' unidad disponible' : ' unidades disponibles')">En Stock</span>
+                        <span th:class="${prod.currentStock <= 20} ? 'stock-pill stock-pill--warning' : 'stock-pill'"
+                              th:text="${prod.currentStock <= 20}
+                                ? ('¡Últimos ' + ${prod.currentStock} + (${prod.currentStock == 1} ? ' bulto!' : ' bultos!'))
+                                : (${prod.currentStock} + (${prod.currentStock == 1} ? ' bulto disponible' : ' bultos disponibles'))">En Stock</span>
                     </div>
                     <div class="dm-card-actions" th:if="${currentCustomer != null}">
                         <input type="number" class="dm-card-qty-input" value="1" min="1" th:max="${prod.currentStock}" />
@@ -137,11 +146,7 @@
         </section>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — CUIT: 30-71234567-8</p>
-        <p>Distribuidora Central: Mendoza, Argentina • Tel: +54 9 261 555-1234</p>
-        <p style="margin-top: 0.5rem; font-size: 0.82rem; color: #C5B3A5;">Portal de Clientes Mayoristas • Dulce Mayor</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script>
         (function () {

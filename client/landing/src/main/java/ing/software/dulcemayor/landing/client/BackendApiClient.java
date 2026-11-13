@@ -13,12 +13,16 @@ import ing.software.dulcemayor.landing.dto.OrderSummaryDTO;
 import ing.software.dulcemayor.landing.dto.PaymentConfigDTO;
 import ing.software.dulcemayor.landing.dto.PointOfSaleDTO;
 import ing.software.dulcemayor.landing.dto.ProductDTO;
+import ing.software.dulcemayor.landing.controller.GlobalModelAttributes;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +36,16 @@ public class BackendApiClient {
     public BackendApiClient(@Value("${backend.api.url}") String backendApiUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(backendApiUrl)
+                .requestInterceptor((request, body, execution) -> {
+                    if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
+                        HttpSession session = attrs.getRequest().getSession(false);
+                        if (session != null && session.getAttribute(GlobalModelAttributes.SESSION_AUTH_KEY) instanceof AuthResponseDTO auth
+                                && auth.getToken() != null && !auth.getToken().isBlank()) {
+                            request.getHeaders().setBearerAuth(auth.getToken());
+                        }
+                    }
+                    return execution.execute(request, body);
+                })
                 .build();
     }
 
@@ -312,6 +326,34 @@ public class BackendApiClient {
                 throw new IllegalArgumentException("No se pudo guardar el local.");
             }
             return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
+        }
+    }
+
+    public PointOfSaleDTO updateCustomerStore(String userId, String storeId, Map<String, Object> payload) {
+        try {
+            ApiResponse<PointOfSaleDTO> response = restClient.put()
+                    .uri("/auth/customer/{userId}/stores/{storeId}", userId, storeId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<PointOfSaleDTO>>() {});
+            if (response == null || response.getData() == null) {
+                throw new IllegalArgumentException("No se pudo actualizar el local.");
+            }
+            return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
+        }
+    }
+
+    public void deleteCustomerStore(String userId, String storeId) {
+        try {
+            restClient.delete()
+                    .uri("/auth/customer/{userId}/stores/{storeId}", userId, storeId)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<Void>>() {});
         } catch (RestClientResponseException ex) {
             throw new IllegalArgumentException(extractErrorMessage(ex));
         }

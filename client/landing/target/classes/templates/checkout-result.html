@@ -70,22 +70,41 @@
                     <div><strong>Cliente:</strong> <span th:text="${orderStatus.customerName}">-</span></div>
                     <div><strong>Comercio:</strong> <span th:text="${orderStatus.storeName}">-</span></div>
                     <div><strong>Entrega:</strong> <span th:text="${orderStatus.deliveryAddress} + ' (' + ${orderStatus.deliveryCity} + ')'">-</span></div>
-                    <div><strong>Medio de Pago:</strong> <span th:text="${orderStatus.paymentType}">-</span></div>
+                    <div>
+                        <strong>Medio de Pago:</strong>
+                        <span th:switch="${orderStatus.paymentType}">
+                            <span th:case="'MERCADO_PAGO'">Mercado Pago</span>
+                            <span th:case="'BANK_TRANSFER'">Transferencia Bancaria</span>
+                            <span th:case="'CASH'">Efectivo Contra Entrega</span>
+                            <span th:case="'DIGITAL_WALLET'">Billetera Virtual / QR</span>
+                            <span th:case="*" th:text="${orderStatus.paymentType ?: 'No especificado'}">-</span>
+                        </span>
+                    </div>
                 </div>
 
                 <div th:if="${orderStatus.items != null}" style="border-top:1px solid var(--border); padding-top:0.75rem;">
-                    <div th:each="item : ${orderStatus.items}" style="display:flex; justify-content:space-between; padding:0.4rem 0; border-bottom:1px dashed #EADFCF; font-size:0.9rem;">
+                    <div th:each="item : ${orderStatus.items}" style="display:flex; justify-content:space-between; padding:0.4rem 0; border-bottom:1px dashed var(--border); font-size:0.9rem;">
                         <span>
                             <strong th:text="${item.productName}">Producto</strong>
-                            <span style="color:#7A6254;" th:text="' (' + ${item.quantity} + (${item.quantity == 1} ? ' unidad' : ' unidades') + ')'"></span>
+                            <span style="color:var(--muted);" th:text="' (' + ${item.quantity} + (${item.quantity == 1} ? ' bulto' : ' bultos') + ')'"></span>
                         </span>
                         <strong th:text="'$' + ${#numbers.formatDecimal(item.subtotal, 0, 'POINT', 0, 'COMMA')}">$0</strong>
                     </div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:1.15rem; color:var(--primary);">
-                    <strong>Total del Pedido</strong>
-                    <strong th:text="'$' + ${#numbers.formatDecimal(orderStatus.total, 0, 'POINT', 0, 'COMMA')}">$0</strong>
+                <div style="margin-top:0.85rem; display:flex; flex-direction:column; gap:0.35rem; font-size:0.92rem;">
+                    <div style="display:flex; justify-content:space-between; color:var(--muted);">
+                        <span>Subtotal</span>
+                        <strong th:text="'$' + ${#numbers.formatDecimal(orderStatus.subtotal, 0, 'POINT', 0, 'COMMA')}">$0</strong>
+                    </div>
+                    <div th:if="${orderStatus.discount > 0}" style="display:flex; justify-content:space-between; color:var(--success);">
+                        <span>Descuento Aplicado</span>
+                        <strong th:text="'-$' + ${#numbers.formatDecimal(orderStatus.discount, 0, 'POINT', 0, 'COMMA')}">-$0</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.35rem; padding-top:0.55rem; border-top:1.5px solid var(--border); font-size:1.15rem; color:var(--primary);">
+                        <strong>Total del Pedido</strong>
+                        <strong th:text="'$' + ${#numbers.formatDecimal(orderStatus.total, 0, 'POINT', 0, 'COMMA')}">$0</strong>
+                    </div>
                 </div>
 
                 <div style="margin-top:1.25rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
@@ -97,9 +116,7 @@
         </div>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script th:src="@{/js/cart.js}"></script>
     <script>

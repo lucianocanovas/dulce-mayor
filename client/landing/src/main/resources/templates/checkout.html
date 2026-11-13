@@ -15,7 +15,7 @@
 
         <div id="dm-empty-checkout" class="dm-panel" style="display:none; text-align:center; padding:3rem;">
             <h3>Tu carrito está vacío</h3>
-            <p style="margin:0.75rem 0 1.25rem; color:#7A6254;">Agregá golosinas desde nuestro catálogo para generar tu pedido y elegir el medio de pago.</p>
+            <p style="margin:0.75rem 0 1.25rem; color:var(--muted);">Agregá golosinas desde nuestro catálogo para generar tu pedido y elegir el medio de pago.</p>
             <a th:href="@{/catalog}" class="btn btn-primary">Explorar Catálogo</a>
         </div>
 
@@ -29,88 +29,142 @@
 
                     <!-- Saved Stores Selector -->
                     <div th:if="${!#lists.isEmpty(savedStores)}" class="dm-store-selector-box">
-                        <div class="dm-store-selector-title">¿Dónde entregamos tu pedido?</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.65rem;">
+                            <div class="dm-store-selector-title" style="margin:0;">Seleccioná tu local precargado (Checkout en 1 clic)</div>
+                            <a th:href="@{/profile}" style="font-size:0.8rem; font-weight:700; color:var(--primary); text-decoration:none;">⚙️ Administrar mis locales</a>
+                        </div>
                         <div class="dm-store-cards">
                             <label th:each="st, iter : ${savedStores}"
                                    th:class="'dm-store-option' + (${iter.index == 0} ? ' selected' : '')">
                                 <input type="radio" name="selectedStoreRadio"
                                        th:value="${st.id}"
                                        th:checked="${iter.index == 0}"
-                                       th:attr="data-store-name=${st.storeName},data-address=${st.address},data-neighborhood=${st.neighborhood},data-city=${st.city},data-phone=${st.phone}" />
+                                       th:attr="data-store-name=${st.storeName},
+                                                data-address=${st.address},
+                                                data-neighborhood=${st.neighborhood},
+                                                data-city=${st.city != null ? st.city : 'Mendoza Capital'},
+                                                data-owner-name=${st.ownerName != null and !#strings.isEmpty(st.ownerName) ? st.ownerName : (currentCustomer != null ? currentCustomer.fullName : '')},
+                                                data-phone=${st.phone != null and !#strings.isEmpty(st.phone) ? st.phone : (currentCustomer != null ? currentCustomer.phone : '')},
+                                                data-email=${st.contactEmail != null and !#strings.isEmpty(st.contactEmail) ? st.contactEmail : (currentCustomer != null ? currentCustomer.email : '')},
+                                                data-tax-id=${st.taxIdOrDni != null and !#strings.isEmpty(st.taxIdOrDni) ? st.taxIdOrDni : (currentCustomer != null ? currentCustomer.taxIdOrDni : '')},
+                                                data-notes=${st.deliveryNotes != null ? st.deliveryNotes : ''}" />
                                 <div class="dm-store-option-body">
                                     <strong th:text="${st.storeName}">Local</strong>
                                     <span th:text="${st.address} + (${st.neighborhood != null and !#strings.isEmpty(st.neighborhood)} ? ' • ' + ${st.neighborhood} : '') + (${st.city != null and !#strings.isEmpty(st.city)} ? ' (' + ${st.city} + ')' : '')">
                                         Dirección
                                     </span>
+                                    <span style="font-size:0.77rem; color:var(--text);"
+                                          th:text="'👤 ' + (${st.ownerName != null and !#strings.isEmpty(st.ownerName) ? st.ownerName : (currentCustomer != null ? currentCustomer.fullName : 'Titular')}) + (${st.phone != null and !#strings.isEmpty(st.phone)} ? ' • 📞 ' + ${st.phone} : '')">
+                                        Contacto
+                                    </span>
                                 </div>
                             </label>
 
                             <label class="dm-store-option dm-store-option--new">
-                                <input type="radio" name="selectedStoreRadio" value="__NEW__" />
+                                <input type="radio" name="selectedStoreRadio" value="__NEW__"
+                                       th:attr="data-owner-name=${currentCustomer != null ? currentCustomer.fullName : ''},
+                                                data-phone=${currentCustomer != null ? currentCustomer.phone : ''},
+                                                data-email=${currentCustomer != null ? currentCustomer.email : ''},
+                                                data-tax-id=${currentCustomer != null ? currentCustomer.taxIdOrDni : ''}" />
                                 <div class="dm-store-option-body">
                                     <strong>+ Cargar un nuevo local</strong>
-                                    <span>Ingresar una nueva dirección de entrega y guardarla para futuras compras</span>
+                                    <span>Completar los datos de un nuevo punto de venta y guardarlo para próximas compras</span>
                                 </div>
                             </label>
                         </div>
-                    </div>
 
-                    <div id="dm-buyer-fields" class="dm-form-grid">
-                        <div class="dm-field">
-                            <label for="customerName">Nombre y Apellido *</label>
-                            <input id="customerName" name="customerName" required placeholder="Ej: Lucía Fernández"
-                                   th:value="${currentCustomer != null ? currentCustomer.fullName : ''}" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="customerPhone">Teléfono / WhatsApp *</label>
-                            <input id="customerPhone" name="customerPhone" required placeholder="261-555-0000"
-                                   th:value="${currentCustomer != null ? currentCustomer.phone : ''}" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="customerEmail">Correo Electrónico (confirmación y seguimiento)</label>
-                            <input id="customerEmail" name="customerEmail" type="email" placeholder="cliente@kiosco.com"
-                                   th:value="${currentCustomer != null ? currentCustomer.email : ''}" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="taxIdOrDni">CUIT o DNI</label>
-                            <input id="taxIdOrDni" name="taxIdOrDni" placeholder="20-34567890-1"
-                                   th:value="${currentCustomer != null ? currentCustomer.taxIdOrDni : ''}" />
+                        <!-- Preloaded Store Summary Banner -->
+                        <div id="dm-preloaded-store-summary" class="dm-preloaded-store-summary">
+                            <div class="dm-preloaded-store-summary-header">
+                                <div>
+                                    <span class="dm-preloaded-badge">⚡ Checkout Rápido Activo</span>
+                                    <strong id="dm-summary-card-store-name" th:text="${savedStores[0].storeName}" style="margin-left:0.4rem;">Local</strong>
+                                </div>
+                                <button type="button" id="dm-toggle-edit-store-fields" class="btn btn-outline dm-btn-xs">
+                                    ✏️ Modificar algún dato para este pedido
+                                </button>
+                            </div>
+                            <div class="dm-preloaded-store-summary-grid">
+                                <div><strong>📍 Entrega en:</strong> <span id="dm-summary-card-address" th:text="${savedStores[0].address} + (${savedStores[0].neighborhood != null and !#strings.isEmpty(savedStores[0].neighborhood)} ? ' (' + ${savedStores[0].neighborhood} + ')' : '') + ' - ' + (${savedStores[0].city != null ? savedStores[0].city : 'Mendoza Capital'})"></span></div>
+                                <div><strong>👤 Recibe:</strong> <span id="dm-summary-card-contact" th:text="(${savedStores[0].ownerName != null and !#strings.isEmpty(savedStores[0].ownerName) ? savedStores[0].ownerName : (currentCustomer != null ? currentCustomer.fullName : '-')}) + ' • Tel: ' + (${savedStores[0].phone != null and !#strings.isEmpty(savedStores[0].phone) ? savedStores[0].phone : (currentCustomer != null ? currentCustomer.phone : '-')})"></span></div>
+                                <div><strong>🧾 Facturación / Email:</strong> <span id="dm-summary-card-billing" th:text="(${savedStores[0].taxIdOrDni != null and !#strings.isEmpty(savedStores[0].taxIdOrDni) ? savedStores[0].taxIdOrDni : (currentCustomer != null and currentCustomer.taxIdOrDni != null ? currentCustomer.taxIdOrDni : 'Sin CUIT')}) + ' • ' + (${savedStores[0].contactEmail != null and !#strings.isEmpty(savedStores[0].contactEmail) ? savedStores[0].contactEmail : (currentCustomer != null ? currentCustomer.email : '-')})"></span></div>
+                                <div id="dm-summary-card-notes-row" th:style="${savedStores[0].deliveryNotes != null and !#strings.isEmpty(savedStores[0].deliveryNotes)} ? 'display:block;' : 'display:none;'">
+                                    <strong>📝 Notas de entrega:</strong> <span id="dm-summary-card-notes" th:text="${savedStores[0].deliveryNotes}"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div id="dm-new-store-fields"
-                         th:style="${!#lists.isEmpty(savedStores)} ? 'display:none; margin-top:0.85rem;' : 'margin-top:0.85rem;'">
-                        <div class="dm-form-grid">
+                    <div id="dm-checkout-manual-fields"
+                         th:style="${!#lists.isEmpty(savedStores)} ? 'display:none;' : 'display:block;'">
+                        <div id="dm-buyer-fields" class="dm-form-grid">
                             <div class="dm-field">
-                                <label for="storeName">Nombre del Kiosco / Comercio</label>
-                                <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol"
-                                       th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].storeName : (currentCustomer != null ? currentCustomer.storeName : '')}" />
+                                <label for="customerName">Nombre y Apellido (Quien recibe) *</label>
+                                <input id="customerName" name="customerName" required minlength="3" maxlength="100"
+                                       pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'\-()]{3,100}$"
+                                       title="Ingresá nombre y apellido válidos (solo letras y espacios)"
+                                       placeholder="Ej: Lucía Fernández"
+                                       th:value="${!#lists.isEmpty(savedStores) and savedStores[0].ownerName != null and !#strings.isEmpty(savedStores[0].ownerName) ? savedStores[0].ownerName : (currentCustomer != null ? currentCustomer.fullName : '')}" />
                             </div>
                             <div class="dm-field">
-                                <label for="deliveryCity">Departamento / Localidad *</label>
-                                <select id="deliveryCity" name="deliveryCity">
-                                    <option value="Mendoza Capital">Mendoza Capital</option>
-                                    <option value="Godoy Cruz">Godoy Cruz</option>
-                                    <option value="Guaymallén">Guaymallén</option>
-                                    <option value="Maipú">Maipú</option>
-                                    <option value="Las Heras">Las Heras</option>
-                                </select>
+                                <label for="customerPhone">Teléfono / WhatsApp *</label>
+                                <input id="customerPhone" name="customerPhone" required minlength="7" maxlength="30"
+                                       pattern="^[0-9+\-()\s.]{7,30}$"
+                                       title="Ingresá un teléfono válido de 7 a 15 dígitos"
+                                       placeholder="261-555-0000"
+                                       th:value="${!#lists.isEmpty(savedStores) and savedStores[0].phone != null and !#strings.isEmpty(savedStores[0].phone) ? savedStores[0].phone : (currentCustomer != null ? currentCustomer.phone : '')}" />
                             </div>
                             <div class="dm-field">
-                                <label for="deliveryAddress">Dirección de Entrega *</label>
-                                <input id="deliveryAddress" name="deliveryAddress" required placeholder="Av. San Martín 1450"
-                                       th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].address : (currentCustomer != null ? currentCustomer.deliveryAddress : '')}" />
+                                <label for="customerEmail">Correo Electrónico (confirmación y seguimiento)</label>
+                                <input id="customerEmail" name="customerEmail" type="email" maxlength="120" placeholder="cliente@kiosco.com"
+                                       th:value="${!#lists.isEmpty(savedStores) and savedStores[0].contactEmail != null and !#strings.isEmpty(savedStores[0].contactEmail) ? savedStores[0].contactEmail : (currentCustomer != null ? currentCustomer.email : '')}" />
                             </div>
                             <div class="dm-field">
-                                <label for="deliveryNeighborhood">Barrio / Referencia de Zona</label>
-                                <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro"
-                                       th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].neighborhood : (currentCustomer != null ? currentCustomer.deliveryNeighborhood : '')}" />
+                                <label for="taxIdOrDni">CUIT o DNI</label>
+                                <input id="taxIdOrDni" name="taxIdOrDni" minlength="7" maxlength="15"
+                                       pattern="^[0-9.\-\s]{7,15}$"
+                                       title="Ingresá un DNI (7 u 8 dígitos) o CUIT (11 dígitos, ej: 20-34567890-1)"
+                                       placeholder="20-34567890-1"
+                                       th:value="${!#lists.isEmpty(savedStores) and savedStores[0].taxIdOrDni != null and !#strings.isEmpty(savedStores[0].taxIdOrDni) ? savedStores[0].taxIdOrDni : (currentCustomer != null ? currentCustomer.taxIdOrDni : '')}" />
                             </div>
                         </div>
-                    </div>
-                    <div class="dm-field" style="margin-top:0.85rem;">
-                        <label for="notes">Notas para el Repartidor</label>
-                        <textarea id="notes" name="notes" rows="2" placeholder="Ej: Horario de descarga 09:00 a 13:00 hs"></textarea>
+
+                        <div id="dm-new-store-fields" style="margin-top:0.85rem;">
+                            <div class="dm-form-grid">
+                                <div class="dm-field">
+                                    <label for="storeName">Nombre del Kiosco / Comercio *</label>
+                                    <input id="storeName" name="storeName" minlength="2" maxlength="100" placeholder="Ej: Kiosco El Sol"
+                                           th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].storeName : (currentCustomer != null ? currentCustomer.storeName : '')}" />
+                                </div>
+                                <div class="dm-field">
+                                    <label for="deliveryCity">Departamento / Localidad *</label>
+                                    <select id="deliveryCity" name="deliveryCity" required>
+                                        <option value="Mendoza Capital" th:selected="${!#lists.isEmpty(savedStores) and savedStores[0].city == 'Mendoza Capital'}">Mendoza Capital</option>
+                                        <option value="Godoy Cruz" th:selected="${!#lists.isEmpty(savedStores) and savedStores[0].city == 'Godoy Cruz'}">Godoy Cruz</option>
+                                        <option value="Guaymallén" th:selected="${!#lists.isEmpty(savedStores) and savedStores[0].city == 'Guaymallén'}">Guaymallén</option>
+                                        <option value="Maipú" th:selected="${!#lists.isEmpty(savedStores) and savedStores[0].city == 'Maipú'}">Maipú</option>
+                                        <option value="Las Heras" th:selected="${!#lists.isEmpty(savedStores) and savedStores[0].city == 'Las Heras'}">Las Heras</option>
+                                    </select>
+                                </div>
+                                <div class="dm-field">
+                                    <label for="deliveryAddress">Dirección de Entrega *</label>
+                                    <input id="deliveryAddress" name="deliveryAddress" required minlength="5" maxlength="150"
+                                           title="Ingresá una dirección válida de al menos 5 caracteres (ej: Av. San Martín 1450)"
+                                           placeholder="Av. San Martín 1450"
+                                           th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].address : (currentCustomer != null ? currentCustomer.deliveryAddress : '')}" />
+                                </div>
+                                <div class="dm-field">
+                                    <label for="deliveryNeighborhood">Barrio / Referencia de Zona</label>
+                                    <input id="deliveryNeighborhood" name="deliveryNeighborhood" minlength="2" maxlength="80" placeholder="Centro"
+                                           th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].neighborhood : (currentCustomer != null ? currentCustomer.deliveryNeighborhood : '')}" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dm-field" style="margin-top:0.85rem;">
+                            <label for="notes">Notas para el Repartidor</label>
+                            <textarea id="notes" name="notes" rows="2" maxlength="250" placeholder="Ej: Horario de descarga 09:00 a 13:00 hs"
+                                      th:text="${!#lists.isEmpty(savedStores) and savedStores[0].deliveryNotes != null ? savedStores[0].deliveryNotes : ''}"></textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -121,7 +175,7 @@
                         <input type="radio" name="paymentType" value="MERCADO_PAGO" checked style="margin-top:0.25rem;" />
                         <div style="flex:1;">
                             <div style="font-weight:700; color:var(--text);">Mercado Pago / Billetera Virtual</div>
-                            <div style="font-size:0.83rem; color:#7A6254;">
+                            <div style="font-size:0.83rem; color:var(--muted);">
                                 Te redirigimos al Checkout oficial de Mercado Pago (tarjeta de débito, crédito o dinero en cuenta). Al acreditarse se emite tu factura y pasa directo a distribución.
                             </div>
                         </div>
@@ -131,7 +185,7 @@
                         <input type="radio" name="paymentType" value="BANK_TRANSFER" style="margin-top:0.25rem;" />
                         <div style="flex:1;">
                             <div style="font-weight:700; color:var(--text);">Transferencia Bancaria por Alias</div>
-                            <div style="font-size:0.83rem; color:#7A6254;">
+                            <div style="font-size:0.83rem; color:var(--muted);">
                                 Reservamos tu pedido como pendiente hasta que administración confirme el comprobante de transferencia.
                             </div>
                             <div id="dm-transfer-details" class="dm-bank-box" style="display:none;">
@@ -146,7 +200,7 @@
                         <input type="radio" name="paymentType" value="CASH" style="margin-top:0.25rem;" />
                         <div style="flex:1;">
                             <div style="font-weight:700; color:var(--text);">Efectivo Contra Entrega</div>
-                            <div style="font-size:0.83rem; color:#7A6254;">
+                            <div style="font-size:0.83rem; color:var(--muted);">
                                 Abonás directamente al repartidor mayorista al recibir la mercadería.
                             </div>
                         </div>
@@ -188,14 +242,25 @@
         </form>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script th:src="@{/js/cart.js}"></script>
     <script>
         (function () {
             let appliedPromo = null;
+
+            function computePromoDiscount(items, subtotal, totalUnits) {
+                if (!appliedPromo) return 0;
+                const minQty = Number(appliedPromo.minimumQuantity || 0);
+                const pct = Number(appliedPromo.discountPercentage || 0);
+                if (appliedPromo.productId) {
+                    const matchingItems = items.filter(i => i.id === appliedPromo.productId);
+                    const matchingQty = matchingItems.reduce((acc, i) => acc + Number(i.quantity || 0), 0);
+                    const matchingSub = matchingItems.reduce((acc, i) => acc + Number(i.price) * Number(i.quantity), 0);
+                    return matchingQty >= minQty ? (matchingSub * pct) / 100 : 0;
+                }
+                return totalUnits >= minQty ? (subtotal * pct) / 100 : 0;
+            }
 
             function renderSummary() {
                 const items = window.DulceCart.getItems();
@@ -219,9 +284,9 @@
                     subtotal += line;
                     totalUnits += Number(item.quantity);
                     const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; justify-content:space-between; gap:0.5rem; font-size:0.88rem; border-bottom:1px dashed #EADFCF; padding-bottom:0.45rem;';
+                    row.style.cssText = 'display:flex; justify-content:space-between; gap:0.5rem; font-size:0.88rem; border-bottom:1px dashed var(--border); padding-bottom:0.45rem;';
                     const left = document.createElement('div');
-                    left.innerHTML = `<strong>${window.DulceCart.escapeHtml(item.name)}</strong><div style="font-size:0.78rem; color:#7A6254;">${window.DulceCart.formatUnitLabel(item.quantity)} &times; ${window.DulceCart.formatMoney(item.price)}</div>`;
+                    left.innerHTML = `<strong>${window.DulceCart.escapeHtml(item.name)}</strong><div style="font-size:0.78rem; color:var(--muted);">${window.DulceCart.formatUnitLabel(item.quantity)} &times; ${window.DulceCart.formatMoney(item.price)}</div>`;
                     const right = document.createElement('div');
                     right.style.fontWeight = '700';
                     right.textContent = window.DulceCart.formatMoney(line);
@@ -230,15 +295,25 @@
                     listEl.appendChild(row);
                 });
 
-                let discount = 0;
-                if (appliedPromo && totalUnits >= Number(appliedPromo.minimumQuantity || 0)) {
-                    discount = subtotal * Number(appliedPromo.discountPercentage || 0) / 100;
-                }
+                const discount = computePromoDiscount(items, subtotal, totalUnits);
                 const total = Math.max(0, subtotal - discount);
 
                 document.getElementById('dm-summary-subtotal').textContent = window.DulceCart.formatMoney(subtotal);
                 document.getElementById('dm-summary-discount').textContent = discount > 0 ? '-' + window.DulceCart.formatMoney(discount) : '$0';
                 document.getElementById('dm-summary-total').textContent = window.DulceCart.formatMoney(total);
+            }
+
+            const toggleEditBtn = document.getElementById('dm-toggle-edit-store-fields');
+            if (toggleEditBtn) {
+                toggleEditBtn.addEventListener('click', () => {
+                    const manualFields = document.getElementById('dm-checkout-manual-fields');
+                    if (!manualFields) return;
+                    const isHidden = manualFields.style.display === 'none';
+                    manualFields.style.display = isHidden ? 'block' : 'none';
+                    toggleEditBtn.textContent = isHidden
+                        ? '▲ Ocultar campos de edición'
+                        : '✏️ Modificar algún dato para este pedido';
+                });
             }
 
             document.querySelectorAll('input[name="selectedStoreRadio"]').forEach(radio => {
@@ -248,31 +323,79 @@
                     if (parent) parent.classList.add('selected');
 
                     const posIdInput = document.getElementById('pointOfSaleId');
-                    const newStoreFields = document.getElementById('dm-new-store-fields');
+                    const manualFields = document.getElementById('dm-checkout-manual-fields');
+                    const preloadedSummary = document.getElementById('dm-preloaded-store-summary');
+
                     const storeNameEl = document.getElementById('storeName');
                     const addressEl = document.getElementById('deliveryAddress');
                     const neighEl = document.getElementById('deliveryNeighborhood');
                     const cityEl = document.getElementById('deliveryCity');
+                    const customerNameEl = document.getElementById('customerName');
                     const phoneEl = document.getElementById('customerPhone');
+                    const emailEl = document.getElementById('customerEmail');
+                    const taxIdEl = document.getElementById('taxIdOrDni');
+                    const notesEl = document.getElementById('notes');
 
                     if (radio.value === '__NEW__') {
                         posIdInput.value = '';
-                        newStoreFields.style.display = 'block';
+                        if (preloadedSummary) preloadedSummary.style.display = 'none';
+                        if (manualFields) manualFields.style.display = 'block';
                         storeNameEl.value = '';
                         addressEl.value = '';
                         neighEl.value = '';
+                        notesEl.value = '';
+                        customerNameEl.value = radio.dataset.ownerName || '';
+                        phoneEl.value = radio.dataset.phone || '';
+                        emailEl.value = radio.dataset.email || '';
+                        taxIdEl.value = radio.dataset.taxId || '';
                         addressEl.required = true;
                     } else {
                         posIdInput.value = radio.value;
-                        newStoreFields.style.display = 'none';
-                        storeNameEl.value = radio.dataset.storeName || '';
-                        addressEl.value = radio.dataset.address || '';
-                        neighEl.value = radio.dataset.neighborhood || '';
-                        if (radio.dataset.city) {
-                            cityEl.value = radio.dataset.city;
+                        if (preloadedSummary) preloadedSummary.style.display = 'block';
+                        if (manualFields) manualFields.style.display = 'none';
+                        if (toggleEditBtn) {
+                            toggleEditBtn.textContent = '✏️ Modificar algún dato para este pedido';
                         }
-                        if (!phoneEl.value && radio.dataset.phone) {
-                            phoneEl.value = radio.dataset.phone;
+
+                        const sName = radio.dataset.storeName || '';
+                        const sAddr = radio.dataset.address || '';
+                        const sNeigh = radio.dataset.neighborhood || '';
+                        const sCity = radio.dataset.city || 'Mendoza Capital';
+                        const sOwner = radio.dataset.ownerName || '';
+                        const sPhone = radio.dataset.phone || '';
+                        const sEmail = radio.dataset.email || '';
+                        const sTax = radio.dataset.taxId || '';
+                        const sNotes = radio.dataset.notes || '';
+
+                        storeNameEl.value = sName;
+                        addressEl.value = sAddr;
+                        neighEl.value = sNeigh;
+                        cityEl.value = sCity;
+                        customerNameEl.value = sOwner;
+                        phoneEl.value = sPhone;
+                        emailEl.value = sEmail;
+                        taxIdEl.value = sTax;
+                        notesEl.value = sNotes;
+
+                        const sumName = document.getElementById('dm-summary-card-store-name');
+                        const sumAddr = document.getElementById('dm-summary-card-address');
+                        const sumContact = document.getElementById('dm-summary-card-contact');
+                        const sumBilling = document.getElementById('dm-summary-card-billing');
+                        const sumNotesRow = document.getElementById('dm-summary-card-notes-row');
+                        const sumNotes = document.getElementById('dm-summary-card-notes');
+
+                        if (sumName) sumName.textContent = sName;
+                        if (sumAddr) sumAddr.textContent = sAddr + (sNeigh ? ' (' + sNeigh + ')' : '') + ' - ' + sCity;
+                        if (sumContact) sumContact.textContent = (sOwner || '-') + ' • Tel: ' + (sPhone || '-');
+                        if (sumBilling) sumBilling.textContent = (sTax || 'Sin CUIT') + ' • ' + (sEmail || '-');
+                        if (sumNotesRow && sumNotes) {
+                            if (sNotes) {
+                                sumNotes.textContent = sNotes;
+                                sumNotesRow.style.display = 'block';
+                            } else {
+                                sumNotes.textContent = '';
+                                sumNotesRow.style.display = 'none';
+                            }
                         }
                     }
                 });
@@ -306,10 +429,23 @@
                         msgEl.textContent = json.message || 'Cupón inválido o vencido.';
                     } else {
                         appliedPromo = json.data;
-                        const totalUnits = window.DulceCart.getItems().reduce((a, b) => a + Number(b.quantity), 0);
-                        if (totalUnits < Number(appliedPromo.minimumQuantity || 0)) {
+                        const items = window.DulceCart.getItems();
+                        const totalUnits = items.reduce((a, b) => a + Number(b.quantity), 0);
+                        const minQty = Number(appliedPromo.minimumQuantity || 0);
+                        if (appliedPromo.productId) {
+                            const matchingQty = items
+                                .filter(i => i.id === appliedPromo.productId)
+                                .reduce((a, b) => a + Number(b.quantity || 0), 0);
+                            if (matchingQty < minQty) {
+                                msgEl.style.color = '#D97706';
+                                msgEl.textContent = `Cupón válido (${appliedPromo.discountPercentage}% OFF en ${appliedPromo.productName || 'producto seleccionado'}): requiere mínimo ${window.DulceCart.formatUnitLabel(minQty)} de ese producto.`;
+                            } else {
+                                msgEl.style.color = '#059669';
+                                msgEl.textContent = `Cupón ${code} aplicado (${appliedPromo.discountPercentage}% OFF en ${appliedPromo.productName || 'producto seleccionado'}).`;
+                            }
+                        } else if (totalUnits < minQty) {
                             msgEl.style.color = '#D97706';
-                            msgEl.textContent = `Cupón válido (${appliedPromo.discountPercentage}%): requiere mínimo ${window.DulceCart.formatUnitLabel(appliedPromo.minimumQuantity)}.`;
+                            msgEl.textContent = `Cupón válido (${appliedPromo.discountPercentage}%): requiere mínimo ${window.DulceCart.formatUnitLabel(minQty)}.`;
                         } else {
                             msgEl.style.color = '#059669';
                             msgEl.textContent = `Cupón ${code} aplicado (${appliedPromo.discountPercentage}% OFF).`;

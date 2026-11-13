@@ -41,43 +41,58 @@
             <form th:action="@{/register}" method="post" class="dm-form-grid">
                 <div class="dm-field">
                     <label for="firstName">Nombre *</label>
-                    <input id="firstName" type="text" name="firstName" th:value="${firstName}" required />
+                    <input id="firstName" type="text" name="firstName" th:value="${firstName}" required minlength="2" maxlength="60"
+                           pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'\-()]{2,60}$"
+                           title="Ingresá un nombre válido (solo letras, entre 2 y 60 caracteres)" />
                 </div>
                 <div class="dm-field">
                     <label for="lastName">Apellido *</label>
-                    <input id="lastName" type="text" name="lastName" th:value="${lastName}" required />
+                    <input id="lastName" type="text" name="lastName" th:value="${lastName}" required minlength="2" maxlength="60"
+                           pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'\-()]{2,60}$"
+                           title="Ingresá un apellido válido (solo letras, entre 2 y 60 caracteres)" />
                 </div>
                 <div class="dm-field">
                     <label for="email">Correo Electrónico *</label>
-                    <input id="email" type="email" name="email" th:value="${email}" placeholder="cliente@kiosco.com" required />
+                    <input id="email" type="email" name="email" th:value="${email}" maxlength="120" placeholder="cliente@kiosco.com" required />
                 </div>
                 <div class="dm-field">
                     <label for="password">Contraseña (mín. 6 caracteres) *</label>
-                    <input id="password" type="password" name="password" minlength="6" required />
+                    <input id="password" type="password" name="password" minlength="6" maxlength="100" required />
                 </div>
                 <div class="dm-field">
                     <label for="storeName">Nombre del Comercio / Kiosco</label>
-                    <input id="storeName" type="text" name="storeName" th:value="${storeName}" placeholder="Ej: Kiosco El Sol" />
+                    <input id="storeName" type="text" name="storeName" th:value="${storeName}" minlength="2" maxlength="100" placeholder="Ej: Kiosco El Sol" />
                 </div>
                 <div class="dm-field">
                     <label for="phone">Teléfono / WhatsApp</label>
-                    <input id="phone" type="text" name="phone" th:value="${phone}" placeholder="+54 9 261 ..." />
+                    <input id="phone" type="text" name="phone" th:value="${phone}" minlength="7" maxlength="30"
+                           pattern="^[0-9+\-()\s.]{7,30}$"
+                           title="Ingresá un teléfono válido de 7 a 15 dígitos"
+                           placeholder="+54 9 261 ..." />
                 </div>
                 <div class="dm-field">
                     <label for="taxIdOrDni">DNI o CUIT</label>
-                    <input id="taxIdOrDni" type="text" name="taxIdOrDni" th:value="${taxIdOrDni}" />
+                    <input id="taxIdOrDni" type="text" name="taxIdOrDni" th:value="${taxIdOrDni}" minlength="7" maxlength="15"
+                           pattern="^[0-9.\-\s]{7,15}$"
+                           title="Ingresá un DNI (7 u 8 dígitos) o CUIT (11 dígitos, ej: 20-34567890-1)" />
                 </div>
                 <div class="dm-field">
                     <label for="deliveryCity">Ciudad / Departamento</label>
-                    <input id="deliveryCity" type="text" name="deliveryCity" th:value="${deliveryCity ?: 'Capital'}" />
+                    <select id="deliveryCity" name="deliveryCity">
+                        <option value="Mendoza Capital" th:selected="${deliveryCity == null or deliveryCity == 'Mendoza Capital' or deliveryCity == 'Capital'}">Mendoza Capital</option>
+                        <option value="Godoy Cruz" th:selected="${deliveryCity == 'Godoy Cruz'}">Godoy Cruz</option>
+                        <option value="Guaymallén" th:selected="${deliveryCity == 'Guaymallén'}">Guaymallén</option>
+                        <option value="Maipú" th:selected="${deliveryCity == 'Maipú'}">Maipú</option>
+                        <option value="Las Heras" th:selected="${deliveryCity == 'Las Heras'}">Las Heras</option>
+                    </select>
                 </div>
                 <div class="dm-field">
                     <label for="deliveryAddress">Dirección de Entrega</label>
-                    <input id="deliveryAddress" type="text" name="deliveryAddress" th:value="${deliveryAddress}" placeholder="Av. San Martín 1234" />
+                    <input id="deliveryAddress" type="text" name="deliveryAddress" th:value="${deliveryAddress}" minlength="5" maxlength="150" placeholder="Av. San Martín 1234" />
                 </div>
                 <div class="dm-field">
                     <label for="deliveryNeighborhood">Barrio</label>
-                    <input id="deliveryNeighborhood" type="text" name="deliveryNeighborhood" th:value="${deliveryNeighborhood}" placeholder="Centro" />
+                    <input id="deliveryNeighborhood" type="text" name="deliveryNeighborhood" th:value="${deliveryNeighborhood}" minlength="2" maxlength="80" placeholder="Centro" />
                 </div>
                 <div style="grid-column: 1 / -1; margin-top: 0.5rem;">
                     <button type="submit" class="btn btn-primary" style="width:100%;">Registrarme y Comenzar</button>
@@ -90,9 +105,7 @@
         </div>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script th:src="@{/js/cart.js}"></script>
     <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2/dist/auth0-spa-js.production.min.js"></script>

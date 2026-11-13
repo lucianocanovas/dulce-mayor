@@ -61,23 +61,36 @@
                     <div class="dm-form-grid">
                         <div class="dm-field">
                             <label for="firstName">Nombre *</label>
-                            <input id="firstName" name="firstName" required th:value="${currentCustomer.firstName}" />
+                            <input id="firstName" name="firstName" required minlength="2" maxlength="60"
+                                   pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'\-()]{2,60}$"
+                                   title="Ingresá un nombre válido (solo letras, entre 2 y 60 caracteres)"
+                                   th:value="${currentCustomer.firstName}" />
                         </div>
                         <div class="dm-field">
                             <label for="lastName">Apellido *</label>
-                            <input id="lastName" name="lastName" required th:value="${currentCustomer.lastName}" />
+                            <input id="lastName" name="lastName" required minlength="2" maxlength="60"
+                                   pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'\-()]{2,60}$"
+                                   title="Ingresá un apellido válido (solo letras, entre 2 y 60 caracteres)"
+                                   th:value="${currentCustomer.lastName}" />
                         </div>
                         <div class="dm-field">
                             <label for="phone">Teléfono / WhatsApp</label>
-                            <input id="phone" name="phone" placeholder="261-555-0000" th:value="${currentCustomer.phone}" />
+                            <input id="phone" name="phone" minlength="7" maxlength="30"
+                                   pattern="^[0-9+\-()\s.]{7,30}$"
+                                   title="Ingresá un teléfono válido de 7 a 15 dígitos (ej: 261-555-0000)"
+                                   placeholder="261-555-0000" th:value="${currentCustomer.phone}" />
                         </div>
                         <div class="dm-field">
                             <label for="taxIdOrDni">CUIT / DNI</label>
-                            <input id="taxIdOrDni" name="taxIdOrDni" placeholder="20-34567890-1" th:value="${currentCustomer.taxIdOrDni}" />
+                            <input id="taxIdOrDni" name="taxIdOrDni" minlength="7" maxlength="15"
+                                   pattern="^[0-9.\-\s]{7,15}$"
+                                   title="Ingresá un DNI (7 u 8 dígitos) o CUIT (11 dígitos, ej: 20-34567890-1)"
+                                   placeholder="20-34567890-1" th:value="${currentCustomer.taxIdOrDni}" />
                         </div>
                         <div class="dm-field">
                             <label for="storeName">Comercio Principal</label>
-                            <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol" th:value="${currentCustomer.storeName}" />
+                            <input id="storeName" name="storeName" minlength="2" maxlength="100"
+                                   placeholder="Ej: Kiosco El Sol" th:value="${currentCustomer.storeName}" />
                         </div>
                         <div class="dm-field">
                             <label for="deliveryCity">Departamento / Localidad</label>
@@ -91,11 +104,13 @@
                         </div>
                         <div class="dm-field">
                             <label for="deliveryAddress">Dirección Principal</label>
-                            <input id="deliveryAddress" name="deliveryAddress" placeholder="Av. San Martín 1450" th:value="${currentCustomer.deliveryAddress}" />
+                            <input id="deliveryAddress" name="deliveryAddress" minlength="5" maxlength="150"
+                                   placeholder="Av. San Martín 1450" th:value="${currentCustomer.deliveryAddress}" />
                         </div>
                         <div class="dm-field">
                             <label for="deliveryNeighborhood">Barrio / Referencia</label>
-                            <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro" th:value="${currentCustomer.deliveryNeighborhood}" />
+                            <input id="deliveryNeighborhood" name="deliveryNeighborhood" minlength="2" maxlength="80"
+                                   placeholder="Centro" th:value="${currentCustomer.deliveryNeighborhood}" />
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
@@ -139,69 +154,209 @@
 
         <!-- Mis Locales Guardados -->
         <div class="dm-panel" style="margin-top: 1.25rem;">
-            <h3 class="dm-profile-card-title">Mis Locales Guardados para Entrega</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.9rem; padding-bottom:0.5rem; border-bottom:1.5px solid var(--border);">
+                <h3 class="dm-profile-card-title" style="margin:0; padding:0; border:none;">Mis Locales Guardados para Checkout Rápido</h3>
+                <span style="font-size:0.82rem; color:var(--muted);">Seleccioná cualquiera de tus locales al finalizar compra sin volver a cargar datos</span>
+            </div>
 
             <div th:if="${storeAdded}" class="dm-alert-success">
-                Nuevo local guardado correctamente. Ya podés seleccionarlo en el checkout.
+                Nuevo local guardado con todos sus datos. Ya podés seleccionarlo con 1 clic en el checkout.
+            </div>
+            <div th:if="${storeUpdated}" class="dm-alert-success">
+                Los datos del local se actualizaron correctamente.
+            </div>
+            <div th:if="${storeDeleted}" class="dm-alert-success">
+                El local fue eliminado de tu cuenta.
             </div>
             <div th:if="${storeError}" class="dm-alert-error" th:text="${storeError}">
                 Error al guardar el local.
             </div>
 
             <div th:if="${#lists.isEmpty(savedStores)}" style="color: var(--muted); font-size: 0.92rem; margin-bottom: 1rem;">
-                Todavía no tenés locales guardados. Agregá uno abajo o cargalo directamente al finalizar tu compra.
+                Todavía no tenés locales guardados. Agregá uno abajo con todos sus datos para hacer tus checkouts en 1 clic.
             </div>
 
             <div th:unless="${#lists.isEmpty(savedStores)}" class="dm-saved-stores-grid" style="margin-bottom: 1.25rem;">
                 <div th:each="st : ${savedStores}" class="dm-saved-store-item">
-                    <strong th:text="${st.storeName}">Local</strong>
-                    <span th:text="${st.address} + (${st.neighborhood != null and !#strings.isEmpty(st.neighborhood)} ? ' • ' + ${st.neighborhood} : '')">Dirección</span>
-                    <span class="dm-saved-store-city" th:text="${st.city}">Mendoza Capital</span>
+                    <div class="dm-saved-store-header">
+                        <strong th:text="${st.storeName}">Local</strong>
+                        <span class="dm-saved-store-city" th:text="${st.city != null ? st.city : 'Mendoza Capital'}">Mendoza Capital</span>
+                    </div>
+
+                    <div class="dm-saved-store-meta">
+                        <div><strong>📍 Dirección:</strong> <span th:text="${st.address} + (${st.neighborhood != null and !#strings.isEmpty(st.neighborhood)} ? ' (' + ${st.neighborhood} + ')' : '')">Dirección</span></div>
+                        <div th:if="${st.ownerName != null and !#strings.isEmpty(st.ownerName)}">
+                            <strong>👤 Recibe:</strong> <span th:text="${st.ownerName}">Responsable</span>
+                            <span th:if="${st.phone != null and !#strings.isEmpty(st.phone)}" th:text="' • 📞 ' + ${st.phone}"></span>
+                        </div>
+                        <div th:if="${(st.taxIdOrDni != null and !#strings.isEmpty(st.taxIdOrDni)) or (st.contactEmail != null and !#strings.isEmpty(st.contactEmail))}">
+                            <span th:if="${st.taxIdOrDni != null and !#strings.isEmpty(st.taxIdOrDni)}"><strong>🧾 CUIT/DNI:</strong> <span th:text="${st.taxIdOrDni}"></span></span>
+                            <span th:if="${st.contactEmail != null and !#strings.isEmpty(st.contactEmail)}" th:text="(${st.taxIdOrDni != null and !#strings.isEmpty(st.taxIdOrDni)} ? ' • ' : '') + '✉️ ' + ${st.contactEmail}"></span>
+                        </div>
+                        <div th:if="${st.deliveryNotes != null and !#strings.isEmpty(st.deliveryNotes)}" class="dm-saved-store-notes">
+                            <strong>📝 Notas de entrega:</strong> <span th:text="${st.deliveryNotes}">Horario</span>
+                        </div>
+                    </div>
+
+                    <div class="dm-saved-store-actions">
+                        <details class="dm-edit-store-details">
+                            <summary class="btn btn-outline dm-btn-xs">✏️ Editar datos</summary>
+                            <form th:action="@{'/profile/stores/' + ${st.id} + '/update'}" method="post" class="dm-edit-store-form">
+                                <div class="dm-form-grid">
+                                    <div class="dm-field">
+                                        <label>Nombre del Local / Kiosco *</label>
+                                        <input name="storeName" required minlength="2" maxlength="100"
+                                               title="El nombre del local debe tener entre 2 y 100 caracteres"
+                                               th:value="${st.storeName}" />
+                                    </div>
+                                    <div class="dm-field">
+                                        <label>Departamento / Localidad *</label>
+                                        <select name="city" required>
+                                            <option value="Mendoza Capital" th:selected="${st.city == null or st.city == 'Mendoza Capital'}">Mendoza Capital</option>
+                                            <option value="Godoy Cruz" th:selected="${st.city == 'Godoy Cruz'}">Godoy Cruz</option>
+                                            <option value="Guaymallén" th:selected="${st.city == 'Guaymallén'}">Guaymallén</option>
+                                            <option value="Maipú" th:selected="${st.city == 'Maipú'}">Maipú</option>
+                                            <option value="Las Heras" th:selected="${st.city == 'Las Heras'}">Las Heras</option>
+                                        </select>
+                                    </div>
+                                    <div class="dm-field">
+                                        <label>Dirección de Entrega *</label>
+                                        <input name="address" required minlength="5" maxlength="150"
+                                               title="Ingresá una dirección válida de al menos 5 caracteres (ej: Av. San Martín 1450)"
+                                               th:value="${st.address}" />
+                                    </div>
+                                    <div class="dm-field">
+                                        <label>Barrio / Referencia de Zona</label>
+                                        <input name="neighborhood" minlength="2" maxlength="80" th:value="${st.neighborhood}" />
+                                    </div>
+                                    <div class="dm-field">
+                                        <label>Nombre y Apellido (Quien recibe) *</label>
+                                        <input name="ownerName" required minlength="3" maxlength="100"
+                                               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'\-()]{3,100}$"
+                                               title="Ingresá nombre y apellido válidos (solo letras y espacios)"
+                                               th:value="${st.ownerName != null and !#strings.isEmpty(st.ownerName) ? st.ownerName : currentCustomer.fullName}" />
+                                    </div>
+                                    <div class="dm-field">
+                                        <label>Teléfono / WhatsApp del Local *</label>
+                                        <input name="phone" required minlength="7" maxlength="30"
+                                               pattern="^[0-9+\-()\s.]{7,30}$"
+                                               title="Ingresá un teléfono válido de 7 a 15 dígitos"
+                                               th:value="${st.phone != null and !#strings.isEmpty(st.phone) ? st.phone : currentCustomer.phone}" />
+                                    </div>
+                                    <div class="dm-field">
+                                        <label>Correo Electrónico (Seguimiento)</label>
+                                        <input name="contactEmail" type="email" maxlength="120"
+                                               th:value="${st.contactEmail != null and !#strings.isEmpty(st.contactEmail) ? st.contactEmail : currentCustomer.email}" />
+                                    </div>
+                                    <div class="dm-field">
+                                        <label>CUIT o DNI de Facturación</label>
+                                        <input name="taxIdOrDni" minlength="7" maxlength="15"
+                                               pattern="^[0-9.\-\s]{7,15}$"
+                                               title="Ingresá un DNI (7 u 8 dígitos) o CUIT (11 dígitos)"
+                                               th:value="${st.taxIdOrDni != null and !#strings.isEmpty(st.taxIdOrDni) ? st.taxIdOrDni : currentCustomer.taxIdOrDni}" />
+                                    </div>
+                                </div>
+                                <div class="dm-field" style="margin-top:0.65rem;">
+                                    <label>Notas para el Repartidor / Horario de Descarga</label>
+                                    <input name="deliveryNotes" maxlength="250" placeholder="Ej: Recibe de 08:30 a 13:30 hs, portón lateral" th:value="${st.deliveryNotes}" />
+                                </div>
+                                <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.75rem;">
+                                    <button type="submit" class="btn btn-primary dm-btn-xs">Guardar Cambios del Local</button>
+                                </div>
+                            </form>
+                        </details>
+
+                        <form th:action="@{'/profile/stores/' + ${st.id} + '/delete'}" method="post" style="margin:0;">
+                            <button type="submit" class="btn btn-outline dm-btn-danger dm-btn-xs">🗑️ Eliminar</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <details class="dm-add-store-details">
-                <summary class="btn btn-outline" style="cursor: pointer; display: inline-flex;">+ Agregar Nuevo Local</summary>
+            <details class="dm-add-store-details" th:attr="open=${storeFormOpen != null and storeFormOpen ? 'open' : null}">
+                <summary class="btn btn-outline" style="cursor: pointer; display: inline-flex;">+ Agregar Nuevo Local Precargado</summary>
                 <form th:action="@{/profile/stores}" method="post" style="margin-top: 1rem;">
+                    <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.85rem;">
+                        Completá todos los datos del local una sola vez. En tus próximos pedidos solo tendrás que elegir este local y confirmar.
+                    </p>
                     <div class="dm-form-grid">
                         <div class="dm-field">
                             <label for="newStoreName">Nombre del Local / Kiosco *</label>
-                            <input id="newStoreName" name="storeName" required placeholder="Ej: Kiosco Centro II" />
+                            <input id="newStoreName" name="storeName" required minlength="2" maxlength="100"
+                                   title="El nombre del local debe tener entre 2 y 100 caracteres"
+                                   placeholder="Ej: Kiosco Centro II" th:value="${draftStoreName}" />
                         </div>
                         <div class="dm-field">
-                            <label for="newStoreAddress">Dirección *</label>
-                            <input id="newStoreAddress" name="address" required placeholder="Av. Las Heras 420" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="newStoreNeighborhood">Barrio / Referencia</label>
-                            <input id="newStoreNeighborhood" name="neighborhood" placeholder="Centro" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="newStoreCity">Departamento / Localidad</label>
-                            <select id="newStoreCity" name="city">
-                                <option value="Mendoza Capital">Mendoza Capital</option>
-                                <option value="Godoy Cruz">Godoy Cruz</option>
-                                <option value="Guaymallén">Guaymallén</option>
-                                <option value="Maipú">Maipú</option>
-                                <option value="Las Heras">Las Heras</option>
+                            <label for="newStoreCity">Departamento / Localidad *</label>
+                            <select id="newStoreCity" name="city" required>
+                                <option value="Mendoza Capital" th:selected="${draftCity == null or draftCity == 'Mendoza Capital'}">Mendoza Capital</option>
+                                <option value="Godoy Cruz" th:selected="${draftCity == 'Godoy Cruz'}">Godoy Cruz</option>
+                                <option value="Guaymallén" th:selected="${draftCity == 'Guaymallén'}">Guaymallén</option>
+                                <option value="Maipú" th:selected="${draftCity == 'Maipú'}">Maipú</option>
+                                <option value="Las Heras" th:selected="${draftCity == 'Las Heras'}">Las Heras</option>
                             </select>
                         </div>
+                        <div class="dm-field">
+                            <label for="newStoreAddress">Dirección de Entrega *</label>
+                            <input id="newStoreAddress" name="address" required minlength="5" maxlength="150"
+                                   title="Ingresá una dirección válida de al menos 5 caracteres (ej: Av. Las Heras 420)"
+                                   placeholder="Av. Las Heras 420" th:value="${draftAddress}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStoreNeighborhood">Barrio / Referencia de Zona</label>
+                            <input id="newStoreNeighborhood" name="neighborhood" minlength="2" maxlength="80"
+                                   placeholder="Centro" th:value="${draftNeighborhood}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStoreOwnerName">Nombre y Apellido (Quien recibe) *</label>
+                            <input id="newStoreOwnerName" name="ownerName" required minlength="3" maxlength="100"
+                                   pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'\-()]{3,100}$"
+                                   title="Ingresá nombre y apellido válidos (solo letras y espacios)"
+                                   placeholder="Ej: Lucía Fernández"
+                                   th:value="${draftOwnerName != null ? draftOwnerName : currentCustomer.fullName}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStorePhone">Teléfono / WhatsApp del Local *</label>
+                            <input id="newStorePhone" name="phone" required minlength="7" maxlength="30"
+                                   pattern="^[0-9+\-()\s.]{7,30}$"
+                                   title="Ingresá un teléfono válido de 7 a 15 dígitos"
+                                   placeholder="261-555-0000"
+                                   th:value="${draftPhone != null ? draftPhone : currentCustomer.phone}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStoreEmail">Correo Electrónico (Confirmación)</label>
+                            <input id="newStoreEmail" name="contactEmail" type="email" maxlength="120"
+                                   placeholder="sucursal@kiosco.com"
+                                   th:value="${draftContactEmail != null ? draftContactEmail : currentCustomer.email}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStoreTaxId">CUIT o DNI</label>
+                            <input id="newStoreTaxId" name="taxIdOrDni" minlength="7" maxlength="15"
+                                   pattern="^[0-9.\-\s]{7,15}$"
+                                   title="Ingresá un DNI (7 u 8 dígitos) o CUIT (11 dígitos, ej: 20-34567890-1)"
+                                   placeholder="20-34567890-1"
+                                   th:value="${draftTaxIdOrDni != null ? draftTaxIdOrDni : currentCustomer.taxIdOrDni}" />
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top: 0.85rem;">
-                        Guardar Local
+                    <div class="dm-field" style="margin-top: 0.85rem;">
+                        <label for="newStoreNotes">Notas para el Repartidor / Horario de Descarga</label>
+                        <input id="newStoreNotes" name="deliveryNotes" maxlength="250"
+                               placeholder="Ej: Horario de descarga 09:00 a 13:00 hs, tocar timbre depósito"
+                               th:value="${draftDeliveryNotes}" />
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 0.95rem;">
+                        Guardar Local Completo
                     </button>
                 </form>
             </details>
         </div>
 
         <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
-            <a th:href="@{/logout}" class="btn btn-outline dm-btn-danger">Cerrar Sesión</a>
+            <a th:href="@{/logout}" class="btn btn-outline dm-btn-danger dm-logout-link">Cerrar Sesión</a>
         </div>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script th:src="@{/js/cart.js}"></script>
     <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>

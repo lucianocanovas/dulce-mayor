@@ -50,38 +50,71 @@
         <div class="dm-panel" style="margin-bottom:1.5rem;">
             <form th:action="@{/my-orders}" method="get" class="dm-form-grid" style="align-items:end;">
                 <div class="dm-field">
-                    <label for="searchEmail">Buscar por Email de Compra</label>
-                    <input id="searchEmail" type="email" name="email" th:value="${searchEmail}" placeholder="cliente@kiosco.com" />
+                    <label for="searchEmail">Filtrar por Comercio o Email</label>
+                    <input id="searchEmail" type="text" name="email" th:value="${searchEmail}" placeholder="Ej: Kiosco San Martín" />
                 </div>
                 <div class="dm-field">
                     <label for="searchOrderNumber">o por Número de Pedido</label>
                     <input id="searchOrderNumber" type="number" name="orderNumber" th:value="${searchOrderNumber}" placeholder="Ej: 1001" />
                 </div>
-                <div>
-                    <button type="submit" class="btn btn-primary">Consultar Pedidos</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <button type="submit" class="btn btn-primary">Filtrar Mis Pedidos</button>
+                    <a th:if="${!#strings.isEmpty(searchEmail) or searchOrderNumber != null}" th:href="@{/my-orders}" class="btn btn-outline">Ver Todos</a>
                 </div>
             </form>
         </div>
 
-        <div th:if="${#lists.isEmpty(orders) and (!#strings.isEmpty(searchEmail) or searchOrderNumber != null or currentCustomer != null)}" class="dm-panel" style="text-align:center;">
-            No se encontraron pedidos registrados todavía.
+        <div th:if="${#lists.isEmpty(orders)}" class="dm-panel" style="text-align:center; color:var(--muted);">
+            No se encontraron pedidos registrados en tu cuenta con ese criterio.
         </div>
 
         <div style="display:flex; flex-direction:column; gap:1rem;" th:unless="${#lists.isEmpty(orders)}">
             <div th:each="ord : ${orders}" class="dm-panel">
-                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.65rem;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.65rem;">
                     <div>
-                        <strong style="font-size:1.1rem;">Pedido #<span th:text="${ord.orderNumber}">1001</span></strong>
-                        <span style="margin-left:0.6rem; font-size:0.84rem; color:#7A6254;" th:text="${ord.storeName}">Comercio</span>
+                        <strong style="font-size:1.1rem; color:var(--text);">Pedido #<span th:text="${ord.orderNumber}">1001</span></strong>
+                        <span th:if="${ord.storeName != null}" style="margin-left:0.6rem; font-size:0.86rem; font-weight:600; color:var(--muted);" th:text="'• ' + ${ord.storeName}">Comercio</span>
+                        <div th:if="${ord.orderDateTime != null}" style="font-size:0.8rem; color:var(--muted); margin-top:0.15rem;"
+                             th:text="'Fecha: ' + ${#temporals.format(ord.orderDateTime, 'dd/MM/yyyy HH:mm')} + ' hs'">
+                            Fecha
+                        </div>
                     </div>
-                    <span class="stock-pill" th:text="${ord.status}">STATUS</span>
+                    <span th:switch="${ord.status}">
+                        <span th:case="'PENDING_PAYMENT'" class="dm-status-pill dm-status-pill--pending">⏱️ Pendiente de Pago</span>
+                        <span th:case="'PAID'" class="dm-status-pill dm-status-pill--prep">💳 Pago Acreditado</span>
+                        <span th:case="'LOADED'" class="dm-status-pill dm-status-pill--prep">📦 En Preparación</span>
+                        <span th:case="'INVOICED'" class="dm-status-pill dm-status-pill--prep">📄 Facturado • Listo para Despacho</span>
+                        <span th:case="'IN_DELIVERY'" class="dm-status-pill dm-status-pill--route">🚚 En Reparto</span>
+                        <span th:case="'DELIVERED'" class="dm-status-pill dm-status-pill--delivered">✅ Entregado</span>
+                        <span th:case="'CANCELLED'" class="dm-status-pill dm-status-pill--cancelled">❌ Cancelado</span>
+                        <span th:case="*" class="dm-status-pill dm-status-pill--prep" th:text="${ord.status}">Estado</span>
+                    </span>
                 </div>
-                <div style="font-size:0.88rem; color:#5C4033; margin-bottom:0.65rem;">
-                    <span><strong>Medio:</strong> <span th:text="${ord.paymentType}">-</span></span>
+
+                <div style="font-size:0.88rem; color:var(--text); margin-bottom:0.65rem;">
+                    <span>
+                        <strong>Medio de Pago:</strong>
+                        <span th:switch="${ord.paymentType}">
+                            <span th:case="'MERCADO_PAGO'">Mercado Pago</span>
+                            <span th:case="'BANK_TRANSFER'">Transferencia Bancaria</span>
+                            <span th:case="'CASH'">Efectivo Contra Entrega</span>
+                            <span th:case="'DIGITAL_WALLET'">Billetera Virtual / QR</span>
+                            <span th:case="*" th:text="${ord.paymentType ?: 'Efectivo / Cuenta Corriente'}">-</span>
+                        </span>
+                    </span>
                     &nbsp;•&nbsp;
                     <span><strong>Total:</strong> $<span th:text="${#numbers.formatDecimal(ord.total, 0, 'POINT', 0, 'COMMA')}">0</span></span>
+                    <span th:if="${ord.discount > 0}" style="color:var(--success);">&nbsp;(Desc: -$<span th:text="${#numbers.formatDecimal(ord.discount, 0, 'POINT', 0, 'COMMA')}">0</span>)</span>
                     <span th:if="${ord.invoiceNumber != null}">&nbsp;•&nbsp;<strong>Factura:</strong> #<span th:text="${ord.invoiceNumber}">10001</span></span>
                 </div>
+
+                <div th:if="${!#lists.isEmpty(ord.items)}" style="font-size:0.83rem; color:var(--muted); background:var(--bg); padding:0.55rem 0.8rem; border-radius:8px; border:1px solid var(--border); margin-bottom:0.75rem;">
+                    <strong>Productos:</strong>
+                    <span th:each="it, iter : ${ord.items}">
+                        <span th:text="${it.quantity} + 'x ' + ${it.productName}">1x Prod</span><span th:if="${!iter.last}">, </span>
+                    </span>
+                </div>
+
                 <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
                     <a th:href="@{'/checkout/pending?orderId=' + ${ord.id}}" class="btn btn-outline" style="padding:0.4rem 0.85rem; font-size:0.84rem;">
                         Ver Estado / Comprobante
@@ -96,9 +129,7 @@
         </div>
     </div>
 
-    <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
-    </footer>
+    <footer th:replace="~{fragments/chat-widget :: siteFooter}"></footer>
 
     <script th:src="@{/js/cart.js}"></script>
     <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>

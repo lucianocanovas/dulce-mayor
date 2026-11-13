@@ -15,6 +15,7 @@ import ing.software.dulcemayor.repository.location.AddressRepository;
 import ing.software.dulcemayor.repository.location.CityRepository;
 import ing.software.dulcemayor.repository.order.OrderRepository;
 import ing.software.dulcemayor.repository.order.PointOfSaleRepository;
+import ing.software.dulcemayor.util.InputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,14 @@ public class PointOfSaleService {
 
     @Transactional
     public PointOfSaleResponseDTO createPointOfSale(CreatePointOfSaleRequestDTO request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Los datos del local no pueden estar vacíos.");
+        }
+        if (request.getCity() == null || request.getCity().isBlank()) {
+            request.setCity("Mendoza Capital");
+        }
+        InputValidator.validatePointOfSaleRequest(request, false);
+
         // Resolve or create retailer
         String ownerFullName = (request.getOwnerName() != null && !request.getOwnerName().isBlank())
                 ? request.getOwnerName().trim()

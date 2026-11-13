@@ -216,8 +216,23 @@ public class OrderService {
             Promotion promo = promotionRepository
                     .findActivePromotionByCode(spec.getCouponCode().trim().toUpperCase(), LocalDate.now())
                     .orElse(null);
-            if (promo != null && finalTotalUnits >= promo.getMinimumQuantity()) {
-                discount = (subtotal * promo.getDiscountPercentage()) / 100.0;
+            if (promo != null) {
+                if (promo.getProduct() != null && promo.getProduct().getId() != null) {
+                    String targetProductId = promo.getProduct().getId();
+                    int matchingUnits = savedOrder.getOrderDetails().stream()
+                            .filter(d -> d.getProduct() != null && targetProductId.equals(d.getProduct().getId()))
+                            .mapToInt(OrderDetail::getQuantity)
+                            .sum();
+                    double matchingSubtotal = savedOrder.getOrderDetails().stream()
+                            .filter(d -> d.getProduct() != null && targetProductId.equals(d.getProduct().getId()))
+                            .mapToDouble(OrderDetail::getSubtotal)
+                            .sum();
+                    if (matchingUnits >= promo.getMinimumQuantity()) {
+                        discount = (matchingSubtotal * promo.getDiscountPercentage()) / 100.0;
+                    }
+                } else if (finalTotalUnits >= promo.getMinimumQuantity()) {
+                    discount = (subtotal * promo.getDiscountPercentage()) / 100.0;
+                }
             }
         }
 

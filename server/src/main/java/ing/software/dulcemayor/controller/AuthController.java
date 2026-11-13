@@ -96,4 +96,23 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Local guardado con éxito", created));
     }
+
+    // Actualiza un local guardado del cliente
+    @PutMapping("/customer/{userId}/stores/{storeId}")
+    public ResponseEntity<ApiResponse<PointOfSaleResponseDTO>> updateCustomerStore(
+            @PathVariable String userId,
+            @PathVariable String storeId,
+            @RequestBody CreatePointOfSaleRequestDTO request) {
+        PointOfSaleResponseDTO updated = authService.updateCustomerPointOfSale(userId, storeId, request);
+        return ResponseEntity.ok(ApiResponse.ok("Local actualizado con éxito", updated));
+    }
+
+    // Elimina un local guardado del cliente
+    @org.springframework.web.bind.annotation.DeleteMapping("/customer/{userId}/stores/{storeId}")
+    public ResponseEntity<ApiResponse<Void>> deleteCustomerStore(
+            @PathVariable String userId,
+            @PathVariable String storeId) {
+        authService.deleteCustomerPointOfSale(userId, storeId);
+        return ResponseEntity.ok(ApiResponse.ok("Local eliminado con éxito", null));
+    }
 }

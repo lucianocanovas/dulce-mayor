@@ -28,6 +28,7 @@
     async function completeSocialSession(client) {
         const claims = await client.getIdTokenClaims();
         const user = await client.getUser();
+        const idToken = (claims && claims.__raw) || '';
         const sub = (claims && claims.sub) || (user && user.sub) || '';
         const email = (claims && claims.email) || (user && user.email) || (sub ? `${sub}@auth0.dulcemayor.com` : '');
         const name = (claims && claims.name) || (user && user.name) || (user && user.nickname) || 'Usuario Auth0';
@@ -36,7 +37,7 @@
         const res = await fetch('/auth/social', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, name, sub, provider: 'GOOGLE', picture })
+            body: JSON.stringify({ email, name, sub, idToken, provider: 'GOOGLE', picture })
         });
         const data = await res.json();
         if (!res.ok || !data.ok) {

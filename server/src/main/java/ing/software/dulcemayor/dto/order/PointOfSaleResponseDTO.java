@@ -15,9 +15,11 @@ public class PointOfSaleResponseDTO {
     private String ownerName;
     private String taxIdOrDni;
     private String phone;
+    private String contactEmail;
     private String address;
     private String neighborhood;
     private String city;
+    private String deliveryNotes;
     private double latitude;
     private double longitude;
     private String salesRepId;

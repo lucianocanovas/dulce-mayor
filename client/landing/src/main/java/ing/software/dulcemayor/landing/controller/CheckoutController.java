@@ -80,8 +80,11 @@ public class CheckoutController {
             @RequestParam(name = "collection_id", required = false) String collectionId,
             HttpSession session,
             Model model) {
-        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO customer)) {
             return "redirect:/login";
+        }
+        if (orderId != null && !orderId.isBlank() && !isOrderOwnedByCustomer(orderId, customer)) {
+            return "redirect:/my-orders";
         }
         String effectivePaymentId = (paymentId != null && !paymentId.isBlank()) ? paymentId : collectionId;
         OrderPaymentStatusDTO status = (orderId != null && !orderId.isBlank())
@@ -96,8 +99,11 @@ public class CheckoutController {
             @RequestParam(required = false) String orderId,
             HttpSession session,
             Model model) {
-        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO customer)) {
             return "redirect:/login";
+        }
+        if (orderId != null && !orderId.isBlank() && !isOrderOwnedByCustomer(orderId, customer)) {
+            return "redirect:/my-orders";
         }
         OrderPaymentStatusDTO status = (orderId != null && !orderId.isBlank())
                 ? backendApiClient.getOrderStatus(orderId)
@@ -111,8 +117,11 @@ public class CheckoutController {
             @RequestParam(required = false) String orderId,
             HttpSession session,
             Model model) {
-        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO customer)) {
             return "redirect:/login";
+        }
+        if (orderId != null && !orderId.isBlank() && !isOrderOwnedByCustomer(orderId, customer)) {
+            return "redirect:/my-orders";
         }
         OrderPaymentStatusDTO status = (orderId != null && !orderId.isBlank())
                 ? backendApiClient.getOrderStatus(orderId)
@@ -123,7 +132,15 @@ public class CheckoutController {
 
     @GetMapping("/api/landing/orders/{orderId}/status")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> pollOrderStatus(@PathVariable String orderId) {
+    public ResponseEntity<Map<String, Object>> pollOrderStatus(
+            @PathVariable String orderId,
+            HttpSession session) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO customer)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "No autenticado"));
+        }
+        if (!isOrderOwnedByCustomer(orderId, customer)) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Acceso denegado al pedido"));
+        }
         OrderPaymentStatusDTO status = backendApiClient.getOrderStatus(orderId);
         if (status == null) {
             return ResponseEntity.notFound().build();
@@ -155,18 +172,33 @@ public class CheckoutController {
         if (!(attr instanceof CustomerProfileDTO customer)) {
             return "redirect:/login";
         }
-        List<OrderSummaryDTO> orders;
-        boolean hasExplicitFilter = (email != null && !email.isBlank()) || orderNumber != null;
-        if (!hasExplicitFilter) {
-            orders = backendApiClient.searchOrdersByUserId(customer.getUserId());
-        } else {
-            orders = backendApiClient.searchOrders(email, orderNumber);
+        List<OrderSummaryDTO> orders = backendApiClient.searchOrdersByUserId(customer.getUserId());
+        if (orderNumber != null) {
+            orders = orders.stream()
+                    .filter(o -> orderNumber.equals(o.getOrderNumber()))
+                    .toList();
+        }
+        if (email != null && !email.isBlank()) {
+            String filterTerm = email.trim().toLowerCase();
+            orders = orders.stream()
+                    .filter(o -> (o.getStoreName() != null && o.getStoreName().toLowerCase().contains(filterTerm))
+                              || (o.getCustomerEmail() != null && o.getCustomerEmail().toLowerCase().contains(filterTerm))
+                              || (customer.getEmail() != null && customer.getEmail().toLowerCase().contains(filterTerm)))
+                    .toList();
         }
         model.addAttribute("title", "Mis Pedidos — Dulce Mayor");
         model.addAttribute("orders", orders);
         model.addAttribute("searchEmail", email != null ? email : "");
         model.addAttribute("searchOrderNumber", orderNumber);
         return "my-orders";
+    }
+
+    private boolean isOrderOwnedByCustomer(String orderId, CustomerProfileDTO customer) {
+        if (orderId == null || customer == null || customer.getUserId() == null) {
+            return false;
+        }
+        List<OrderSummaryDTO> customerOrders = backendApiClient.searchOrdersByUserId(customer.getUserId());
+        return customerOrders.stream().anyMatch(o -> orderId.equals(o.getId()));
     }
 
     private void populateResultModel(

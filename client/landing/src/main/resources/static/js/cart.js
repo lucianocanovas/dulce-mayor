@@ -1,5 +1,22 @@
 (function () {
-    const CART_KEY = 'dulce_mayor_cart_v1';
+    const BASE_CART_KEY = 'dulce_mayor_cart_v1';
+
+    function getCurrentUserId() {
+        const header = document.getElementById('dm-site-header');
+        if (header && header.dataset && header.dataset.userId) {
+            return header.dataset.userId;
+        }
+        const chatRoot = document.getElementById('dm-ai-chat-root');
+        if (chatRoot && chatRoot.dataset && chatRoot.dataset.userId) {
+            return chatRoot.dataset.userId;
+        }
+        return 'guest';
+    }
+
+    function getCartKey() {
+        const uid = getCurrentUserId();
+        return uid && uid !== 'guest' ? `${BASE_CART_KEY}_${uid}` : BASE_CART_KEY;
+    }
 
     function isAuthenticated() {
         const header = document.getElementById('dm-site-header');
@@ -30,22 +47,23 @@
     }
 
     function formatUnitLabel(qty) {
-        return Number(qty) === 1 ? '1 unidad' : `${Number(qty)} unidades`;
+        return Number(qty) === 1 ? '1 bulto' : `${Number(qty)} bultos`;
     }
 
     function getItems() {
-        return safeJsonParse(localStorage.getItem(CART_KEY), []);
+        return safeJsonParse(localStorage.getItem(getCartKey()), []);
     }
 
     function saveItems(items) {
-        localStorage.setItem(CART_KEY, JSON.stringify(items));
+        localStorage.setItem(getCartKey(), JSON.stringify(items));
         renderCartBadge();
         renderDrawer();
         window.dispatchEvent(new CustomEvent('dulce-cart-updated', { detail: items }));
     }
 
     function clear() {
-        localStorage.removeItem(CART_KEY);
+        localStorage.removeItem(getCartKey());
+        localStorage.removeItem(BASE_CART_KEY);
         renderCartBadge();
         renderDrawer();
         window.dispatchEvent(new CustomEvent('dulce-cart-updated', { detail: [] }));
@@ -196,7 +214,7 @@
             container.innerHTML = `
                 <div class="dm-drawer-empty">
                     <p>Tu carrito mayorista está vacío.</p>
-                    <p style="font-size:0.85rem; color:#7A6254;">Agregá productos desde el catálogo para iniciar tu compra.</p>
+                    <p style="font-size:0.85rem; color:var(--muted);">Agregá productos desde el catálogo para iniciar tu compra.</p>
                 </div>`;
             subtotalEl.textContent = '$0';
             if (goBtn) {
@@ -280,6 +298,13 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.dm-logout-link').forEach(link => {
+            link.addEventListener('click', () => {
+                try {
+                    sessionStorage.clear();
+                } catch (_) { /* ignore */ }
+            });
+        });
         if (!isAuthenticated()) {
             return;
         }

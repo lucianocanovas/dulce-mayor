@@ -30,6 +30,21 @@ public class PointOfSale extends BaseEntity {
     @Column(name = "store_name", nullable = false, length = 150)
     private String storeName;
 
+    @Column(name = "contact_name", length = 150)
+    private String contactName;
+
+    @Column(name = "contact_phone", length = 60)
+    private String contactPhone;
+
+    @Column(name = "contact_email", length = 150)
+    private String contactEmail;
+
+    @Column(name = "tax_id_or_dni", length = 40)
+    private String taxIdOrDni;
+
+    @Column(name = "delivery_notes", length = 300)
+    private String deliveryNotes;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "retailer_id", nullable = false)
     private Retailer retailer;

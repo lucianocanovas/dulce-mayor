@@ -97,13 +97,14 @@ public class GlobalModelAttributes {
             }
 
             String json = String.format(
-                    "{\"userId\":\"%s\",\"username\":\"%s\",\"fullName\":\"%s\",\"role\":\"%s\",\"temporaryPassword\":%s,\"token\":\"%s\"}",
+                    "{\"userId\":\"%s\",\"username\":\"%s\",\"fullName\":\"%s\",\"role\":\"%s\",\"temporaryPassword\":%s,\"token\":\"%s\",\"timestamp\":%d}",
                     escapeJson(userId),
                     escapeJson(username),
                     escapeJson(fullName),
                     escapeJson(role),
                     tempPass,
-                    escapeJson(token)
+                    escapeJson(token),
+                    System.currentTimeMillis()
             );
             return Base64.getUrlEncoder().withoutPadding().encodeToString(json.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {

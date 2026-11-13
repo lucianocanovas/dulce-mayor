@@ -36,10 +36,12 @@
 
         const isAuthenticated = root.dataset.authenticated === 'true';
         const customerName = root.dataset.customerName || '';
+        const userId = root.dataset.userId || 'guest';
+        const scopedHistoryKey = `${HISTORY_KEY}_${userId}`;
 
         let history = [];
         try {
-            const saved = sessionStorage.getItem(HISTORY_KEY);
+            const saved = sessionStorage.getItem(scopedHistoryKey);
             if (saved) history = JSON.parse(saved);
         } catch (e) {
             history = [];
@@ -47,7 +49,7 @@
 
         function saveHistory() {
             try {
-                sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-16)));
+                sessionStorage.setItem(scopedHistoryKey, JSON.stringify(history.slice(-16)));
             } catch (e) { /* ignore */ }
         }
 
