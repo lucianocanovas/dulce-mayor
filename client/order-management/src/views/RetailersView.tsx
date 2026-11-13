@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { PointOfSale } from '../types/models';
 import { fetchPointsOfSale, createPointOfSaleOnBackend } from '../services/api';
-import { Plus, MapPin, Phone, User, Check, Search, Navigation, Loader2, ShoppingBag } from 'lucide-react';
+import { geocodeAddressWithOSM } from '../utils/geocoding';
+import { Plus, MapPin, Phone, User, Check, Search, Navigation, Loader2, ShoppingBag, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface RetailersViewProps {
   onSelectPOS?: (pos: PointOfSale) => void;
@@ -25,6 +26,11 @@ export const RetailersView: React.FC<RetailersViewProps> = ({ onSelectPOS }) => 
   const [city, setCity] = useState('Mendoza Capital');
   const [latitude, setLatitude] = useState<number>(-32.8895);
   const [longitude, setLongitude] = useState<number>(-68.8458);
+  const [latInput, setLatInput] = useState<string>('-32.8895');
+  const [lonInput, setLonInput] = useState<string>('-68.8458');
+  const [coordSource, setCoordSource] = useState<'idle' | 'searching' | 'osm' | 'gps' | 'manual' | 'not_found'>('idle');
+  const [osmMatchLabel, setOsmMatchLabel] = useState<string>('');
+  const [geoErrorMsg, setGeoErrorMsg] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
@@ -40,26 +46,86 @@ export const RetailersView: React.FC<RetailersViewProps> = ({ onSelectPOS }) => 
     loadRetailers();
   }, []);
 
+  useEffect(() => {
+    if (!showForm) return;
+    const cleanAddr = address.trim();
+    if (cleanAddr.length < 5) {
+      if (coordSource === 'osm' || coordSource === 'not_found') {
+        setCoordSource('idle');
+        setOsmMatchLabel('');
+      }
+      return;
+    }
+
+    if (coordSource === 'gps' || coordSource === 'manual') return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setCoordSource('searching');
+      const result = await geocodeAddressWithOSM(cleanAddr, city, neighborhood);
+      if (cancelled) return;
+      if (result) {
+        setLatitude(result.latitude);
+        setLongitude(result.longitude);
+        setLatInput(result.latitude.toFixed(5));
+        setLonInput(result.longitude.toFixed(5));
+        setOsmMatchLabel(result.displayName);
+        setCoordSource('osm');
+        setGeoErrorMsg(null);
+      } else {
+        setOsmMatchLabel('');
+        setCoordSource('not_found');
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [address, city, neighborhood, showForm]);
+
   const handleCaptureGPS = () => {
     setIsLocating(true);
+    setGeoErrorMsg(null);
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setLatitude(pos.coords.latitude);
           setLongitude(pos.coords.longitude);
+          setLatInput(pos.coords.latitude.toFixed(5));
+          setLonInput(pos.coords.longitude.toFixed(5));
+          setCoordSource('gps');
+          setOsmMatchLabel('');
           setIsLocating(false);
         },
         () => {
-          // Default to random offset in Mendoza
-          setLatitude(-32.8900 + (Math.random() - 0.5) * 0.02);
-          setLongitude(-68.8400 + (Math.random() - 0.5) * 0.02);
+          setGeoErrorMsg('No se pudo obtener el GPS del dispositivo. Ingresá las coordenadas manualmente.');
+          setCoordSource('not_found');
           setIsLocating(false);
         },
         { timeout: 5000 }
       );
     } else {
+      setGeoErrorMsg('Tu navegador no soporta geolocalización. Ingresá las coordenadas manualmente.');
+      setCoordSource('not_found');
       setIsLocating(false);
     }
+  };
+
+  const handleManualLatChange = (val: string) => {
+    setLatInput(val);
+    setCoordSource('manual');
+    setGeoErrorMsg(null);
+    const parsed = Number.parseFloat(val);
+    if (Number.isFinite(parsed)) setLatitude(parsed);
+  };
+
+  const handleManualLonChange = (val: string) => {
+    setLonInput(val);
+    setCoordSource('manual');
+    setGeoErrorMsg(null);
+    const parsed = Number.parseFloat(val);
+    if (Number.isFinite(parsed)) setLongitude(parsed);
   };
 
   const handleCreateRetailer = async (e: React.FormEvent) => {
@@ -67,7 +133,36 @@ export const RetailersView: React.FC<RetailersViewProps> = ({ onSelectPOS }) => 
     if (!name.trim() || !address.trim()) return;
 
     setIsSubmitting(true);
+    setGeoErrorMsg(null);
+
+    let finalLat = Number.parseFloat(latInput);
+    let finalLon = Number.parseFloat(lonInput);
+
     try {
+      if (coordSource !== 'gps' && coordSource !== 'manual' && coordSource !== 'osm') {
+        const result = await geocodeAddressWithOSM(address.trim(), city, neighborhood);
+        if (result) {
+          finalLat = result.latitude;
+          finalLon = result.longitude;
+          setLatitude(finalLat);
+          setLongitude(finalLon);
+          setLatInput(finalLat.toFixed(5));
+          setLonInput(finalLon.toFixed(5));
+          setCoordSource('osm');
+        } else {
+          setCoordSource('not_found');
+          setGeoErrorMsg('No se encontró la dirección en OpenStreetMap. Cargá Latitud y Longitud a mano o usá "Capturar GPS Actual".');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      if (!Number.isFinite(finalLat) || !Number.isFinite(finalLon)) {
+        setGeoErrorMsg('Ingresá coordenadas válidas de Latitud y Longitud.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const created = await createPointOfSaleOnBackend({
         storeName: name.trim(),
         ownerName: ownerName.trim() || 'Titular',
@@ -76,8 +171,8 @@ export const RetailersView: React.FC<RetailersViewProps> = ({ onSelectPOS }) => 
         address: address.trim(),
         neighborhood: neighborhood.trim() || 'Centro',
         city,
-        latitude,
-        longitude,
+        latitude: finalLat,
+        longitude: finalLon,
       });
 
       setRetailers((prev) => [created, ...prev]);
@@ -91,6 +186,10 @@ export const RetailersView: React.FC<RetailersViewProps> = ({ onSelectPOS }) => 
       setPhone('');
       setAddress('');
       setNeighborhood('');
+      setCoordSource('idle');
+      setOsmMatchLabel('');
+      setLatInput('-32.8895');
+      setLonInput('-68.8458');
 
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
@@ -235,21 +334,74 @@ export const RetailersView: React.FC<RetailersViewProps> = ({ onSelectPOS }) => 
             </div>
           </div>
 
-          {/* GPS Coordinates Capture */}
-          <div className="gps-capture-box">
-            <div className="gps-coords">
-              <span className="gps-label">Coordenadas GPS:</span>
-              <span className="gps-val">{latitude.toFixed(5)}, {longitude.toFixed(5)}</span>
+          {/* GPS & OpenStreetMap Coordinates */}
+          <div className="gps-capture-box" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="gps-label">Ubicación en OpenStreetMap / GPS</span>
+              <button
+                type="button"
+                onClick={handleCaptureGPS}
+                disabled={isLocating}
+                className="btn btn-sm btn-secondary gps-btn"
+              >
+                <Navigation size={14} className={isLocating ? 'animate-spin' : ''} />
+                <span>{isLocating ? 'Obteniendo GPS...' : 'Capturar GPS Actual'}</span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleCaptureGPS}
-              disabled={isLocating}
-              className="btn btn-sm btn-secondary gps-btn"
-            >
-              <Navigation size={14} className={isLocating ? 'animate-spin' : ''} />
-              <span>{isLocating ? 'Obteniendo GPS...' : 'Capturar GPS Actual'}</span>
-            </button>
+
+            {coordSource === 'searching' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: '#2563EB', fontWeight: 600 }}>
+                <Loader2 size={13} className="animate-spin" />
+                <span>Buscando dirección en OpenStreetMap...</span>
+              </div>
+            )}
+            {coordSource === 'osm' && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.35rem', fontSize: '0.75rem', color: '#15803D', fontWeight: 600 }}>
+                <CheckCircle2 size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>Ubicación encontrada en OpenStreetMap{osmMatchLabel ? `: ${osmMatchLabel}` : ''}</span>
+              </div>
+            )}
+            {coordSource === 'not_found' && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.35rem', fontSize: '0.75rem', color: '#B45309', fontWeight: 600 }}>
+                <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>No se encontró en OpenStreetMap. Cargá las coordenadas a mano o usá "Capturar GPS Actual".</span>
+              </div>
+            )}
+            {coordSource === 'gps' && (
+              <div style={{ fontSize: '0.75rem', color: '#1B449C', fontWeight: 600 }}>
+                Usando coordenadas actuales del dispositivo ({latitude.toFixed(5)}, {longitude.toFixed(5)}).
+              </div>
+            )}
+            {geoErrorMsg && (
+              <div style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: 600 }}>
+                {geoErrorMsg}
+              </div>
+            )}
+
+            <div className="form-row-2">
+              <div className="form-group">
+                <label>Latitud</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={latInput}
+                  onChange={(e) => handleManualLatChange(e.target.value)}
+                  placeholder="-32.8895"
+                  className="form-control"
+                />
+              </div>
+              <div className="form-group">
+                <label>Longitud</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={lonInput}
+                  onChange={(e) => handleManualLonChange(e.target.value)}
+                  placeholder="-68.8458"
+                  className="form-control"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="form-actions">
