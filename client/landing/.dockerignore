@@ -1,0 +1,9 @@
+target/
+.mvn/timing.properties
+.env
+.env.*
+*.log
+.git/
+.gitignore
+.DS_Store
+

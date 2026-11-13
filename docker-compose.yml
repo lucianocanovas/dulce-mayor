@@ -1,0 +1,132 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dulcemayor-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-dulcemayor}
+      POSTGRES_USER: ${DB_USER:-dulcemayor}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dulcemayor}
+    ports:
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - dulcemayor-net
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: dulcemayor-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: ./.env
+        required: false
+      - path: ./server/.env
+        required: false
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-dulcemayor}
+      DB_USER: ${DB_USER:-dulcemayor}
+      DB_PASSWORD: ${DB_PASSWORD:-dulcemayor}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
+      MERCADOPAGO_PUBLIC_KEY: ${MERCADOPAGO_PUBLIC_KEY:-}
+      MERCADOPAGO_SANDBOX_ENABLED: ${MERCADOPAGO_SANDBOX_ENABLED:-true}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:8081}
+      APP_CENTRAL_URL: ${APP_CENTRAL_URL:-http://localhost:5173}
+      APP_ORDER_URL: ${APP_ORDER_URL:-http://localhost:5174}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      PAYMENT_BANK_ALIAS: ${PAYMENT_BANK_ALIAS:-DULCE.MAYOR.MZA}
+      PAYMENT_BANK_CBU: ${PAYMENT_BANK_CBU:-0000003100084920193842}
+      PAYMENT_BANK_HOLDER: ${PAYMENT_BANK_HOLDER:-Dulce Mayor S.A.}
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@dulcemayor.com.ar}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    networks:
+      - dulcemayor-net
+
+  landing:
+    build:
+      context: ./client/landing
+      dockerfile: Dockerfile
+    container_name: dulcemayor-landing
+    restart: unless-stopped
+    depends_on:
+      - server
+    env_file:
+      - path: ./.env
+        required: false
+      - path: ./server/.env
+        required: false
+    environment:
+      SERVER_PORT: 8081
+      BACKEND_API_URL: http://server:8080/api
+      APP_CENTRAL_URL: ${APP_CENTRAL_URL:-http://localhost:5173}
+      APP_ORDER_URL: ${APP_ORDER_URL:-http://localhost:5174}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-dev-is022ursig5yhq3k.us.auth0.com}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-CfWfvGPNV2dHB72zT1yU6dFI0eMpaQZF}
+    ports:
+      - "${LANDING_PORT:-8081}:8081"
+    networks:
+      - dulcemayor-net
+
+  central-management:
+    build:
+      context: ./client/central-management
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_CENTRAL_API_URL:-/api}
+        VITE_AUTH0_DOMAIN: ${AUTH0_DOMAIN:-dev-is022ursig5yhq3k.us.auth0.com}
+        VITE_AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-CfWfvGPNV2dHB72zT1yU6dFI0eMpaQZF}
+    container_name: dulcemayor-central
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${CENTRAL_PORT:-5173}:80"
+    networks:
+      - dulcemayor-net
+
+  order-management:
+    build:
+      context: ./client/order-management
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_ORDER_API_URL:-/api}
+        VITE_AUTH0_DOMAIN: ${AUTH0_DOMAIN:-dev-is022ursig5yhq3k.us.auth0.com}
+        VITE_AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-CfWfvGPNV2dHB72zT1yU6dFI0eMpaQZF}
+    container_name: dulcemayor-order
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${ORDER_PORT:-5174}:80"
+    networks:
+      - dulcemayor-net
+
+volumes:
+  postgres_data:
+
+networks:
+  dulcemayor-net:
+    driver: bridge
+

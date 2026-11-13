@@ -178,6 +178,12 @@ build_java_cmd() {
   JAVA_CMD=(./mvnw spring-boot:run)
 }
 
+if command -v docker >/dev/null 2>&1 && ! ss -tln 2>/dev/null | grep -q ':5432 '; then
+  echo "${YELLOW}[DB] Iniciando contenedor PostgreSQL (docker compose up -d postgres)...${NC}"
+  (cd "$ROOT_DIR" && docker compose up -d postgres >/dev/null 2>&1 || true)
+  sleep 2
+fi
+
 echo "${BLUE}[START] Iniciando Backend REST API (puerto 8080)...${NC}"
 build_java_cmd "$ROOT_DIR/server" "ing.software.dulcemayor.DulceMayorApplication"
 start_service "SERVER" "$BLUE" "$ROOT_DIR/server" "$LOG_DIR/server.log" "${JAVA_CMD[@]}"
@@ -196,7 +202,7 @@ echo ""
 echo "${BOLD}------------------------------------------------------------${NC}"
 echo "${BOLD}Servicios levantándose:${NC}"
 echo "  • ${BLUE}Backend API:${NC}          http://localhost:8080/api"
-echo "  • ${BLUE}Consola H2:${NC}           http://localhost:8080/h2-console"
+echo "  • ${BLUE}PostgreSQL DB:${NC}        jdbc:postgresql://localhost:5432/dulcemayor"
 echo "  • ${MAGENTA}Landing Page:${NC}         http://localhost:8081"
 echo "  • ${GREEN}Central Management:${NC}   http://localhost:5173"
 echo "  • ${CYAN}Order Management:${NC}     http://localhost:5174"
