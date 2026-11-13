@@ -209,6 +209,14 @@ function Start-LoggedService($name, $color, $workDir, $logName, $execPath, $args
     return $process
 }
 
+Write-Host "[BUILD] Compilando Backend REST API y Landing Page (Java 21)..." -ForegroundColor DarkCyan
+Push-Location (Join-Path $ROOT_DIR "server")
+cmd.exe /c "mvnw.cmd clean compile -q"
+Pop-Location
+Push-Location (Join-Path $ROOT_DIR "client\landing")
+cmd.exe /c "mvnw.cmd clean compile -q"
+Pop-Location
+
 Write-Host "[START] Iniciando Backend REST API (puerto 8080)..." -ForegroundColor Blue
 $serverCmd = Get-JavaCommand (Join-Path $ROOT_DIR "server") "ing.software.dulcemayor.DulceMayorApplication"
 $procServer = Start-LoggedService "SERVER" "Cyan" (Join-Path $ROOT_DIR "server") "server.log" $serverCmd.Executable $serverCmd.Arguments

@@ -6,6 +6,9 @@ import ing.software.dulcemayor.dto.auth.CustomerProfileDTO;
 import ing.software.dulcemayor.dto.auth.CustomerRegisterRequestDTO;
 import ing.software.dulcemayor.dto.auth.LoginRequestDTO;
 import ing.software.dulcemayor.dto.auth.SocialLoginRequestDTO;
+import ing.software.dulcemayor.dto.auth.UpdateCustomerProfileRequestDTO;
+import ing.software.dulcemayor.dto.order.CreatePointOfSaleRequestDTO;
+import ing.software.dulcemayor.dto.order.PointOfSaleResponseDTO;
 import ing.software.dulcemayor.entity.actor.Employee;
 import ing.software.dulcemayor.entity.actor.Retailer;
 import ing.software.dulcemayor.entity.actor.User;
@@ -274,6 +277,161 @@ public class AuthService {
                 .deliveryNeighborhood(deliveryNeighborhood)
                 .deliveryCity(deliveryCity)
                 .role(user.getRole())
+                .build();
+    }
+
+    @Transactional
+    public CustomerProfileDTO updateCustomerProfile(String userId, UpdateCustomerProfileRequestDTO request) {
+        User user = userRepository.findByIdAndIsDeletedFalse(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        if (user.getPerson() != null) {
+            if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
+                user.getPerson().setFirstName(request.getFirstName().trim());
+            }
+            if (request.getLastName() != null && !request.getLastName().isBlank()) {
+                user.getPerson().setLastName(request.getLastName().trim());
+            }
+            if (request.getTaxIdOrDni() != null && !request.getTaxIdOrDni().isBlank()) {
+                user.getPerson().setDocumentNumber(request.getTaxIdOrDni().trim());
+            }
+
+            if (user.getPerson() instanceof Retailer retailer) {
+                if (request.getPhone() != null) {
+                    retailer.setPhone(request.getPhone().trim());
+                }
+                retailerRepository.save(retailer);
+
+                boolean hasStoreData = (request.getStoreName() != null && !request.getStoreName().isBlank())
+                        || (request.getDeliveryAddress() != null && !request.getDeliveryAddress().isBlank());
+                if (hasStoreData) {
+                    List<PointOfSale> posList = pointOfSaleRepository.findByRetailerIdAndIsDeletedFalse(retailer.getId());
+                    if (!posList.isEmpty()) {
+                        PointOfSale primary = posList.get(0);
+                        if (request.getStoreName() != null && !request.getStoreName().isBlank()) {
+                            primary.setStoreName(request.getStoreName().trim());
+                        }
+                        Address addr = primary.getAddress();
+                        if (addr == null) {
+                            addr = Address.builder().latitude(-32.8895).longitude(-68.8458).build();
+                        }
+                        if (request.getDeliveryAddress() != null && !request.getDeliveryAddress().isBlank()) {
+                            addr.setStreet(request.getDeliveryAddress().trim());
+                        }
+                        if (request.getDeliveryNeighborhood() != null && !request.getDeliveryNeighborhood().isBlank()) {
+                            addr.setNeighborhood(request.getDeliveryNeighborhood().trim());
+                        }
+                        if (request.getDeliveryCity() != null && !request.getDeliveryCity().isBlank()) {
+                            addr.setCity(resolveCity(request.getDeliveryCity()));
+                        }
+                        primary.setAddress(addressRepository.save(addr));
+                        pointOfSaleRepository.save(primary);
+                    } else if (request.getDeliveryAddress() != null && !request.getDeliveryAddress().isBlank()) {
+                        Address addr = addressRepository.save(Address.builder()
+                                .street(request.getDeliveryAddress().trim())
+                                .neighborhood(request.getDeliveryNeighborhood() != null && !request.getDeliveryNeighborhood().isBlank()
+                                        ? request.getDeliveryNeighborhood().trim() : "Centro")
+                                .latitude(-32.8895)
+                                .longitude(-68.8458)
+                                .city(resolveCity(request.getDeliveryCity()))
+                                .build());
+                        String storeLabel = (request.getStoreName() != null && !request.getStoreName().isBlank())
+                                ? request.getStoreName().trim()
+                                : (retailer.getFirstName() + " " + retailer.getLastName()).trim();
+                        pointOfSaleRepository.save(PointOfSale.builder()
+                                .storeName(storeLabel)
+                                .retailer(retailer)
+                                .address(addr)
+                                .build());
+                    }
+                }
+            } else if (user.getPerson() instanceof Employee emp) {
+                employeeRepository.save(emp);
+            }
+        }
+
+        return getCustomerProfile(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PointOfSaleResponseDTO> getCustomerPointsOfSale(String userId) {
+        User user = userRepository.findByIdAndIsDeletedFalse(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        if (!(user.getPerson() instanceof Retailer retailer)) {
+            return List.of();
+        }
+        return pointOfSaleRepository.findByRetailerIdAndIsDeletedFalse(retailer.getId())
+                .stream()
+                .map(pos -> toPosDto(pos, retailer))
+                .toList();
+    }
+
+    @Transactional
+    public PointOfSaleResponseDTO addCustomerPointOfSale(String userId, CreatePointOfSaleRequestDTO request) {
+        User user = userRepository.findByIdAndIsDeletedFalse(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        if (request == null || request.getStoreName() == null || request.getStoreName().isBlank()
+                || request.getAddress() == null || request.getAddress().isBlank()) {
+            throw new IllegalArgumentException("El nombre del local y la dirección son obligatorios");
+        }
+
+        Retailer retailer;
+        if (user.getPerson() instanceof Retailer existing) {
+            retailer = existing;
+        } else {
+            String first = user.getPerson() != null ? user.getPerson().getFirstName() : user.getUsername();
+            String last = user.getPerson() != null ? user.getPerson().getLastName() : "Cliente";
+            retailer = retailerRepository.save(Retailer.builder()
+                    .firstName(first)
+                    .lastName(last)
+                    .documentType(DocumentType.DNI)
+                    .documentNumber("CLI-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                    .phone(request.getPhone())
+                    .build());
+        }
+
+        Address address = addressRepository.save(Address.builder()
+                .street(request.getAddress().trim())
+                .neighborhood(request.getNeighborhood() != null && !request.getNeighborhood().isBlank()
+                        ? request.getNeighborhood().trim() : "Centro")
+                .latitude(request.getLatitude() != null && request.getLatitude() != 0 ? request.getLatitude() : -32.8895)
+                .longitude(request.getLongitude() != null && request.getLongitude() != 0 ? request.getLongitude() : -68.8458)
+                .city(resolveCity(request.getCity()))
+                .build());
+
+        PointOfSale saved = pointOfSaleRepository.save(PointOfSale.builder()
+                .storeName(request.getStoreName().trim())
+                .retailer(retailer)
+                .address(address)
+                .build());
+
+        return toPosDto(saved, retailer);
+    }
+
+    private City resolveCity(String targetCityName) {
+        List<City> cities = cityRepository.findByIsDeletedFalse();
+        String target = targetCityName != null ? targetCityName.trim() : "";
+        return cities.stream()
+                .filter(c -> c.getName() != null && c.getName().equalsIgnoreCase(target))
+                .findFirst()
+                .orElse(cities.isEmpty() ? null : cities.get(0));
+    }
+
+    private PointOfSaleResponseDTO toPosDto(PointOfSale pos, Retailer retailer) {
+        Address addr = pos.getAddress();
+        return PointOfSaleResponseDTO.builder()
+                .id(pos.getId())
+                .storeName(pos.getStoreName())
+                .ownerName((retailer.getFirstName() + " " + retailer.getLastName()).trim())
+                .taxIdOrDni(retailer.getDocumentNumber())
+                .phone(retailer.getPhone())
+                .address(addr != null ? addr.getStreet() : "")
+                .neighborhood(addr != null ? addr.getNeighborhood() : "")
+                .city(addr != null && addr.getCity() != null ? addr.getCity().getName() : "Mendoza Capital")
+                .latitude(addr != null ? addr.getLatitude() : -32.8895)
+                .longitude(addr != null ? addr.getLongitude() : -68.8458)
+                .retailerId(retailer.getId())
                 .build();
     }
 }

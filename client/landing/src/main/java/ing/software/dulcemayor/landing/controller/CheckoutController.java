@@ -31,12 +31,13 @@ public class CheckoutController {
 
     @GetMapping("/checkout")
     public String checkoutPage(HttpSession session, Model model) {
-        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO customer)) {
             return "redirect:/login";
         }
         PaymentConfigDTO paymentConfig = backendApiClient.getPaymentConfig();
         model.addAttribute("title", "Finalizar Compra — Dulce Mayor");
         model.addAttribute("paymentConfig", paymentConfig);
+        model.addAttribute("savedStores", backendApiClient.getCustomerStores(customer.getUserId()));
         return "checkout";
     }
 
@@ -77,7 +78,11 @@ public class CheckoutController {
             @RequestParam(required = false) String orderId,
             @RequestParam(name = "payment_id", required = false) String paymentId,
             @RequestParam(name = "collection_id", required = false) String collectionId,
+            HttpSession session,
             Model model) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+            return "redirect:/login";
+        }
         String effectivePaymentId = (paymentId != null && !paymentId.isBlank()) ? paymentId : collectionId;
         OrderPaymentStatusDTO status = (orderId != null && !orderId.isBlank())
                 ? backendApiClient.verifyMercadoPagoPayment(orderId, effectivePaymentId)
@@ -89,7 +94,11 @@ public class CheckoutController {
     @GetMapping("/checkout/pending")
     public String checkoutPending(
             @RequestParam(required = false) String orderId,
+            HttpSession session,
             Model model) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+            return "redirect:/login";
+        }
         OrderPaymentStatusDTO status = (orderId != null && !orderId.isBlank())
                 ? backendApiClient.getOrderStatus(orderId)
                 : null;
@@ -100,7 +109,11 @@ public class CheckoutController {
     @GetMapping("/checkout/failure")
     public String checkoutFailure(
             @RequestParam(required = false) String orderId,
+            HttpSession session,
             Model model) {
+        if (!(session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY) instanceof CustomerProfileDTO)) {
+            return "redirect:/login";
+        }
         OrderPaymentStatusDTO status = (orderId != null && !orderId.isBlank())
                 ? backendApiClient.getOrderStatus(orderId)
                 : null;
@@ -138,10 +151,13 @@ public class CheckoutController {
             @RequestParam(required = false) Long orderNumber,
             HttpSession session,
             Model model) {
+        Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
+        if (!(attr instanceof CustomerProfileDTO customer)) {
+            return "redirect:/login";
+        }
         List<OrderSummaryDTO> orders;
         boolean hasExplicitFilter = (email != null && !email.isBlank()) || orderNumber != null;
-        Object attr = session.getAttribute(GlobalModelAttributes.SESSION_CUSTOMER_KEY);
-        if (!hasExplicitFilter && attr instanceof CustomerProfileDTO customer) {
+        if (!hasExplicitFilter) {
             orders = backendApiClient.searchOrdersByUserId(customer.getUserId());
         } else {
             orders = backendApiClient.searchOrders(email, orderNumber);

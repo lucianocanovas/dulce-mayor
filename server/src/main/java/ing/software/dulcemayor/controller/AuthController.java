@@ -5,6 +5,9 @@ import ing.software.dulcemayor.dto.auth.ChangePasswordRequestDTO;
 import ing.software.dulcemayor.dto.auth.CustomerProfileDTO;
 import ing.software.dulcemayor.dto.auth.CustomerRegisterRequestDTO;
 import ing.software.dulcemayor.dto.auth.LoginRequestDTO;
+import ing.software.dulcemayor.dto.auth.UpdateCustomerProfileRequestDTO;
+import ing.software.dulcemayor.dto.order.CreatePointOfSaleRequestDTO;
+import ing.software.dulcemayor.dto.order.PointOfSaleResponseDTO;
 import ing.software.dulcemayor.dto.response.ApiResponse;
 import ing.software.dulcemayor.service.actor.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +16,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 // Controlador independiente de autenticación (no extiende BaseController porque no es un CRUD estándar).
 // Recibe DTOs de entrada, delega en AuthService y devuelve la respuesta envuelta en ApiResponse.
@@ -64,5 +70,30 @@ public class AuthController {
     public ResponseEntity<ApiResponse<CustomerProfileDTO>> getCustomerProfile(@PathVariable String userId) {
         CustomerProfileDTO profile = authService.getCustomerProfile(userId);
         return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
+    // Actualiza datos del perfil del cliente autenticado
+    @PutMapping("/customer/{userId}")
+    public ResponseEntity<ApiResponse<CustomerProfileDTO>> updateCustomerProfile(
+            @PathVariable String userId,
+            @RequestBody UpdateCustomerProfileRequestDTO request) {
+        CustomerProfileDTO profile = authService.updateCustomerProfile(userId, request);
+        return ResponseEntity.ok(ApiResponse.ok("Perfil actualizado correctamente", profile));
+    }
+
+    // Locales (puntos de venta) guardados del cliente
+    @GetMapping("/customer/{userId}/stores")
+    public ResponseEntity<ApiResponse<List<PointOfSaleResponseDTO>>> getCustomerStores(@PathVariable String userId) {
+        return ResponseEntity.ok(ApiResponse.ok(authService.getCustomerPointsOfSale(userId)));
+    }
+
+    // Agrega un nuevo local guardado para el cliente
+    @PostMapping("/customer/{userId}/stores")
+    public ResponseEntity<ApiResponse<PointOfSaleResponseDTO>> addCustomerStore(
+            @PathVariable String userId,
+            @RequestBody CreatePointOfSaleRequestDTO request) {
+        PointOfSaleResponseDTO created = authService.addCustomerPointOfSale(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Local guardado con éxito", created));
     }
 }

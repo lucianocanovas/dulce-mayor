@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">Crear Cuenta — Dulce Mayor</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css(v=2)}">
 </head>
 <body>
     <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
@@ -95,7 +95,7 @@
     </footer>
 
     <script th:src="@{/js/cart.js}"></script>
-    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2/dist/auth0-spa-js.production.min.js"></script>
     <script th:src="@{/js/google-auth.js}"></script>
     <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>
 </body>

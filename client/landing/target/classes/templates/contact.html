@@ -5,24 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">Contacto &amp; Sucursales — Dulce Mayor</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css(v=2)}">
 </head>
 <body>
     <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
 
-    <div class="container" style="max-width: 800px;">
-        <h1 class="section-title">Sucursales y Canales de Atención</h1>
-        <div class="product-card" style="padding: 2.5rem; gap: 1rem;">
-            <h3 style="font-size: 1.4rem; color: var(--rust);">Sede Central Mendoza</h3>
-            <p><strong>Dirección:</strong> Av. San Martín 1500, Ciudad de Mendoza (CP 5500)</p>
-            <p><strong>Teléfono:</strong> +54 9 261 555-1234</p>
-            <p><strong>Correo Corporativo:</strong> ventas@dulcemayor.com.ar</p>
-            <p><strong>Horario de Atención Mayorista:</strong> Lunes a Viernes de 08:00 a 17:00 hs.</p>
+    <div class="container">
+        <div class="dm-section-header">
+            <h1 class="section-title" style="margin-bottom: 0.35rem;">Contacto, Sucursales y Puntos de Venta</h1>
+            <p class="dm-section-subtitle">Conocé nuestros canales de atención, sucursales mayoristas y comercios adheridos</p>
         </div>
+
+        <!-- Datos de la Empresa -->
+        <section class="dm-panel dm-company-card">
+            <div class="dm-company-header">
+                <div>
+                    <span class="badge-sale" style="margin-bottom: 0.5rem; display: inline-block;">DATOS DE LA EMPRESA</span>
+                    <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text);">Dulce Mayor S.A.</h2>
+                    <p style="color: var(--muted); font-size: 0.94rem; margin-top: 0.2rem;">
+                        Distribuidora Mayorista de Golosinas y Confitería desde 1926
+                    </p>
+                </div>
+                <span class="stock-pill">Atención Mayorista Activa</span>
+            </div>
+            <div class="dm-company-grid">
+                <div class="dm-company-item">
+                    <span class="dm-company-label">Razón Social / CUIT</span>
+                    <strong>Dulce Mayor S.A. — CUIT 30-71234567-8</strong>
+                </div>
+                <div class="dm-company-item">
+                    <span class="dm-company-label">Teléfono Comercial</span>
+                    <strong>+54 9 261 555-1234</strong>
+                </div>
+                <div class="dm-company-item">
+                    <span class="dm-company-label">Correo Corporativo</span>
+                    <strong>ventas@dulcemayor.com.ar</strong>
+                </div>
+                <div class="dm-company-item">
+                    <span class="dm-company-label">Horario de Atención</span>
+                    <strong>Lun a Vie 08:00 a 17:00 hs • Sáb 08:30 a 12:30 hs</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sucursales -->
+        <section style="margin-top: 2.5rem;">
+            <h2 class="dm-subsection-title">Nuestras Sucursales</h2>
+            <div class="dm-branches-grid">
+                <article class="product-card dm-branch-card">
+                    <span class="product-pack">Casa Central</span>
+                    <h3 class="product-title">Sede Central Mendoza</h3>
+                    <p class="product-desc">Atención mayorista presencial, retiro de pedidos y asesoramiento comercial.</p>
+                    <ul class="dm-branch-details">
+                        <li><strong>Dirección:</strong> Av. San Martín 1500, Ciudad de Mendoza (CP 5500)</li>
+                        <li><strong>Teléfono:</strong> +54 9 261 555-1234</li>
+                        <li><strong>Horario:</strong> Lun a Vie 08:00–17:00 hs</li>
+                    </ul>
+                </article>
+
+                <article class="product-card dm-branch-card">
+                    <span class="product-pack">Sucursal Zona Sur</span>
+                    <h3 class="product-title">Sucursal Godoy Cruz</h3>
+                    <p class="product-desc">Salón de ventas mayorista y despacho rápido para kioscos y almacenes.</p>
+                    <ul class="dm-branch-details">
+                        <li><strong>Dirección:</strong> Av. San Martín Sur 890, Godoy Cruz, Mendoza</li>
+                        <li><strong>Teléfono:</strong> +54 9 261 555-2480</li>
+                        <li><strong>Horario:</strong> Lun a Vie 08:30–17:00 hs • Sáb 08:30–12:30 hs</li>
+                    </ul>
+                </article>
+
+                <article class="product-card dm-branch-card">
+                    <span class="product-pack">Centro Logístico</span>
+                    <h3 class="product-title">Depósito Guaymallén</h3>
+                    <p class="product-desc">Centro de distribución de carga pesada, armado de rutas y envíos provinciales.</p>
+                    <ul class="dm-branch-details">
+                        <li><strong>Dirección:</strong> Carril Rodríguez Peña 2450, Guaymallén, Mendoza</li>
+                        <li><strong>Teléfono:</strong> +54 9 261 555-3910</li>
+                        <li><strong>Horario:</strong> Lun a Vie 07:30–16:30 hs</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <!-- Puntos de Venta -->
+        <section style="margin-top: 2.5rem;">
+            <h2 class="dm-subsection-title">Puntos de Venta y Comercios Adheridos</h2>
+
+            <div th:if="${#lists.isEmpty(pointsOfSale)}" class="dm-panel" style="text-align: center; color: var(--muted);">
+                Próximamente verás aquí el listado completo de puntos de venta adheridos a nuestra red.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(pointsOfSale)}" class="dm-branches-grid">
+                <article th:each="pos : ${pointsOfSale}" class="product-card dm-branch-card">
+                    <span class="product-pack" th:text="${pos.city != null and !#strings.isEmpty(pos.city) ? pos.city : 'Mendoza'}">Mendoza</span>
+                    <h3 class="product-title" th:text="${pos.storeName}">Comercio</h3>
+                    <ul class="dm-branch-details" style="margin-top: 0.5rem;">
+                        <li th:if="${pos.address != null and !#strings.isEmpty(pos.address)}">
+                            <strong>Dirección:</strong> <span th:text="${pos.address}">Dirección</span>
+                        </li>
+                        <li th:if="${pos.neighborhood != null and !#strings.isEmpty(pos.neighborhood)}">
+                            <strong>Barrio / Zona:</strong> <span th:text="${pos.neighborhood}">Barrio</span>
+                        </li>
+                        <li th:if="${pos.phone != null and !#strings.isEmpty(pos.phone)}">
+                            <strong>Teléfono:</strong> <span th:text="${pos.phone}">Teléfono</span>
+                        </li>
+                        <li th:if="${pos.ownerName != null and !#strings.isEmpty(pos.ownerName)}">
+                            <strong>Referente:</strong> <span th:text="${pos.ownerName}">Titular</span>
+                        </li>
+                    </ul>
+                </article>
+            </div>
+        </section>
     </div>
 
     <footer>
-        <p><strong>Dulce Mayor S.A.</strong> — Mendoza, Argentina</p>
+        <p><strong>Dulce Mayor S.A.</strong> — CUIT: 30-71234567-8</p>
+        <p>Mendoza, Argentina • ventas@dulcemayor.com.ar</p>
     </footer>
 
     <script th:src="@{/js/cart.js}"></script>

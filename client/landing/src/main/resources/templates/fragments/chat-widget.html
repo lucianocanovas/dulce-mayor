@@ -3,45 +3,74 @@
 <body>
 
 <!-- Reusable Header -->
-<header th:fragment="siteHeader">
+<header th:fragment="siteHeader" id="dm-site-header" th:attr="data-authenticated=${currentCustomer != null}">
     <a th:href="@{/}" class="logo">
         <img th:src="@{/images/logo-horizontal.svg}" alt="Dulce Mayor" height="40" />
     </a>
-    <nav style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-        <a th:href="@{/}">Inicio</a>
-        <a th:href="@{/catalog}">Catálogo Completo</a>
-        <a th:href="@{/my-orders}">Mis Pedidos</a>
-        <a th:href="@{/contact}">Contacto &amp; Sucursales</a>
-        <button type="button" id="dm-open-cart-btn" class="dm-cart-btn">
-            🛒 Carrito <span id="dm-cart-count" class="dm-cart-badge">0</span>
-        </button>
+    <nav class="dm-nav">
+        <a th:href="@{/}" class="dm-nav-link">Inicio</a>
+        <a th:href="@{/catalog}" class="dm-nav-link">Catálogo</a>
+        <a th:href="@{/contact}" class="dm-nav-link">Contacto</a>
 
         <th:block th:if="${currentCustomer != null}">
             <a th:if="${portalUrl != null}"
                th:href="${portalUrl}"
                target="_blank"
                rel="noopener"
-               class="btn btn-primary"
-               style="padding: 0.38rem 0.85rem; font-size: 0.82rem; font-weight: 700;"
+               class="btn btn-primary dm-nav-btn"
                th:text="${portalLabel}">
                 Ir al Portal
             </a>
-            <a th:href="@{/my-orders}" class="dm-account-pill" title="Mi Cuenta y Pedidos">
-                👤 <span th:text="${currentCustomer.fullName}">Cliente</span>
-            </a>
-            <a th:href="@{/logout}" class="btn btn-outline" style="padding: 0.38rem 0.75rem; font-size: 0.8rem;">
-                Salir
-            </a>
+            <button type="button" id="dm-open-cart-btn" class="dm-cart-btn">
+                🛒 Carrito <span id="dm-cart-count" class="dm-cart-badge">0</span>
+            </button>
+            <div class="dm-user-menu" id="dm-user-menu">
+                <button type="button" id="dm-user-menu-btn" class="dm-user-trigger" aria-expanded="false" aria-haspopup="true">
+                    <span class="dm-user-avatar" th:text="${#strings.substring(currentCustomer.fullName != null && !#strings.isEmpty(currentCustomer.fullName) ? currentCustomer.fullName : currentCustomer.email, 0, 1).toUpperCase()}">U</span>
+                    <span class="dm-user-name" th:text="${currentCustomer.fullName != null && !#strings.isEmpty(currentCustomer.fullName) ? currentCustomer.fullName : currentCustomer.email}">Cliente</span>
+                    <span class="dm-user-chevron">▾</span>
+                </button>
+                <div class="dm-user-dropdown" id="dm-user-dropdown" role="menu">
+                    <a th:href="@{/profile}" class="dm-dropdown-item" role="menuitem">👤 Mi Perfil</a>
+                    <a th:href="@{/my-orders}" class="dm-dropdown-item" role="menuitem">📦 Mis Pedidos</a>
+                    <div class="dm-dropdown-divider"></div>
+                    <a th:href="@{/logout}" class="dm-dropdown-item dm-dropdown-danger" role="menuitem">🚪 Cerrar Sesión</a>
+                </div>
+            </div>
         </th:block>
+
         <th:block th:if="${currentCustomer == null}">
-            <a th:href="@{/login}" class="btn btn-outline" style="padding: 0.38rem 0.8rem; font-size: 0.82rem;">
-                Ingresar
-            </a>
-            <a th:href="@{/register}" class="btn btn-primary" style="padding: 0.38rem 0.8rem; font-size: 0.82rem;">
-                Crear Cuenta
-            </a>
+            <div class="dm-auth-links">
+                <a th:href="@{/login}" class="btn btn-outline dm-nav-btn">Iniciar Sesión</a>
+                <a th:href="@{/register}" class="btn btn-primary dm-nav-btn">Registrarse</a>
+            </div>
         </th:block>
     </nav>
+    <script>
+        (function () {
+            const menu = document.getElementById('dm-user-menu');
+            const btn = document.getElementById('dm-user-menu-btn');
+            const dropdown = document.getElementById('dm-user-dropdown');
+            if (!menu || !btn || !dropdown) return;
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isOpen = menu.classList.toggle('open');
+                btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+            document.addEventListener('click', function (e) {
+                if (!menu.contains(e.target)) {
+                    menu.classList.remove('open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    menu.classList.remove('open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        })();
+    </script>
 </header>
 
 <!-- Reusable AI Chat Widget -->

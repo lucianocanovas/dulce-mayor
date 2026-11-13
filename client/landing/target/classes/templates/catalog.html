@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">Catálogo — Dulce Mayor</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css(v=2)}">
 </head>
 <body>
     <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
@@ -37,12 +37,15 @@
                 <div style="margin-top: 0.75rem;">
                     <span class="stock-pill" th:text="${prod.currentStock} + (${prod.currentStock == 1} ? ' unidad disponible' : ' unidades disponibles')">En Stock</span>
                 </div>
-                <div class="dm-card-actions">
+                <div class="dm-card-actions" th:if="${currentCustomer != null}">
                     <input type="number" class="dm-card-qty-input" value="1" min="1" th:max="${prod.currentStock}" />
                     <button type="button" class="dm-add-btn"
                             th:attr="data-id=${prod.id},data-code=${prod.code},data-name=${prod.name},data-price=${prod.currentPrice},data-stock=${prod.currentStock},data-packaging=${prod.packaging}">
                         + Agregar al Carrito
                     </button>
+                </div>
+                <div class="dm-card-actions dm-card-actions--guest" th:if="${currentCustomer == null}">
+                    <a th:href="@{/login}" class="dm-login-to-order">Iniciá sesión para pedir</a>
                 </div>
             </div>
         </div>

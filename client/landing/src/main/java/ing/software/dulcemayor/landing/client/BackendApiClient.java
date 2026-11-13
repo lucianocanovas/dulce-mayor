@@ -11,6 +11,7 @@ import ing.software.dulcemayor.landing.dto.CustomerRegisterRequestDTO;
 import ing.software.dulcemayor.landing.dto.OrderPaymentStatusDTO;
 import ing.software.dulcemayor.landing.dto.OrderSummaryDTO;
 import ing.software.dulcemayor.landing.dto.PaymentConfigDTO;
+import ing.software.dulcemayor.landing.dto.PointOfSaleDTO;
 import ing.software.dulcemayor.landing.dto.ProductDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -63,6 +64,18 @@ public class BackendApiClient {
             }
         }
         return Collections.emptyList();
+    }
+
+    public List<PointOfSaleDTO> getPointsOfSale() {
+        try {
+            ApiResponse<List<PointOfSaleDTO>> response = restClient.get()
+                    .uri("/points-of-sale")
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<List<PointOfSaleDTO>>>() {});
+            return response != null && response.getData() != null ? response.getData() : Collections.emptyList();
+        } catch (Exception ex) {
+            return Collections.emptyList();
+        }
     }
 
     public PaymentConfigDTO getPaymentConfig() {
@@ -239,6 +252,68 @@ public class BackendApiClient {
             return response != null ? response.getData() : null;
         } catch (Exception ex) {
             return null;
+        }
+    }
+
+    public CustomerProfileDTO updateCustomerProfile(String userId, Map<String, Object> payload) {
+        try {
+            ApiResponse<CustomerProfileDTO> response = restClient.put()
+                    .uri("/auth/customer/{userId}", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<CustomerProfileDTO>>() {});
+            if (response == null || response.getData() == null) {
+                throw new IllegalArgumentException("No se pudo actualizar el perfil.");
+            }
+            return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
+        }
+    }
+
+    public void changePassword(String userId, String currentPassword, String newPassword) {
+        try {
+            restClient.post()
+                    .uri("/auth/change-password?userId={userId}", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("currentPassword", currentPassword, "newPassword", newPassword))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<Void>>() {});
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
+        }
+    }
+
+    public List<PointOfSaleDTO> getCustomerStores(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            ApiResponse<List<PointOfSaleDTO>> response = restClient.get()
+                    .uri("/auth/customer/{userId}/stores", userId)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<List<PointOfSaleDTO>>>() {});
+            return response != null && response.getData() != null ? response.getData() : Collections.emptyList();
+        } catch (Exception ex) {
+            return Collections.emptyList();
+        }
+    }
+
+    public PointOfSaleDTO createCustomerStore(String userId, Map<String, Object> payload) {
+        try {
+            ApiResponse<PointOfSaleDTO> response = restClient.post()
+                    .uri("/auth/customer/{userId}/stores", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<ApiResponse<PointOfSaleDTO>>() {});
+            if (response == null || response.getData() == null) {
+                throw new IllegalArgumentException("No se pudo guardar el local.");
+            }
+            return response.getData();
+        } catch (RestClientResponseException ex) {
+            throw new IllegalArgumentException(extractErrorMessage(ex));
         }
     }
 

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Mi Perfil — Dulce Mayor</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
+    <link rel="stylesheet" th:href="@{/css/style.css(v=2)}">
+</head>
+<body>
+    <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
+
+    <div class="container" style="max-width: 920px;">
+        <h1 class="section-title">Mi Perfil</h1>
+
+        <div class="dm-panel dm-profile-hero">
+            <div class="dm-profile-identity">
+                <div class="dm-profile-avatar"
+                     th:text="${#strings.substring(currentCustomer.fullName != null && !#strings.isEmpty(currentCustomer.fullName) ? currentCustomer.fullName : currentCustomer.email, 0, 1).toUpperCase()}">
+                    U
+                </div>
+                <div>
+                    <h2 class="dm-profile-name" th:text="${currentCustomer.fullName != null && !#strings.isEmpty(currentCustomer.fullName) ? currentCustomer.fullName : currentCustomer.email}">
+                        Cliente Mayorista
+                    </h2>
+                    <div class="dm-profile-email" th:text="${currentCustomer.email}">cliente@comercio.com</div>
+                    <span class="stock-pill" style="margin-top: 0.45rem;"
+                          th:text="${currentCustomer.role == 'RETAILER' or currentCustomer.role == null ? 'Cliente Mayorista' : currentCustomer.role}">
+                        Cliente Mayorista
+                    </span>
+                </div>
+            </div>
+            <div class="dm-profile-actions">
+                <a th:href="@{/my-orders}" class="btn btn-primary">📦 Mis Pedidos</a>
+                <a th:href="@{/catalog}" class="btn btn-outline">🛒 Ir al Catálogo</a>
+            </div>
+        </div>
+
+        <div th:if="${portalUrl != null}" class="dm-panel" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; background: var(--primary-light); border-color: rgba(27,68,156,0.2);">
+            <span style="font-size: 0.92rem; font-weight: 600; color: var(--text);">
+                Acceso interno habilitado (<strong th:text="${currentCustomer.role}">STAFF</strong>).
+            </span>
+            <a th:href="${portalUrl}" target="_blank" rel="noopener" class="btn btn-primary" th:text="${portalLabel}">
+                Ir al Portal
+            </a>
+        </div>
+
+        <div class="dm-profile-grid">
+            <!-- Editar Datos de la Cuenta -->
+            <div class="dm-panel">
+                <h3 class="dm-profile-card-title">Información de Mi Cuenta</h3>
+
+                <div th:if="${updated}" class="dm-alert-success">
+                    Tus datos se actualizaron correctamente.
+                </div>
+                <div th:if="${profileError}" class="dm-alert-error" th:text="${profileError}">
+                    Error al actualizar.
+                </div>
+
+                <form th:action="@{/profile/update}" method="post" class="dm-profile-form">
+                    <div class="dm-form-grid">
+                        <div class="dm-field">
+                            <label for="firstName">Nombre *</label>
+                            <input id="firstName" name="firstName" required th:value="${currentCustomer.firstName}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="lastName">Apellido *</label>
+                            <input id="lastName" name="lastName" required th:value="${currentCustomer.lastName}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="phone">Teléfono / WhatsApp</label>
+                            <input id="phone" name="phone" placeholder="261-555-0000" th:value="${currentCustomer.phone}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="taxIdOrDni">CUIT / DNI</label>
+                            <input id="taxIdOrDni" name="taxIdOrDni" placeholder="20-34567890-1" th:value="${currentCustomer.taxIdOrDni}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="storeName">Comercio Principal</label>
+                            <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol" th:value="${currentCustomer.storeName}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="deliveryCity">Departamento / Localidad</label>
+                            <select id="deliveryCity" name="deliveryCity">
+                                <option value="Mendoza Capital" th:selected="${currentCustomer.deliveryCity == 'Mendoza Capital'}">Mendoza Capital</option>
+                                <option value="Godoy Cruz" th:selected="${currentCustomer.deliveryCity == 'Godoy Cruz'}">Godoy Cruz</option>
+                                <option value="Guaymallén" th:selected="${currentCustomer.deliveryCity == 'Guaymallén'}">Guaymallén</option>
+                                <option value="Maipú" th:selected="${currentCustomer.deliveryCity == 'Maipú'}">Maipú</option>
+                                <option value="Las Heras" th:selected="${currentCustomer.deliveryCity == 'Las Heras'}">Las Heras</option>
+                            </select>
+                        </div>
+                        <div class="dm-field">
+                            <label for="deliveryAddress">Dirección Principal</label>
+                            <input id="deliveryAddress" name="deliveryAddress" placeholder="Av. San Martín 1450" th:value="${currentCustomer.deliveryAddress}" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="deliveryNeighborhood">Barrio / Referencia</label>
+                            <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro" th:value="${currentCustomer.deliveryNeighborhood}" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
+                        Guardar Cambios de Cuenta
+                    </button>
+                </form>
+            </div>
+
+            <!-- Cambiar Contraseña -->
+            <div class="dm-panel">
+                <h3 class="dm-profile-card-title">Seguridad y Cambio de Clave</h3>
+
+                <div th:if="${passwordChanged}" class="dm-alert-success">
+                    Tu contraseña se actualizó correctamente.
+                </div>
+                <div th:if="${passwordError}" class="dm-alert-error" th:text="${passwordError}">
+                    Error al cambiar contraseña.
+                </div>
+
+                <form th:action="@{/profile/change-password}" method="post" class="dm-profile-form">
+                    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                        <div class="dm-field">
+                            <label for="currentPassword">Contraseña Actual *</label>
+                            <input id="currentPassword" name="currentPassword" type="password" required autocomplete="current-password" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newPassword">Nueva Contraseña * (mín. 6 caracteres)</label>
+                            <input id="newPassword" name="newPassword" type="password" minlength="6" required autocomplete="new-password" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="confirmPassword">Confirmar Nueva Contraseña *</label>
+                            <input id="confirmPassword" name="confirmPassword" type="password" minlength="6" required autocomplete="new-password" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
+                        Actualizar Contraseña
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Mis Locales Guardados -->
+        <div class="dm-panel" style="margin-top: 1.25rem;">
+            <h3 class="dm-profile-card-title">Mis Locales Guardados para Entrega</h3>
+
+            <div th:if="${storeAdded}" class="dm-alert-success">
+                Nuevo local guardado correctamente. Ya podés seleccionarlo en el checkout.
+            </div>
+            <div th:if="${storeError}" class="dm-alert-error" th:text="${storeError}">
+                Error al guardar el local.
+            </div>
+
+            <div th:if="${#lists.isEmpty(savedStores)}" style="color: var(--muted); font-size: 0.92rem; margin-bottom: 1rem;">
+                Todavía no tenés locales guardados. Agregá uno abajo o cargalo directamente al finalizar tu compra.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(savedStores)}" class="dm-saved-stores-grid" style="margin-bottom: 1.25rem;">
+                <div th:each="st : ${savedStores}" class="dm-saved-store-item">
+                    <strong th:text="${st.storeName}">Local</strong>
+                    <span th:text="${st.address} + (${st.neighborhood != null and !#strings.isEmpty(st.neighborhood)} ? ' • ' + ${st.neighborhood} : '')">Dirección</span>
+                    <span class="dm-saved-store-city" th:text="${st.city}">Mendoza Capital</span>
+                </div>
+            </div>
+
+            <details class="dm-add-store-details">
+                <summary class="btn btn-outline" style="cursor: pointer; display: inline-flex;">+ Agregar Nuevo Local</summary>
+                <form th:action="@{/profile/stores}" method="post" style="margin-top: 1rem;">
+                    <div class="dm-form-grid">
+                        <div class="dm-field">
+                            <label for="newStoreName">Nombre del Local / Kiosco *</label>
+                            <input id="newStoreName" name="storeName" required placeholder="Ej: Kiosco Centro II" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStoreAddress">Dirección *</label>
+                            <input id="newStoreAddress" name="address" required placeholder="Av. Las Heras 420" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStoreNeighborhood">Barrio / Referencia</label>
+                            <input id="newStoreNeighborhood" name="neighborhood" placeholder="Centro" />
+                        </div>
+                        <div class="dm-field">
+                            <label for="newStoreCity">Departamento / Localidad</label>
+                            <select id="newStoreCity" name="city">
+                                <option value="Mendoza Capital">Mendoza Capital</option>
+                                <option value="Godoy Cruz">Godoy Cruz</option>
+                                <option value="Guaymallén">Guaymallén</option>
+                                <option value="Maipú">Maipú</option>
+                                <option value="Las Heras">Las Heras</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 0.85rem;">
+                        Guardar Local
+                    </button>
+                </form>
+            </details>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+            <a th:href="@{/logout}" class="btn btn-outline dm-btn-danger">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Dulce Mayor S.A.</strong> — Portal de Clientes Mayoristas</p>
+    </footer>
+
+    <script th:src="@{/js/cart.js}"></script>
+    <div th:replace="~{fragments/chat-widget :: aiChatWidget}"></div>
+</body>
+</html>

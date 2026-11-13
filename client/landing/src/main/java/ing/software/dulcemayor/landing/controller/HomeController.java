@@ -18,10 +18,24 @@ public class HomeController {
     @GetMapping("/")
     public String index(Model model) {
         List<ProductDTO> products = backendApiClient.getCatalogProducts();
-        List<ProductDTO> featured = products.stream()
+        List<ProductDTO> onSale = products.stream()
                 .filter(ProductDTO::isOnSale)
-                .limit(4)
+                .limit(10)
                 .toList();
+
+        List<ProductDTO> featured;
+        if (onSale.size() >= 4) {
+            featured = onSale;
+        } else {
+            List<ProductDTO> combined = new java.util.ArrayList<>(onSale);
+            for (ProductDTO p : products) {
+                if (combined.size() >= 8) break;
+                if (!p.isOnSale()) {
+                    combined.add(p);
+                }
+            }
+            featured = combined;
+        }
 
         model.addAttribute("title", "Dulce Mayor — Distribuidora Mayorista");
         model.addAttribute("products", products);
@@ -32,6 +46,7 @@ public class HomeController {
     @GetMapping("/contact")
     public String contact(Model model) {
         model.addAttribute("title", "Contacto & Sucursales — Dulce Mayor");
+        model.addAttribute("pointsOfSale", backendApiClient.getPointsOfSale());
         return "contact";
     }
 }

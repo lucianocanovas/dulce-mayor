@@ -1,6 +1,15 @@
 (function () {
     const CART_KEY = 'dulce_mayor_cart_v1';
 
+    function isAuthenticated() {
+        const header = document.getElementById('dm-site-header');
+        if (header && header.dataset && typeof header.dataset.authenticated !== 'undefined') {
+            return header.dataset.authenticated === 'true';
+        }
+        const chatRoot = document.getElementById('dm-ai-chat-root');
+        return Boolean(chatRoot && chatRoot.dataset && chatRoot.dataset.authenticated === 'true');
+    }
+
     function safeJsonParse(raw, fallback) {
         try {
             return raw ? JSON.parse(raw) : fallback;
@@ -43,6 +52,9 @@
     }
 
     function addItem(product, qtyToAdd) {
+        if (!isAuthenticated()) {
+            return;
+        }
         const qty = Math.max(1, Number(qtyToAdd || 1));
         const maxStock = Number(product.stock || 0);
         if (maxStock <= 0) {
@@ -150,6 +162,9 @@
     }
 
     function openDrawer() {
+        if (!isAuthenticated()) {
+            return;
+        }
         ensureDrawerDom();
         renderDrawer();
         document.getElementById('dm-cart-backdrop').classList.add('open');
@@ -265,6 +280,9 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
+        if (!isAuthenticated()) {
+            return;
+        }
         ensureDrawerDom();
         renderCartBadge();
         renderDrawer();

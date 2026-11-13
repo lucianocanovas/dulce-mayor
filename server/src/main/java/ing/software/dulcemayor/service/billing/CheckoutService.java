@@ -148,10 +148,15 @@ public class CheckoutService {
             User user = userRepository.findByIdAndIsDeletedFalse(request.getUserId()).orElse(null);
             if (user != null && user.getPerson() instanceof Retailer retailer) {
                 existingRetailer = retailer;
-                List<PointOfSale> posList = pointOfSaleRepository.findByRetailerIdAndIsDeletedFalse(retailer.getId());
-                if (!posList.isEmpty()) {
-                    return posList.get(0);
-                }
+            }
+        }
+
+        if (request.getPointOfSaleId() != null && !request.getPointOfSaleId().isBlank()) {
+            PointOfSale selected = pointOfSaleRepository.findByIdAndIsDeletedFalse(request.getPointOfSaleId().trim())
+                    .orElse(null);
+            if (selected != null && (existingRetailer == null
+                    || (selected.getRetailer() != null && selected.getRetailer().getId().equals(existingRetailer.getId())))) {
+                return selected;
             }
         }
 

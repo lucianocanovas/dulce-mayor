@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">Finalizar Compra — Dulce Mayor</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css(v=2)}">
 </head>
 <body>
     <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
@@ -23,21 +23,43 @@
             <div style="display:flex; flex-direction:column; gap:1.25rem;">
                 <div class="dm-panel">
                     <h2 style="margin-bottom:1rem; font-size:1.15rem;">1. Datos del Comprador y Entrega</h2>
-                    <div class="dm-form-grid">
+
+                    <input type="hidden" id="pointOfSaleId" name="pointOfSaleId"
+                           th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].id : ''}" />
+
+                    <!-- Saved Stores Selector -->
+                    <div th:if="${!#lists.isEmpty(savedStores)}" class="dm-store-selector-box">
+                        <div class="dm-store-selector-title">¿Dónde entregamos tu pedido?</div>
+                        <div class="dm-store-cards">
+                            <label th:each="st, iter : ${savedStores}"
+                                   th:class="'dm-store-option' + (${iter.index == 0} ? ' selected' : '')">
+                                <input type="radio" name="selectedStoreRadio"
+                                       th:value="${st.id}"
+                                       th:checked="${iter.index == 0}"
+                                       th:attr="data-store-name=${st.storeName},data-address=${st.address},data-neighborhood=${st.neighborhood},data-city=${st.city},data-phone=${st.phone}" />
+                                <div class="dm-store-option-body">
+                                    <strong th:text="${st.storeName}">Local</strong>
+                                    <span th:text="${st.address} + (${st.neighborhood != null and !#strings.isEmpty(st.neighborhood)} ? ' • ' + ${st.neighborhood} : '') + (${st.city != null and !#strings.isEmpty(st.city)} ? ' (' + ${st.city} + ')' : '')">
+                                        Dirección
+                                    </span>
+                                </div>
+                            </label>
+
+                            <label class="dm-store-option dm-store-option--new">
+                                <input type="radio" name="selectedStoreRadio" value="__NEW__" />
+                                <div class="dm-store-option-body">
+                                    <strong>+ Cargar un nuevo local</strong>
+                                    <span>Ingresar una nueva dirección de entrega y guardarla para futuras compras</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="dm-buyer-fields" class="dm-form-grid">
                         <div class="dm-field">
                             <label for="customerName">Nombre y Apellido *</label>
                             <input id="customerName" name="customerName" required placeholder="Ej: Lucía Fernández"
                                    th:value="${currentCustomer != null ? currentCustomer.fullName : ''}" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="storeName">Nombre del Kiosco / Comercio</label>
-                            <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol"
-                                   th:value="${currentCustomer != null ? currentCustomer.storeName : ''}" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="customerEmail">Correo Electrónico (confirmación y seguimiento)</label>
-                            <input id="customerEmail" name="customerEmail" type="email" placeholder="cliente@kiosco.com"
-                                   th:value="${currentCustomer != null ? currentCustomer.email : ''}" />
                         </div>
                         <div class="dm-field">
                             <label for="customerPhone">Teléfono / WhatsApp *</label>
@@ -45,29 +67,45 @@
                                    th:value="${currentCustomer != null ? currentCustomer.phone : ''}" />
                         </div>
                         <div class="dm-field">
+                            <label for="customerEmail">Correo Electrónico (confirmación y seguimiento)</label>
+                            <input id="customerEmail" name="customerEmail" type="email" placeholder="cliente@kiosco.com"
+                                   th:value="${currentCustomer != null ? currentCustomer.email : ''}" />
+                        </div>
+                        <div class="dm-field">
                             <label for="taxIdOrDni">CUIT o DNI</label>
                             <input id="taxIdOrDni" name="taxIdOrDni" placeholder="20-34567890-1"
                                    th:value="${currentCustomer != null ? currentCustomer.taxIdOrDni : ''}" />
                         </div>
-                        <div class="dm-field">
-                            <label for="deliveryCity">Departamento / Localidad *</label>
-                            <select id="deliveryCity" name="deliveryCity">
-                                <option value="Mendoza Capital">Mendoza Capital</option>
-                                <option value="Godoy Cruz">Godoy Cruz</option>
-                                <option value="Guaymallén">Guaymallén</option>
-                                <option value="Maipú">Maipú</option>
-                                <option value="Las Heras">Las Heras</option>
-                            </select>
-                        </div>
-                        <div class="dm-field">
-                            <label for="deliveryAddress">Dirección de Entrega *</label>
-                            <input id="deliveryAddress" name="deliveryAddress" required placeholder="Av. San Martín 1450"
-                                   th:value="${currentCustomer != null ? currentCustomer.deliveryAddress : ''}" />
-                        </div>
-                        <div class="dm-field">
-                            <label for="deliveryNeighborhood">Barrio / Referencia de Zona</label>
-                            <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro"
-                                   th:value="${currentCustomer != null ? currentCustomer.deliveryNeighborhood : ''}" />
+                    </div>
+
+                    <div id="dm-new-store-fields"
+                         th:style="${!#lists.isEmpty(savedStores)} ? 'display:none; margin-top:0.85rem;' : 'margin-top:0.85rem;'">
+                        <div class="dm-form-grid">
+                            <div class="dm-field">
+                                <label for="storeName">Nombre del Kiosco / Comercio</label>
+                                <input id="storeName" name="storeName" placeholder="Ej: Kiosco El Sol"
+                                       th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].storeName : (currentCustomer != null ? currentCustomer.storeName : '')}" />
+                            </div>
+                            <div class="dm-field">
+                                <label for="deliveryCity">Departamento / Localidad *</label>
+                                <select id="deliveryCity" name="deliveryCity">
+                                    <option value="Mendoza Capital">Mendoza Capital</option>
+                                    <option value="Godoy Cruz">Godoy Cruz</option>
+                                    <option value="Guaymallén">Guaymallén</option>
+                                    <option value="Maipú">Maipú</option>
+                                    <option value="Las Heras">Las Heras</option>
+                                </select>
+                            </div>
+                            <div class="dm-field">
+                                <label for="deliveryAddress">Dirección de Entrega *</label>
+                                <input id="deliveryAddress" name="deliveryAddress" required placeholder="Av. San Martín 1450"
+                                       th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].address : (currentCustomer != null ? currentCustomer.deliveryAddress : '')}" />
+                            </div>
+                            <div class="dm-field">
+                                <label for="deliveryNeighborhood">Barrio / Referencia de Zona</label>
+                                <input id="deliveryNeighborhood" name="deliveryNeighborhood" placeholder="Centro"
+                                       th:value="${!#lists.isEmpty(savedStores) ? savedStores[0].neighborhood : (currentCustomer != null ? currentCustomer.deliveryNeighborhood : '')}" />
+                            </div>
                         </div>
                     </div>
                     <div class="dm-field" style="margin-top:0.85rem;">
@@ -203,6 +241,43 @@
                 document.getElementById('dm-summary-total').textContent = window.DulceCart.formatMoney(total);
             }
 
+            document.querySelectorAll('input[name="selectedStoreRadio"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    document.querySelectorAll('.dm-store-option').forEach(lbl => lbl.classList.remove('selected'));
+                    const parent = radio.closest('.dm-store-option');
+                    if (parent) parent.classList.add('selected');
+
+                    const posIdInput = document.getElementById('pointOfSaleId');
+                    const newStoreFields = document.getElementById('dm-new-store-fields');
+                    const storeNameEl = document.getElementById('storeName');
+                    const addressEl = document.getElementById('deliveryAddress');
+                    const neighEl = document.getElementById('deliveryNeighborhood');
+                    const cityEl = document.getElementById('deliveryCity');
+                    const phoneEl = document.getElementById('customerPhone');
+
+                    if (radio.value === '__NEW__') {
+                        posIdInput.value = '';
+                        newStoreFields.style.display = 'block';
+                        storeNameEl.value = '';
+                        addressEl.value = '';
+                        neighEl.value = '';
+                        addressEl.required = true;
+                    } else {
+                        posIdInput.value = radio.value;
+                        newStoreFields.style.display = 'none';
+                        storeNameEl.value = radio.dataset.storeName || '';
+                        addressEl.value = radio.dataset.address || '';
+                        neighEl.value = radio.dataset.neighborhood || '';
+                        if (radio.dataset.city) {
+                            cityEl.value = radio.dataset.city;
+                        }
+                        if (!phoneEl.value && radio.dataset.phone) {
+                            phoneEl.value = radio.dataset.phone;
+                        }
+                    }
+                });
+            });
+
             document.querySelectorAll('input[name="paymentType"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     document.querySelectorAll('.dm-payment-option').forEach(lbl => lbl.classList.remove('selected'));
@@ -262,6 +337,7 @@
 
                 const paymentType = document.querySelector('input[name="paymentType"]:checked').value;
                 const payload = {
+                    pointOfSaleId: (document.getElementById('pointOfSaleId')?.value || '').trim() || null,
                     customerName: document.getElementById('customerName').value.trim(),
                     storeName: document.getElementById('storeName').value.trim(),
                     customerEmail: document.getElementById('customerEmail').value.trim(),

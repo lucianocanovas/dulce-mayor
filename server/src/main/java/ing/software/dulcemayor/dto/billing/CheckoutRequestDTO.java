@@ -26,6 +26,7 @@ public class CheckoutRequestDTO {
     private String notes;
     private String returnBaseUrl;
     private String userId;
+    private String pointOfSaleId;
     private List<CreateOrderItemDTO> items;
 }
 

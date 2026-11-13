@@ -91,9 +91,9 @@
                     </div>
                     ${usdLine}
                     <div class="dm-quote-actions">
-                        <button type="button" class="dm-quote-add-btn">🛒 Agregar Todo al Carrito</button>
-                        <a href="/checkout" class="dm-quote-checkout-link">Ir al Checkout</a>
-                        ${!isAuthenticated ? '<a href="/register" class="dm-quote-register-link">Crear Cuenta</a>' : ''}
+                        ${isAuthenticated
+                            ? '<button type="button" class="dm-quote-add-btn">🛒 Agregar Todo al Carrito</button><a href="/checkout" class="dm-quote-checkout-link">Ir al Checkout</a>'
+                            : '<a href="/login" class="dm-quote-checkout-link" style="flex:1;">Iniciá sesión para pedir</a><a href="/register" class="dm-quote-register-link">Crear Cuenta</a>'}
                     </div>
                     <div class="dm-quote-disclaimer">${escapeHtml(quoteData.disclaimer || '')}</div>
                 `;

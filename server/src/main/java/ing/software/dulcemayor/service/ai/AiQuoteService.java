@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
 public class AiQuoteService {
 
     private static final String DISCLAIMER = "Este presupuesto es informativo y está sujeto a confirmación final de stock y emisión de factura.";
-    private static final Pattern BUDGET_PATTERN = Pattern.compile("(?:\\$|ars|usd|u\\$s|pesos|dolares|dólares)?\\s*(\\d[\\d.,]{2,})", Pattern.CASE_INSENSITIVE);
+    private static final Pattern BUDGET_PATTERN = Pattern.compile("(?:\\$|ars|usd|u\\$s|pesos|dolares|dólares)?\\s*(\\d[\\d.,]*)\\s*(mil|k)?\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern QTY_BEFORE_WORD = Pattern.compile("(\\d+)\\s+(?:cajas?|bultos?|packs?|unidades?)?\\s*(?:de\\s+)?([a-zA-ZáéíóúñÁÉÍÓÚÑ0-9\\s]{3,25})");
 
     private final ProductService productService;
@@ -55,7 +55,7 @@ public class AiQuoteService {
     @Value("${gemini.api-key:}")
     private String geminiApiKey;
 
-    @Value("${gemini.model:gemini-2.5-flash}")
+    @Value("${gemini.model:gemini-3.5-flash-lite}")
     private String geminiModel;
 
     public AiQuoteService(
@@ -260,15 +260,23 @@ public class AiQuoteService {
             List<OrderResponseDTO> customerOrders) {
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Sos el asistente virtual mayorista de Dulce Mayor (Mendoza, Argentina). ");
+        sb.append("Sos el asistente virtual mayorista de Dulce Mayor (Mendoza, Argentina, desde 1926). ");
         sb.append("Respondés siempre en español rioplatense cordial, claro y conciso.\n");
         sb.append("Reglas estrictas:\n");
         sb.append("1. NUNCA inventes productos, códigos, precios ni stock. Usá exclusivamente el catálogo vigente abajo.\n");
-        sb.append("2. Si el cliente pide un presupuesto o surtido, seleccioná productos reales del catálogo respetando su presupuesto y stock disponible.\n");
-        sb.append("3. Cotización oficial de referencia: 1 USD = $").append(String.format(Locale.US, "%.2f", usdRate)).append(" ARS.\n");
-        sb.append("4. Devolvé SIEMPRE un JSON válido con este formato exacto:\n");
+        sb.append("2. Si el cliente pide un presupuesto o surtido por cualquier monto (por ejemplo $50.000, 300mil, $300.000, etc.), calculá cantidades de productos reales del catálogo cuya suma se acerque al presupuesto solicitado sin superar el stock disponible de cada producto.\n");
+        sb.append("3. Podés responder preguntas sobre sucursales, horarios, tiempos de entrega, medios de pago, promociones, cotización USD, estado de pedidos y también mantener una charla cordial breve (incluso un chiste corto relacionado si te lo piden, volviendo amablemente a ayudar con su compra).\n");
+        sb.append("4. Cotización oficial de referencia: 1 USD = $").append(String.format(Locale.US, "%.2f", usdRate)).append(" ARS.\n");
+        sb.append("5. Devolvé SIEMPRE un JSON válido con este formato exacto:\n");
         sb.append("{\"reply\": \"Texto conversacional para el cliente\", \"items\": [{\"code\": \"CODIGO\", \"quantity\": 2}]}\n");
-        sb.append("Si la consulta no requiere armar un presupuesto de productos (ej: saludo, estado de pedido, consulta de dirección), devolvé \"items\": [].\n\n");
+        sb.append("Si la consulta no requiere armar un presupuesto de productos (ej: saludo, estado de pedido, sucursales, tiempos de entrega, charla), devolvé \"items\": [].\n\n");
+
+        sb.append("INFORMACIÓN INSTITUCIONAL, SUCURSALES Y LOGÍSTICA:\n");
+        sb.append("- Sede Central Mendoza (única sucursal): Av. San Martín 1500, Ciudad de Mendoza (CP 5500).\n");
+        sb.append("- Teléfono / WhatsApp comercial: +54 9 261 555-1234 | Correo: ventas@dulcemayor.com.ar.\n");
+        sb.append("- Horario de atención mayorista: Lunes a Viernes de 08:00 a 17:00 hs.\n");
+        sb.append("- Entregas y tiempos estimados: Cobertura en Gran Mendoza y alrededores. Demora estimada de 24 a 48 hs hábiles desde la confirmación del pedido (también disponible retiro en Sede Central).\n");
+        sb.append("- Medios de pago: Mercado Pago, Transferencia Bancaria (Alias: DULCE.MAYOR.MZA) y Efectivo Contra Entrega.\n\n");
 
         sb.append("CATÁLOGO VIGENTE EN STOCK:\n");
         for (ProductResponseDTO p : catalog) {
@@ -479,6 +487,38 @@ public class AiQuoteService {
                     .build();
         }
 
+        if (norm.contains("sucursal") || norm.contains("donde quedan") || norm.contains("ubicacion")
+                || norm.contains("horario") || norm.contains("telefono") || norm.contains("contacto")) {
+            return AiChatResponseDTO.builder()
+                    .reply("Nuestra **Sede Central Mendoza** está en **Av. San Martín 1500, Ciudad de Mendoza (CP 5500)**.\n"
+                            + "• **Horario mayorista:** Lunes a Viernes de 08:00 a 17:00 hs.\n"
+                            + "• **Teléfono:** +54 9 261 555-1234\n"
+                            + "• **Correo:** ventas@dulcemayor.com.ar")
+                    .recommendedItems(List.of())
+                    .estimatedTotal(0)
+                    .usdRate(usdRate)
+                    .activePromotions(promoSummaries)
+                    .disclaimer(DISCLAIMER)
+                    .authenticated(authenticated)
+                    .aiPowered(false)
+                    .build();
+        }
+
+        if (norm.contains("entrega") || norm.contains("envio") || norm.contains("demora")
+                || norm.contains("tarda") || norm.contains("pago")) {
+            return AiChatResponseDTO.builder()
+                    .reply("Realizamos entregas en **Gran Mendoza y alrededores** con una demora estimada de **24 a 48 hs hábiles** una vez confirmado el pedido (también podés retirar por Sede Central).\n"
+                            + "Aceptamos **Mercado Pago**, **Transferencia Bancaria** (`DULCE.MAYOR.MZA`) y **Efectivo Contra Entrega**.")
+                    .recommendedItems(List.of())
+                    .estimatedTotal(0)
+                    .usdRate(usdRate)
+                    .activePromotions(promoSummaries)
+                    .disclaimer(DISCLAIMER)
+                    .authenticated(authenticated)
+                    .aiPowered(false)
+                    .build();
+        }
+
         // 3. Build a wholesale quote from catalog
         List<AiRecommendedItemDTO> items = buildQuoteItemsFromText(norm, catalog, usdRate);
         if (!items.isEmpty()) {
@@ -520,12 +560,17 @@ public class AiQuoteService {
         // Check for explicit budget in message
         double targetBudget = 0;
         Matcher budgetMatcher = BUDGET_PATTERN.matcher(norm);
-        if (budgetMatcher.find()) {
+        while (budgetMatcher.find()) {
             String rawNum = budgetMatcher.group(1).replace(".", "").replace(",", "");
+            String unit = budgetMatcher.group(2);
             try {
                 double val = Double.parseDouble(rawNum);
+                if (unit != null && !unit.isBlank()) {
+                    val *= 1000.0;
+                }
                 if (val >= 500) {
                     targetBudget = (norm.contains("usd") || norm.contains("dolar")) ? val * usdRate : val;
+                    break;
                 }
             } catch (NumberFormatException ignored) {
             }

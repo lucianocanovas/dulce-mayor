@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">Estado de Compra — Dulce Mayor</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css(v=2)}">
 </head>
 <body>
     <header th:replace="~{fragments/chat-widget :: siteHeader}"></header>
@@ -91,7 +91,7 @@
                 <div style="margin-top:1.25rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
                     <a th:href="@{/catalog}" class="btn btn-primary">Seguir Comprando</a>
                     <a th:href="@{/my-orders}" class="btn btn-outline">Ver Mis Pedidos</a>
-                    <a href="http://localhost:5174" class="btn btn-outline">Abrir App Distribución (:5174)</a>
+                    <a th:if="${portalUrl != null}" th:href="${portalUrl}" target="_blank" rel="noopener" class="btn btn-outline" th:text="${portalLabel}">Ir al Portal</a>
                 </div>
             </div>
         </div>
